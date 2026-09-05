@@ -1,0 +1,278 @@
+// Health Project Hub — data model
+// Couvre le cœur du cahier des charges : hiérarchie Groupe > Établissement > Projet,
+// réunions, actions, risques, décisions, interfaces, anomalies, formation/autonomie,
+// documents et timeline. Les modules non couverts par l'UI (export, parsing mail IA,
+// génération de documents) sont listés en roadmap dans le README, mais le schéma
+// laisse la place pour les brancher (voir DocumentRef, TimelineEvent).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  id             String          @id @default(cuid())
+  name           String
+  establishments Establishment[]
+  projects       Project[]
+  createdAt      DateTime        @default(now())
+}
+
+model Establishment {
+  id       String                 @id @default(cuid())
+  name     String
+  groupId  String
+  group    Group                  @relation(fields: [groupId], references: [id])
+  projects ProjectEstablishment[]
+  trainings TrainingRecord[]
+}
+
+model Actor {
+  id             String @id @default(cuid())
+  name           String
+  fonction       String?
+  organisation   String?
+  email          String?
+  telephone      String?
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  reference   String
+  name        String
+  description String?
+  type        String // deploiement | migration | evolution | interoperabilite | changement_version | remplacement | mise_en_conformite | optimisation | autre
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id])
+
+  chefDeProjet String?
+  sponsor      String?
+
+  startDate  DateTime?
+  targetDate DateTime?
+  status     String   @default("actif") // actif | en_pause | cloture
+  phase      String   @default("cadrage")
+  priority   String   @default("normale") // basse | normale | haute | critique
+  healthOverride String? // permet de forcer manuellement vert/orange/rouge si besoin
+
+  budgetJh     Float @default(0)
+  jhPlanifies  Float @default(0)
+  jhConsommes  Float @default(0)
+
+  establishments   ProjectEstablishment[]
+  meetings         Meeting[]
+  actions          Action[]
+  risks            Risk[]
+  decisions        Decision[]
+  interfaces       Interface[]
+  vigilancePoints  VigilancePoint[]
+  anomalies        Anomaly[]
+  trainings        TrainingRecord[]
+  documents        DocumentRef[]
+  timelineEvents   TimelineEvent[]
+  baselines        PlanningBaseline[]
+  backlogItems     BacklogItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectEstablishment {
+  id              String        @id @default(cuid())
+  projectId       String
+  establishmentId String
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+
+  @@unique([projectId, establishmentId])
+}
+
+model PlanningBaseline {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String // "Baseline initiale", "Révision 1 (arbitrage COPIL 06/09)"...
+  targetDate DateTime
+  reason    String? // justification de la révision (vide pour la baseline initiale)
+  createdAt DateTime @default(now())
+}
+
+model Meeting {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type         String // kick-off | comite_projet | copil | atelier_metier | atelier_interop | atelier_parametrage | suivi | go_no_go | hypercare | retex
+  title        String
+  date         DateTime
+  participants String? // liste libre, séparée par virgules
+  agenda       String?
+  notes        String?
+
+  decisions Decision[]
+  actions   Action[]
+  risks     Risk[]
+
+  createdAt DateTime @default(now())
+}
+
+model Action {
+  id             String    @id @default(cuid())
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingId      String?
+  meeting        Meeting?  @relation(fields: [meetingId], references: [id])
+  title          String
+  responsable    String?
+  echeance       DateTime?
+  priority       String    @default("normale")
+  origine        String?   // reunion | mail | document | manuel
+  status         String    @default("a_faire") // a_faire | en_cours | en_attente | termine | abandonne
+  comments       String?
+  postponedCount Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Risk {
+  id           String    @id @default(cuid())
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingId    String?
+  meeting      Meeting?  @relation(fields: [meetingId], references: [id])
+  interfaceId  String?
+  interfaceRef Interface? @relation(fields: [interfaceId], references: [id])
+  description  String
+  cause        String?
+  consequence  String?
+  probabilite  String @default("moyenne") // faible | moyenne | forte
+  impact       String @default("moyen") // faible | moyen | fort
+  criticite    String @default("moyenne") // faible | moyenne | forte | critique
+  proprietaire String?
+  planAction   String?
+  echeance     DateTime?
+  status       String @default("ouvert") // ouvert | en_traitement | maitrise | cloture
+  createdAt    DateTime @default(now())
+}
+
+model Decision {
+  id             String    @id @default(cuid())
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetingId      String?
+  meeting        Meeting?  @relation(fields: [meetingId], references: [id])
+  subject        String
+  context        String?
+  options        String?
+  recommendation String?
+  decideur       String?
+  decision       String?
+  date           DateTime?
+  impact         String?
+  status         String @default("en_attente") // decision_prise | en_attente | arbitrage_necessaire
+  createdAt      DateTime @default(now())
+}
+
+model Interface {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  systemeSource String?
+  systemeCible  String?
+  flux          String?
+  protocole     String?
+  standard      String?
+  responsable   String?
+  fournisseur   String?
+  status        String   @default("a_specifier") // a_specifier | en_developpement | en_test | valide | bloquant
+  datePrevue    DateTime?
+  dateReelle    DateTime?
+  dateTest      DateTime?
+  resultat      String?
+  isBlocking    Boolean  @default(false)
+  risks         Risk[]
+  createdAt     DateTime @default(now())
+}
+
+model VigilancePoint {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  description String
+  status      String   @default("a_surveiller") // a_surveiller | requalifie | clos
+  convertedTo String? // action | risque | decision | evolution
+  createdAt   DateTime @default(now())
+}
+
+model Anomaly {
+  id             String    @id @default(cuid())
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  description    String
+  origine        String?
+  environnement  String?
+  criticite      String    @default("moyenne") // mineure | moyenne | majeure | critique
+  responsable    String?
+  correction     String?
+  dateCorrection DateTime?
+  status         String    @default("ouverte") // ouverte | en_correction | corrigee | validee
+  createdAt      DateTime  @default(now())
+}
+
+model TrainingRecord {
+  id              String         @id @default(cuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  establishmentId String?
+  establishment   Establishment? @relation(fields: [establishmentId], references: [id])
+  service         String?
+  metier          String?
+  profil          String?
+  nbUsers         Int            @default(0)
+  nbFormes        Int            @default(0)
+  autonomyLevel   Int            @default(0) // 0..4 cf. échelle §27
+  dateFormation   DateTime?
+  createdAt       DateTime       @default(now())
+}
+
+model DocumentRef {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  type        String? // compte_rendu | specification | recette | formation | interop | mail | autre
+  note        String? // résumé ou contenu texte (mail collé, etc.)
+  linkedType  String? // action | risque | decision | interface | reunion | anomalie
+  linkedId    String?
+  createdAt   DateTime @default(now())
+}
+
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  type        String // reunion | action | risque | decision | interface | anomalie | planning | document
+  description String
+
+  createdAt DateTime @default(now())
+}
+
+model BacklogItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  demande     String
+  origine     String?
+  description String?
+  impact      String?
+  priorite    String   @default("normale")
+  estimationJh Float?
+  decision    String?  // accepte | rejete | en_etude
+  status      String   @default("nouveau") // nouveau | qualifie | planifie | realise | rejete
+  createdAt   DateTime @default(now())
+}

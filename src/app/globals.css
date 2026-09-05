@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-sand text-ink;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-teal-100 rounded-md p-5;
+  }
+  .label {
+    @apply text-sm text-ink/60;
+  }
+  .input {
+    @apply w-full border border-teal-100 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/40;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium border border-teal-100 text-ink hover:bg-teal-50 transition-colors;
+  }
+  .table-hp {
+    @apply w-full text-sm border-collapse;
+  }
+  .table-hp th {
+    @apply text-left font-medium text-ink/60 border-b border-teal-100 py-2 pr-4;
+  }
+  .table-hp td {
+    @apply border-b border-teal-50 py-2 pr-4 align-top;
+  }
+}
