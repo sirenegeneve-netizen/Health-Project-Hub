@@ -13,22 +13,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
       <body>
         <div className="min-h-screen flex flex-col">
-          <header className="border-b border-teal-100 bg-white">
+          <header className="sticky top-0 z-10 border-b border-teal-100 bg-sand/90 backdrop-blur">
             <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-              <Link href="/" className="font-display text-xl text-teal-700">
-                Health Project Hub
+              <Link href="/" className="flex items-center gap-2.5">
+                <Mark />
+                <span className="font-display text-lg text-teal-700 leading-none">Health Project Hub</span>
               </Link>
-              <nav className="flex items-center gap-5 text-sm">
-                <Link href="/" className="hover:text-teal-600">
+              <nav className="flex items-center gap-6 text-sm">
+                <Link href="/" className="text-ink/70 hover:text-teal-700 transition-colors">
                   Portefeuille
                 </Link>
-                <Link href="/search" className="hover:text-teal-600">
+                <Link href="/search" className="text-ink/70 hover:text-teal-700 transition-colors">
                   Recherche
                 </Link>
                 <Link href="/projects/new" className="btn">
@@ -37,14 +38,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </nav>
             </div>
           </header>
-          <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">{children}</main>
-          <footer className="border-t border-teal-100 py-4">
-            <div className="max-w-6xl mx-auto px-6 text-xs text-ink/40">
+          <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">{children}</main>
+          <footer className="border-t border-teal-100">
+            <div className="max-w-6xl mx-auto px-6 py-5 text-xs text-ink/40">
               Health Project Hub — cockpit et mémoire des projets numériques en santé
             </div>
           </footer>
         </div>
       </body>
     </html>
+  );
+}
+
+function Mark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
+      <rect width="26" height="26" rx="7" fill="#123A37" />
+      <path d="M8 7v12M18 7v12M8 13h10" stroke="#C4623B" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

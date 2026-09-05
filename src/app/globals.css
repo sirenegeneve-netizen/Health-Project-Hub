@@ -5,32 +5,54 @@
 @layer base {
   body {
     @apply bg-sand text-ink;
+    font-feature-settings: "ss01";
+  }
+  h1, h2, h3 {
+    @apply font-display tracking-tightish;
+  }
+  ::selection {
+    @apply bg-clay/20;
+  }
+  :focus-visible {
+    outline: 2px solid theme("colors.clay.DEFAULT");
+    outline-offset: 2px;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white border border-teal-100 rounded-md p-5;
+    @apply bg-white border border-teal-100 rounded-lg p-5 shadow-soft;
   }
   .label {
-    @apply text-sm text-ink/60;
+    @apply text-[13px] tracking-wide text-ink/55;
   }
   .input {
-    @apply w-full border border-teal-100 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/40;
+    @apply w-full border border-teal-100 rounded-md px-3 py-2 text-sm bg-white transition-shadow
+           focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay/50;
   }
   .btn {
-    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium
+           bg-teal-700 text-white shadow-sm hover:bg-teal-600 active:bg-teal-900
+           transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium border border-teal-100 text-ink hover:bg-teal-50 transition-colors;
+    @apply inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium
+           border border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300
+           transition-colors;
   }
   .table-hp {
     @apply w-full text-sm border-collapse;
   }
   .table-hp th {
-    @apply text-left font-medium text-ink/60 border-b border-teal-100 py-2 pr-4;
+    @apply text-left font-medium text-ink/50 text-[13px] border-b border-teal-100 py-2.5 pr-4;
   }
   .table-hp td {
-    @apply border-b border-teal-50 py-2 pr-4 align-top;
+    @apply border-b border-teal-50 py-3 pr-4 align-top;
+  }
+  .table-hp tbody tr {
+    @apply transition-colors;
+  }
+  .row-link {
+    @apply block transition-transform duration-150 hover:-translate-y-px hover:shadow-lift;
   }
 }

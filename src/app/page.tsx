@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
-import { HealthBadge } from "@/components/HealthBadge";
+import { HealthBadge, HealthBar } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 
 export const dynamic = "force-dynamic";
@@ -23,16 +23,24 @@ export default async function HomePage() {
   const criticalActions = scores.reduce((s, sc) => s + sc.metrics.lateActions, 0);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl text-teal-700">Portefeuille projets</h1>
-        <p className="text-ink/60 mt-1">Vue groupe — pilotage, collaboration et mémoire des projets numériques en santé.</p>
+    <div className="space-y-10">
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div>
+          <div className="label mb-2">Portefeuille</div>
+          <h1 className="font-display text-4xl text-teal-700 leading-tight">
+            {projects.length > 0 ? `${projects.length} projet${projects.length > 1 ? "s" : ""} en cours` : "Votre portefeuille"}
+          </h1>
+          <p className="text-ink/60 mt-2 max-w-xl">
+            Vue d'ensemble des projets numériques en santé du groupe — état, planning et points d'attention en un
+            coup d'œil.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-teal-100 rounded-lg overflow-hidden border border-teal-100">
         <Stat label="Projets" value={projects.length} />
         <Stat label="Établissements" value={establishmentsCount} />
-        <Stat label="Projets à risque" value={atRisk} tone="bad" />
+        <Stat label="À risque" value={atRisk} tone="bad" />
         <Stat label="À surveiller" value={toWatch} tone="warn" />
         <Stat label="Interfaces bloquantes" value={criticalInterfaces} tone="bad" />
         <Stat label="Actions en retard" value={criticalActions} tone="bad" />
@@ -40,62 +48,53 @@ export default async function HomePage() {
         <Stat label="JH consommés" value={totalConsumed} />
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="table-hp">
-          <thead>
-            <tr className="bg-teal-50/50">
-              <th className="pl-5">Projet</th>
-              <th>Établissement(s)</th>
-              <th>Phase</th>
-              <th>Priorité</th>
-              <th>Cible</th>
-              <th>Santé</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((p, i) => (
-              <tr key={p.id} className="hover:bg-teal-50/30">
-                <td className="pl-5">
-                  <Link href={`/projects/${p.id}`} className="font-medium text-teal-700 hover:underline">
-                    {p.name}
-                  </Link>
-                  <div className="text-xs text-ink/50">{p.reference}</div>
-                </td>
-                <td>{p.establishments.map((e) => e.establishment.name).join(", ") || "—"}</td>
-                <td>
-                  <Pill text={p.phase} />
-                </td>
-                <td>
-                  <Pill text={p.priority} tone={p.priority === "critique" ? "bad" : p.priority === "haute" ? "warn" : "neutral"} />
-                </td>
-                <td>{p.targetDate ? new Date(p.targetDate).toLocaleDateString("fr-FR") : "—"}</td>
-                <td>
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-medium text-ink">Projets</h2>
+          <Link href="/projects/new" className="text-sm text-teal-700 hover:underline">
+            + Nouveau projet
+          </Link>
+        </div>
+
+        <div className="space-y-2.5">
+          {projects.map((p, i) => (
+            <Link key={p.id} href={`/projects/${p.id}`} className="row-link">
+              <div className="relative overflow-hidden card flex items-center justify-between gap-6 pl-6">
+                <HealthBar level={scores[i].level} />
+                <div className="min-w-0">
+                  <div className="font-display text-lg text-ink truncate">{p.name}</div>
+                  <div className="text-xs text-ink/45 mt-0.5">
+                    {p.reference} · {p.establishments.map((e) => e.establishment.name).join(", ") || "établissement non défini"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-5 shrink-0">
+                  <Pill text={p.phase.replace(/_/g, " ")} />
+                  <span className="text-sm text-ink/60 hidden sm:inline">
+                    {p.targetDate ? new Date(p.targetDate).toLocaleDateString("fr-FR") : "—"}
+                  </span>
                   <HealthBadge level={scores[i].level} label={scores[i].label} />
-                </td>
-              </tr>
-            ))}
-            {projects.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-10 text-ink/50">
-                  Aucun projet pour le moment.{" "}
-                  <Link href="/projects/new" className="text-teal-700 underline">
-                    Créer le premier projet
-                  </Link>
-                  .
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </Link>
+          ))}
+          {projects.length === 0 && (
+            <div className="card text-center py-14">
+              <p className="text-ink/60 mb-4">Aucun projet pour le moment.</p>
+              <Link href="/projects/new" className="btn">
+                Créer le premier projet
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "bad" | "warn" }) {
-  const toneClass = tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : "text-ink";
+  const toneClass = tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : "text-teal-700";
   return (
-    <div className="card">
+    <div className="bg-sand px-5 py-4">
       <div className="label">{label}</div>
       <div className={`font-display text-3xl mt-1 ${toneClass}`}>{value}</div>
     </div>

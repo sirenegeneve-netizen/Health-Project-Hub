@@ -19,7 +19,7 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
   const pathname = usePathname();
   const base = `/projects/${projectId}`;
   return (
-    <div className="flex flex-wrap gap-1 border-b border-teal-100 mb-6">
+    <div className="flex flex-wrap gap-1 mb-8 -mx-1">
       {TABS.map(([suffix, label]) => {
         const href = `${base}${suffix}`;
         const active = pathname === href;
@@ -27,8 +27,8 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
           <Link
             key={href}
             href={href}
-            className={`px-3 py-2 text-sm rounded-t-md border-b-2 -mb-px ${
-              active ? "border-teal-600 text-teal-700 font-medium" : "border-transparent text-ink/60 hover:text-teal-600"
+            className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+              active ? "bg-teal-700 text-white" : "text-ink/60 hover:bg-teal-50 hover:text-teal-700"
             }`}
           >
             {label}
