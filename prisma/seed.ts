@@ -181,6 +181,34 @@ async function main() {
     },
   });
 
+  await prisma.project.update({ where: { id: project.id }, data: { budgetInitialEur: 250000, budgetReviseEur: 260000 } });
+
+  await prisma.budgetLine.createMany({
+    data: [
+      { projectId: project.id, libelle: "Prestation intégrateur DPI", categorie: "prestation", fournisseur: "Éditeur DPI", prevision: 150000, engage: 150000, reel: 96000 },
+      { projectId: project.id, libelle: "Licences additionnelles", categorie: "licence", prevision: 40000, engage: 40000, reel: 40000 },
+      { projectId: project.id, libelle: "Déplacements équipe projet", categorie: "deplacement", prevision: 8000, engage: 5200, reel: 4100 },
+    ],
+  });
+
+  await prisma.deliverable.create({
+    data: { projectId: project.id, name: "Cahier des charges interopérabilité", responsable: "Équipe interop", version: "v1.2", status: "valide" },
+  });
+  await prisma.deliverable.create({
+    data: { projectId: project.id, name: "Plan de déploiement", responsable: "Chef de projet", datePrevue: new Date("2026-09-15"), status: "en_cours" },
+  });
+
+  await prisma.stakeholder.create({
+    data: { projectId: project.id, name: "Direction des soins", organisation: "CH Nord", role: "Sponsor métier", implication: "forte", influence: "forte" },
+  });
+  await prisma.stakeholder.create({
+    data: { projectId: project.id, name: "Éditeur SIL", organisation: "Fournisseur", role: "Fournisseur interface", implication: "moyenne", influence: "forte" },
+  });
+
+  await prisma.kpi.create({
+    data: { projectId: project.id, name: "Taux de satisfaction formation", value: 82, unit: "%", target: 90, period: "Juillet 2026" },
+  });
+
   console.log("Seed terminé. Projet créé :", project.id);
   console.log("Risque lié à l'interface bloquante :", risk.id);
 }

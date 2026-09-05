@@ -476,3 +476,151 @@ export function BacklogForm({ projectId }: { projectId: string }) {
     </Toggle>
   );
 }
+
+export function DeliverableForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ name: "", responsable: "", datePrevue: "", version: "" });
+  return (
+    <Toggle label="+ Nouveau livrable">
+      {(close) => (
+        <>
+          <Field label="Nom">
+            <input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Responsable">
+              <input className={inputCls} value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} />
+            </Field>
+            <Field label="Date prévue">
+              <input type="date" className={inputCls} value={f.datePrevue} onChange={(e) => setF({ ...f, datePrevue: e.target.value })} />
+            </Field>
+            <Field label="Version">
+              <input className={inputCls} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.name) return;
+                await post("/api/deliverables", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Créer
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
+
+export function StakeholderForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ name: "", organisation: "", role: "", implication: "moyenne", influence: "moyenne", contact: "" });
+  return (
+    <Toggle label="+ Partie prenante">
+      {(close) => (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Nom">
+              <input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+            </Field>
+            <Field label="Organisation">
+              <input className={inputCls} value={f.organisation} onChange={(e) => setF({ ...f, organisation: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Rôle">
+            <input className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Implication">
+              <select className={inputCls} value={f.implication} onChange={(e) => setF({ ...f, implication: e.target.value })}>
+                <option value="faible">Faible</option>
+                <option value="moyenne">Moyenne</option>
+                <option value="forte">Forte</option>
+              </select>
+            </Field>
+            <Field label="Influence">
+              <select className={inputCls} value={f.influence} onChange={(e) => setF({ ...f, influence: e.target.value })}>
+                <option value="faible">Faible</option>
+                <option value="moyenne">Moyenne</option>
+                <option value="forte">Forte</option>
+              </select>
+            </Field>
+            <Field label="Contact">
+              <input className={inputCls} value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.name) return;
+                await post("/api/stakeholders", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Ajouter
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
+
+export function KpiForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ name: "", value: "", unit: "", target: "", period: "" });
+  return (
+    <Toggle label="+ Nouvel indicateur">
+      {(close) => (
+        <>
+          <Field label="Nom de l'indicateur">
+            <input className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-4 gap-3">
+            <Field label="Valeur">
+              <input type="number" className={inputCls} value={f.value} onChange={(e) => setF({ ...f, value: e.target.value })} />
+            </Field>
+            <Field label="Unité">
+              <input className={inputCls} placeholder="%, jours…" value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} />
+            </Field>
+            <Field label="Objectif">
+              <input type="number" className={inputCls} value={f.target} onChange={(e) => setF({ ...f, target: e.target.value })} />
+            </Field>
+            <Field label="Période">
+              <input className={inputCls} placeholder="ex. Q3 2026" value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.name || !f.value) return;
+                await post("/api/kpis", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Créer
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}

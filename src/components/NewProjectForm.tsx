@@ -29,6 +29,7 @@ export function NewProjectForm({ establishments }: { establishments: { id: strin
     targetDate: "",
     priority: "normale",
     budgetJh: "",
+    budgetInitialEur: "",
   });
   const [establishmentIds, setEstablishmentIds] = useState<string[]>([]);
 
@@ -89,7 +90,7 @@ export function NewProjectForm({ establishments }: { establishments: { id: strin
         </Field>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Field label="Date de début">
           <input type="date" className="input" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
         </Field>
@@ -98,6 +99,9 @@ export function NewProjectForm({ establishments }: { establishments: { id: strin
         </Field>
         <Field label="Budget JH">
           <input type="number" className="input" value={form.budgetJh} onChange={(e) => setForm({ ...form, budgetJh: e.target.value })} />
+        </Field>
+        <Field label="Budget (€) — optionnel">
+          <input type="number" className="input" value={form.budgetInitialEur} onChange={(e) => setForm({ ...form, budgetInitialEur: e.target.value })} />
         </Field>
       </div>
 

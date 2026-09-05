@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       phase: data.phase || "cadrage",
       priority: data.priority || "normale",
       budgetJh: data.budgetJh ? Number(data.budgetJh) : 0,
+      budgetInitialEur: data.budgetInitialEur ? Number(data.budgetInitialEur) : null,
       establishments: establishmentIds
         ? { create: (establishmentIds as string[]).map((id) => ({ establishmentId: id })) }
         : undefined,

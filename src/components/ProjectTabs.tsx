@@ -4,10 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  ["", "Cockpit"],
-  ["/meetings", "Réunions"],
-  ["/actions", "Actions"],
+  ["", "Vue d'ensemble"],
+  ["/planning", "Planning"],
+  ["/budget", "Budget"],
   ["/risks", "Risques"],
+  ["/actions", "Actions"],
+  ["/deliverables", "Livrables"],
+  ["/stakeholders", "Parties prenantes"],
+  ["/kpis", "Indicateurs"],
+  ["/meetings", "Réunions"],
   ["/decisions", "Décisions"],
   ["/interfaces", "Interfaces"],
   ["/training", "Formation"],

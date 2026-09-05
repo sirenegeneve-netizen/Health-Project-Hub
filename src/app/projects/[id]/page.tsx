@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
+import { computeBudgetSummary, computeProgress, formatEur } from "@/lib/metrics";
 import { HealthBadge } from "@/components/HealthBadge";
-import { Pill, statusTone } from "@/components/Pill";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProjectEditForm } from "@/components/ProjectEditForm";
 
@@ -18,9 +18,9 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
       risks: true,
       decisions: true,
       interfaces: true,
-      trainings: true,
+      budgetLines: true,
       baselines: { orderBy: { createdAt: "asc" } },
-      timelineEvents: { orderBy: { date: "desc" }, take: 8 },
+      timelineEvents: { orderBy: { date: "desc" }, take: 6 },
     },
   });
   if (!project) notFound();
@@ -28,160 +28,145 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
   const score = await computeHealthScore(project.id);
   const now = new Date();
 
+  const progress = computeProgress(project.actions);
+  const budget = computeBudgetSummary(project.budgetInitialEur, project.budgetReviseEur, project.budgetLines);
+
   const lateActions = project.actions.filter((a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status));
   const openRisks = project.risks.filter((r) => !["maitrise", "cloture"].includes(r.status));
+  const criticalRisks = openRisks.filter((r) => ["forte", "critique"].includes(r.criticite));
   const pendingDecisions = project.decisions.filter((d) => d.status !== "decision_prise");
   const blockingInterfaces = project.interfaces.filter((i) => i.isBlocking || i.status === "bloquant");
 
-  const initialBaseline = project.baselines[0];
-  const consumptionPct = project.budgetJh > 0 ? Math.round((project.jhConsommes / project.budgetJh) * 100) : 0;
+  const upcoming = project.actions
+    .filter((a) => a.echeance && a.echeance >= now && !["termine", "abandonne"].includes(a.status))
+    .sort((a, b) => a.echeance!.getTime() - b.echeance!.getTime())
+    .slice(0, 5);
+
+  const alerts: string[] = [];
+  if (budget && budget.consumptionRate >= 90) alerts.push(`Budget proche du seuil (${budget.consumptionRate}% consommé)`);
+  if (lateActions.length > 0) alerts.push(`${lateActions.length} action(s) en retard`);
+  if (criticalRisks.length > 0) alerts.push(`${criticalRisks.length} risque(s) critique(s) non traité(s)`);
+  if (blockingInterfaces.length > 0) alerts.push(`${blockingInterfaces.length} interface(s) bloquante(s)`);
 
   return (
     <div>
       <ProjectTabs projectId={project.id} />
 
-      <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
         <div>
-          <div className="text-xs text-ink/50">{project.reference}</div>
+          <div className="text-xs text-ink/45">{project.reference}</div>
           <h1 className="font-display text-3xl text-teal-700">{project.name}</h1>
-          <p className="text-ink/60 mt-1 max-w-2xl">{project.description}</p>
-          <div className="flex gap-2 mt-3 flex-wrap">
-            <Pill text={project.phase.replace(/_/g, " ")} />
-            <Pill text={project.priority} tone={project.priority === "critique" ? "bad" : "neutral"} />
-            <Pill text={project.status} />
-            <span className="text-sm text-ink/60">
-              {project.establishments.map((e) => e.establishment.name).join(", ")}
-            </span>
-          </div>
         </div>
         <HealthBadge level={score.level} label={score.label} />
       </div>
 
-      <div className="card mb-6">
-        <div className="font-medium mb-2">Pourquoi ce niveau ?</div>
-        <ul className="text-sm text-ink/70 list-disc pl-5 space-y-1">
-          {score.reasons.map((r, i) => (
-            <li key={i}>{r}</li>
-          ))}
-        </ul>
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink/60 mb-8">
+        <span>{project.status}</span>
+        {progress !== null && <span>Avancement : {progress}%</span>}
+        {project.targetDate && <span>Échéance : {new Date(project.targetDate).toLocaleDateString("fr-FR")}</span>}
+        {project.chefDeProjet && <span>Responsable : {project.chefDeProjet}</span>}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <div className="card">
-          <div className="label mb-2">Planning</div>
-          <div className="text-sm space-y-1">
-            <div>Baseline initiale : {initialBaseline ? new Date(initialBaseline.targetDate).toLocaleDateString("fr-FR") : "—"}</div>
-            <div>Date cible actuelle : {project.targetDate ? new Date(project.targetDate).toLocaleDateString("fr-FR") : "—"}</div>
-            {score.metrics.planningDeltaDays !== null && (
-              <div className={score.metrics.planningDeltaDays > 0 ? "text-bad" : "text-ok"}>
-                Écart : {score.metrics.planningDeltaDays > 0 ? "+" : ""}
-                {score.metrics.planningDeltaDays} j
-              </div>
-            )}
-            <div className="text-ink/50">{project.baselines.length} baseline(s) enregistrée(s)</div>
-          </div>
+      {/* Synthèse — uniquement les indicateurs disponibles */}
+      <div className="flex flex-wrap gap-8 mb-8 pb-8 border-b border-teal-100">
+        {progress !== null && <Metric label="Avancement" value={`${progress}%`} />}
+        {budget && <Metric label="Budget" value={`${budget.consumptionRate}%`} sub={formatEur(budget.reste) + " restants"} />}
+        {project.targetDate && <Metric label="Échéance" value={new Date(project.targetDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} />}
+        {openRisks.length > 0 && <Metric label="Risques ouverts" value={String(openRisks.length)} tone={criticalRisks.length > 0 ? "bad" : undefined} />}
+      </div>
+
+      {alerts.length > 0 && (
+        <div className="mb-8">
+          <div className="font-medium text-sm mb-2">Points d'attention</div>
+          <ul className="space-y-1.5">
+            {alerts.map((a, i) => (
+              <li key={i} className="text-sm text-bad flex items-start gap-2">
+                <span>⚠</span>
+                <span>{a}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <div className="card">
-          <div className="label mb-2">Jours-homme</div>
-          <div className="text-sm space-y-1">
-            <div>Budgétés : {project.budgetJh}</div>
-            <div>Consommés : {project.jhConsommes} ({consumptionPct}%)</div>
-            <div>Restants : {Math.max(project.budgetJh - project.jhConsommes, 0)}</div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-medium text-sm">Prochaines échéances</div>
+            <Link href={`/projects/${project.id}/planning`} className="text-xs text-teal-700 hover:underline">
+              Planning →
+            </Link>
           </div>
+          {upcoming.length > 0 ? (
+            <ul className="space-y-2">
+              {upcoming.map((a) => (
+                <li key={a.id} className="flex justify-between text-sm">
+                  <span>{a.title}</span>
+                  <span className="text-ink/50">{new Date(a.echeance!).toLocaleDateString("fr-FR")}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-ink/45">Aucune échéance à venir renseignée.</p>
+          )}
+          {pendingDecisions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-teal-50">
+              <div className="text-sm text-ink/60 mb-1.5">{pendingDecisions.length} décision(s) en attente</div>
+              <Link href={`/projects/${project.id}/decisions`} className="text-xs text-teal-700 hover:underline">
+                Voir les décisions →
+              </Link>
+            </div>
+          )}
         </div>
-        <div className="card">
-          <div className="label mb-2">Acteurs</div>
-          <div className="text-sm space-y-1">
-            <div>Chef de projet : {project.chefDeProjet || "—"}</div>
-            <div>Sponsor : {project.sponsor || "—"}</div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-medium text-sm">Dernières activités</div>
+            <Link href={`/projects/${project.id}/timeline`} className="text-xs text-teal-700 hover:underline">
+              Tout voir →
+            </Link>
           </div>
+          {project.timelineEvents.length > 0 ? (
+            <ul className="space-y-2">
+              {project.timelineEvents.map((e) => (
+                <li key={e.id} className="text-sm flex gap-3">
+                  <span className="text-ink/40 w-16 shrink-0">{new Date(e.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</span>
+                  <span className="text-ink/70">{e.description}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-ink/45">Aucune activité pour le moment.</p>
+          )}
         </div>
       </div>
 
-      <ProjectEditForm
-        project={{
-          id: project.id,
-          status: project.status,
-          phase: project.phase,
-          priority: project.priority,
-          targetDate: project.targetDate ? project.targetDate.toISOString() : null,
-          budgetJh: project.budgetJh,
-          jhPlanifies: project.jhPlanifies,
-          jhConsommes: project.jhConsommes,
-          chefDeProjet: project.chefDeProjet,
-          sponsor: project.sponsor,
-        }}
-      />
-
-      <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <QuickList title={`Actions en retard (${lateActions.length})`} href={`/projects/${project.id}/actions`}>
-          {lateActions.slice(0, 5).map((a) => (
-            <li key={a.id} className="flex justify-between">
-              <span>{a.title}</span>
-              <Pill text={a.status} tone={statusTone(a.status)} />
-            </li>
-          ))}
-        </QuickList>
-        <QuickList title={`Risques ouverts (${openRisks.length})`} href={`/projects/${project.id}/risks`}>
-          {openRisks.slice(0, 5).map((r) => (
-            <li key={r.id} className="flex justify-between">
-              <span>{r.description}</span>
-              <Pill text={r.criticite} tone={statusTone(r.criticite)} />
-            </li>
-          ))}
-        </QuickList>
-        <QuickList title={`Décisions en attente (${pendingDecisions.length})`} href={`/projects/${project.id}/decisions`}>
-          {pendingDecisions.slice(0, 5).map((d) => (
-            <li key={d.id} className="flex justify-between">
-              <span>{d.subject}</span>
-              <Pill text={d.status} tone={statusTone(d.status)} />
-            </li>
-          ))}
-        </QuickList>
-        <QuickList title={`Interfaces bloquantes (${blockingInterfaces.length})`} href={`/projects/${project.id}/interfaces`}>
-          {blockingInterfaces.slice(0, 5).map((i) => (
-            <li key={i.id} className="flex justify-between">
-              <span>{i.name}</span>
-              <Pill text={i.status} tone="bad" />
-            </li>
-          ))}
-        </QuickList>
-      </div>
-
-      <div className="card mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="font-medium">Mémoire récente du projet</div>
-          <Link href={`/projects/${project.id}/timeline`} className="text-sm text-teal-700 hover:underline">
-            Voir toute la timeline →
-          </Link>
-        </div>
-        <ul className="text-sm space-y-2">
-          {project.timelineEvents.map((e) => (
-            <li key={e.id} className="flex gap-3">
-              <span className="text-ink/40 w-24 shrink-0">{new Date(e.date).toLocaleDateString("fr-FR")}</span>
-              <span>{e.description}</span>
-            </li>
-          ))}
-          {project.timelineEvents.length === 0 && <li className="text-ink/50">Aucun événement pour le moment.</li>}
-        </ul>
+      <div className="mt-8 pt-6 border-t border-teal-100">
+        <ProjectEditForm
+          project={{
+            id: project.id,
+            status: project.status,
+            phase: project.phase,
+            priority: project.priority,
+            targetDate: project.targetDate ? project.targetDate.toISOString() : null,
+            budgetJh: project.budgetJh,
+            jhPlanifies: project.jhPlanifies,
+            jhConsommes: project.jhConsommes,
+            chefDeProjet: project.chefDeProjet,
+            sponsor: project.sponsor,
+          }}
+        />
       </div>
     </div>
   );
 }
 
-function QuickList({ title, href, children }: { title: string; href: string; children: React.ReactNode }) {
+function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "bad" }) {
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-medium text-sm">{title}</div>
-        <Link href={href} className="text-xs text-teal-700 hover:underline">
-          Gérer →
-        </Link>
-      </div>
-      <ul className="text-sm space-y-1.5">
-        {children}
-        {!children || (Array.isArray(children) && children.length === 0) ? null : null}
-      </ul>
+    <div>
+      <div className="label">{label}</div>
+      <div className={`font-display text-2xl mt-0.5 ${tone === "bad" ? "text-bad" : "text-ink"}`}>{value}</div>
+      {sub && <div className="text-xs text-ink/45 mt-0.5">{sub}</div>}
     </div>
   );
 }

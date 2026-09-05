@@ -46,18 +46,25 @@ src/
 ## Ce qui est implémenté
 
 - **Hiérarchie** Groupe → Établissement → Projet (§4)
-- **Fiche projet** complète : type, statut, phase, priorité, chef de projet, sponsor, budget JH (§5)
-- **Planning avec historique de baselines** : un changement de date cible crée une nouvelle révision au lieu d'écraser le planning initial (§8)
-- **Réunions** avec synthèse automatique de préparation (actions en retard/ouvertes/terminées, risques, décisions en attente, points de vigilance, événements survenus depuis la dernière réunion) et saisie rapide pendant la séance (§16, §17, §18)
-- **Registres** Actions, Risques, Décisions, Interfaces, Anomalies, chacun avec statuts et traçabilité (§19-21, §13, §24)
-- **Points de vigilance** requalifiables en action / risque / décision / évolution (§22)
-- **Formation & autonomie utilisateurs** avec l'échelle 0-4 du cahier des charges — "formation réalisée ≠ autonomie acquise" (§26-27)
-- **Checklist Go/No Go** dérivée en direct des données du projet (interfaces bloquantes, anomalies critiques, taux d'autonomie) (§28)
-- **Health Score explicable** (vert/orange/rouge + les raisons, pas juste une couleur) (§40)
-- **Timeline / mémoire du projet**, alimentée automatiquement à chaque création ou changement de statut, sans double saisie (§35)
-- **Recherche globale** transversale (projets, actions, risques, décisions, interfaces, réunions, documents, points de vigilance) (§36)
-- **Import de document/mail** avec suggestion heuristique (mots-clés de retard + noms d'interfaces connues) — l'utilisateur valide ou ignore, rien n'est créé automatiquement (§34)
+- **Portefeuille** épuré : recherche, filtres (statut, niveau de santé), consolidation budgétaire réelle (uniquement sur les projets budgétisés)
+- **Cockpit projet** contextuel : chaque bloc (avancement, budget, échéance, risques, alertes, prochaines échéances) n'apparaît que si la donnée existe — aucun indicateur fictif
+- **Fiche projet** complète : type, statut, phase, priorité, chef de projet, sponsor
+- **Planning** : tâches/jalons en vue Liste ou Timeline, historique des révisions de baseline
+- **Budget en euros** : budget initial/révisé, lignes budgétaires par catégorie et fournisseur, calcul automatique de l'engagé/réel/reste/taux de consommation
+- **Réunions** avec synthèse automatique de préparation et saisie rapide pendant la séance (§16-18)
+- **Registres** Actions, Risques (+ matrice probabilité × impact), Décisions, Interfaces, Anomalies
+- **Livrables** avec statut et version (§13)
+- **Parties prenantes** avec matrice influence × implication (§14)
+- **Indicateurs (KPI) génériques**, avec objectif et seuil d'alerte (§15)
+- **Formation & autonomie utilisateurs** (échelle 0-4, §26-27)
+- **Checklist Go/No Go** dérivée en direct des données du projet (§28)
+- **Health Score explicable** (vert/orange/rouge + les raisons) (§40)
+- **Timeline / mémoire du projet**, alimentée automatiquement (§35)
+- **Recherche globale** transversale (§36)
+- **Import de document/mail** avec suggestion heuristique, jamais automatique (§34)
 - **Backlog / amélioration continue** (§32)
+
+Principe transversal : un module ne s'affiche que s'il contient des données réelles. Un budget non renseigné n'affiche pas de graphique vide ; une section sans risque ne s'affiche pas du tout — remplacée par une invitation à en ajouter.
 
 ## Roadmap — ce qui n'est pas encore fait
 

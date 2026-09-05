@@ -65,6 +65,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       budgetJh: body.budgetJh !== undefined ? Number(body.budgetJh) : undefined,
       jhPlanifies: body.jhPlanifies !== undefined ? Number(body.jhPlanifies) : undefined,
       jhConsommes: body.jhConsommes !== undefined ? Number(body.jhConsommes) : undefined,
+      budgetInitialEur: body.budgetInitialEur !== undefined ? (body.budgetInitialEur ? Number(body.budgetInitialEur) : null) : undefined,
+      budgetReviseEur: body.budgetReviseEur !== undefined ? (body.budgetReviseEur ? Number(body.budgetReviseEur) : null) : undefined,
     },
   });
   return NextResponse.json(project);

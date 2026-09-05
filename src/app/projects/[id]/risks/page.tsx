@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { RiskForm } from "@/components/EntityForms";
+import { RiskMatrix } from "@/components/RiskMatrix";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 
@@ -24,6 +25,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-teal-700 mb-4">Risques</h1>
       <RiskForm projectId={params.id} />
+      <RiskMatrix risks={risks} />
 
       <div className="card p-0 overflow-hidden">
         <table className="table-hp">

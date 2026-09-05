@@ -7,7 +7,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -64,6 +63,10 @@ model Project {
   jhPlanifies  Float @default(0)
   jhConsommes  Float @default(0)
 
+  devise           String @default("EUR")
+  budgetInitialEur Float?
+  budgetReviseEur  Float?
+
   establishments   ProjectEstablishment[]
   meetings         Meeting[]
   actions          Action[]
@@ -77,6 +80,10 @@ model Project {
   timelineEvents   TimelineEvent[]
   baselines        PlanningBaseline[]
   backlogItems     BacklogItem[]
+  budgetLines      BudgetLine[]
+  deliverables     Deliverable[]
+  stakeholders     Stakeholder[]
+  kpis             Kpi[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -276,4 +283,58 @@ model BacklogItem {
   decision    String?  // accepte | rejete | en_etude
   status      String   @default("nouveau") // nouveau | qualifie | planifie | realise | rejete
   createdAt   DateTime @default(now())
+}
+
+model BudgetLine {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  libelle     String
+  categorie   String? // prestation | licence | ressource | deplacement | fournisseur | autre
+  fournisseur String?
+  prevision   Float    @default(0)
+  engage      Float    @default(0)
+  reel        Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Deliverable {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  responsable String?
+  datePrevue  DateTime?
+  dateReelle  DateTime?
+  version     String?
+  status      String    @default("a_venir") // a_venir | en_cours | valide | rejete
+  createdAt   DateTime  @default(now())
+}
+
+model Stakeholder {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  organisation String?
+  role         String?
+  implication  String? // faible | moyenne | forte
+  influence    String? // faible | moyenne | forte
+  contact      String?
+  comments     String?
+  createdAt    DateTime @default(now())
+}
+
+model Kpi {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  value          Float
+  unit           String?
+  target         Float?
+  period         String?
+  alertThreshold Float?
+  createdAt      DateTime @default(now())
 }
