@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 interface Result {
@@ -9,13 +10,13 @@ interface Result {
   href: string;
 }
 
-export default function SearchPage() {
-  const [q, setQ] = useState("");
+function SearchInner() {
+  const searchParams = useSearchParams();
+  const [q, setQ] = useState(searchParams.get("q") || "");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function runSearch(value: string) {
-    setQ(value);
     if (!value.trim()) {
       setResults([]);
       return;
@@ -27,6 +28,11 @@ export default function SearchPage() {
     setLoading(false);
   }
 
+  useEffect(() => {
+    if (q) runSearch(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div>
       <h1 className="font-display text-2xl text-teal-700 mb-4">Recherche globale</h1>
@@ -35,7 +41,10 @@ export default function SearchPage() {
         className="input mb-6"
         placeholder="Rechercher un projet, une action, une interface, un mail…"
         value={q}
-        onChange={(e) => runSearch(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value);
+          runSearch(e.target.value);
+        }}
       />
 
       {loading && <div className="text-ink/50 text-sm">Recherche…</div>}
@@ -50,5 +59,13 @@ export default function SearchPage() {
         {q && !loading && results.length === 0 && <div className="card text-center text-ink/50">Aucun résultat pour « {q} ».</div>}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="text-ink/50 text-sm">Chargement…</div>}>
+      <SearchInner />
+    </Suspense>
   );
 }

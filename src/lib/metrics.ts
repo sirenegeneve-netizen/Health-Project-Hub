@@ -51,3 +51,11 @@ export function computeBudgetSummary(
 export function formatEur(value: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
 }
+
+// Affichage "J-12" / "J+3" façon Linear — plus lisible qu'une date brute dans une liste dense.
+export function formatDaysRemaining(target: Date): string {
+  const now = new Date();
+  const days = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Aujourd'hui";
+  return days > 0 ? `J-${days}` : `J+${Math.abs(days)}`;
+}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { HealthBadge, HealthBar } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
+import { formatDaysRemaining } from "@/lib/metrics";
 import type { HealthLevel } from "@/lib/healthScore";
 
 export interface PortfolioProject {
@@ -17,6 +18,7 @@ export interface PortfolioProject {
   establishments: string[];
   healthLevel: HealthLevel;
   healthLabel: string;
+  progress: number | null;
 }
 
 export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
@@ -63,16 +65,22 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
           <Link key={p.id} href={`/projects/${p.id}`} className="row-link">
             <div className="relative overflow-hidden card flex items-center justify-between gap-6 pl-6">
               <HealthBar level={p.healthLevel} />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="font-display text-lg text-ink truncate">{p.name}</div>
                 <div className="text-xs text-ink/45 mt-0.5">
                   {p.reference} · {p.establishments.join(", ") || "établissement non défini"}
                 </div>
+                {p.progress !== null && (
+                  <div className="mt-2 h-1.5 max-w-[220px] rounded-full bg-teal-50 overflow-hidden">
+                    <div className="h-full rounded-full bg-teal-600" style={{ width: `${p.progress}%` }} />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-5 shrink-0">
                 <Pill text={p.phase.replace(/_/g, " ")} />
+                {p.progress !== null && <span className="text-sm text-ink/60 hidden md:inline">{p.progress}%</span>}
                 <span className="text-sm text-ink/60 hidden sm:inline">
-                  {p.targetDate ? new Date(p.targetDate).toLocaleDateString("fr-FR") : "—"}
+                  {p.targetDate ? formatDaysRemaining(new Date(p.targetDate)) : "—"}
                 </span>
                 <HealthBadge level={p.healthLevel} label={p.healthLabel} />
               </div>
