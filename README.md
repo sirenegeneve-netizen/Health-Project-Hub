@@ -43,6 +43,12 @@ src/
     mailSuggest.ts         # heuristique de suggestion à l'import d'un mail/document
 ```
 
+## Navigation par cycle de vie
+
+La navigation d'un projet suit désormais l'histoire du projet plutôt qu'une liste de modules techniques : Vue d'ensemble → Cadrage → Conception → Interopérabilité → Réalisation → Validation → Accompagnement → Déploiement → Run & Évolutions → Mémoire. Chaque onglet regroupe les écrans qui répondent à une même question métier (ex. "Cadrage" réunit parties prenantes, gouvernance/RACI, budget et planning initial sur un seul écran). Les routes détaillées historiques (`/actions`, `/budget`, `/planning`, etc.) restent accessibles en lien profond depuis ces pages de regroupement, sans être forcées dans la barre d'onglets principale.
+
+Un fil de progression (🟢 fait · 🟠 en cours · ⚪ à venir) s'affiche sous le titre du projet dans la Vue d'ensemble, calculé à partir de la phase réelle du projet.
+
 ## Ce qui est implémenté
 
 - **Hiérarchie** Groupe → Établissement → Projet (§4)

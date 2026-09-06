@@ -6,6 +6,7 @@ import { computeBudgetSummary, computeProgress, formatEur } from "@/lib/metrics"
 import { HealthBadge } from "@/components/HealthBadge";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProjectEditForm } from "@/components/ProjectEditForm";
+import { PhaseRail } from "@/components/PhaseRail";
 
 export const dynamic = "force-dynamic";
 
@@ -52,12 +53,16 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
     <div>
       <ProjectTabs projectId={project.id} />
 
-      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-3">
         <div>
           <div className="text-xs text-ink/45">{project.reference}</div>
           <h1 className="font-display text-3xl text-ink">{project.name}</h1>
         </div>
         <HealthBadge level={score.level} label={score.label} />
+      </div>
+
+      <div className="mb-6">
+        <PhaseRail phase={project.phase} />
       </div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink/60 mb-8">

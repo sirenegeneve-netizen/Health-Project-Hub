@@ -28,7 +28,7 @@ export default async function TrainingPage({ params }: { params: { id: string } 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-ink mb-4">Formation & autonomie</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Accompagnement — Formation & autonomie</h1>
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
         <div className="card">

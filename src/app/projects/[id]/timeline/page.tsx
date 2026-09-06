@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { VigilanceForm, BacklogForm } from "@/components/EntityForms";
+import { VigilanceForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,6 @@ export default async function TimelinePage({ params }: { params: { id: string } 
   if (!project) notFound();
   const events = await prisma.timelineEvent.findMany({ where: { projectId: params.id }, orderBy: { date: "desc" } });
   const vigilancePoints = await prisma.vigilancePoint.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
-  const backlogItems = await prisma.backlogItem.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
   const documents = await prisma.documentRef.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
 
   const grouped = new Map<string, typeof events>();
@@ -58,25 +57,13 @@ export default async function TimelinePage({ params }: { params: { id: string } 
             ))}
             {vigilancePoints.length === 0 && <div className="text-ink/50 text-sm">Aucun point de vigilance.</div>}
           </div>
-
-          <h2 className="font-display text-xl text-ink mb-3 mt-8">Backlog / amélioration continue</h2>
-          <BacklogForm projectId={params.id} />
-          <div className="card space-y-2">
-            {backlogItems.map((b) => (
-              <div key={b.id} className="text-sm border-b border-teal-50 last:border-0 pb-2 last:pb-0">
-                <div className="font-medium">{b.demande}</div>
-                <div className="text-xs text-ink/50">{b.priorite} {b.estimationJh ? `· ${b.estimationJh} JH est.` : ""}</div>
-              </div>
-            ))}
-            {backlogItems.length === 0 && <div className="text-ink/50 text-sm">Backlog vide.</div>}
-          </div>
         </div>
 
         <div>
           <h2 className="font-display text-xl text-ink mb-3">Documents & échanges</h2>
           <p className="text-sm text-ink/60 mb-3">
             Importez un compte rendu, une spécification ou le texte d'un mail : le système propose une action ou un
-            risque si un retard est détecté, mais ne crée jamais rien sans validation (§34).
+            risque si un retard est détecté, mais ne crée jamais rien sans validation.
           </p>
           <div className="card space-y-2">
             {documents.map((d) => (
