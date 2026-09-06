@@ -49,6 +49,10 @@ La navigation d'un projet suit désormais l'histoire du projet plutôt qu'une li
 
 Un fil de progression (🟢 fait · 🟠 en cours · ⚪ à venir) s'affiche sous le titre du projet dans la Vue d'ensemble, calculé à partir de la phase réelle du projet.
 
+## Gouvernance & RACI
+
+La matrice RACI est l'écran principal du module — pas une conséquence d'une liste d'acteurs. Les lignes suivent une trame standard de gouvernance projet SI santé (Gouvernance, Analyse, Réalisation, Validation, Déploiement, Run), visibles dès l'ouverture même avant toute saisie, complétée par des activités personnalisées si besoin. Cliquer sur une cellule fait cycler le rôle R → A → C → I → vide, avec un code couleur immédiat. Le système signale automatiquement : activité sans responsable (R), sans décisionnaire (A), plusieurs décisionnaires, ou rôles en doublon pour un même acteur. La gestion des acteurs (fiche, disponibilité) reste accessible dans un panneau secondaire repliable, en dessous de la matrice.
+
 ## Ce qui est implémenté
 
 - **Hiérarchie** Groupe → Établissement → Projet (§4)
