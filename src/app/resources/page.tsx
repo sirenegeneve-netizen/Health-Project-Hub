@@ -28,14 +28,14 @@ export default async function PortfolioResourcesPage() {
     );
   }
 
-  const byProject = (list: { projectId: string }[]) => {
-    const map = new Map<string, typeof list>();
+  function byProject<T extends { projectId: string }>(list: T[]): Map<string, T[]> {
+    const map = new Map<string, T[]>();
     for (const item of list) {
       if (!map.has(item.projectId)) map.set(item.projectId, []);
       map.get(item.projectId)!.push(item);
     }
     return map;
-  };
+  }
   const actionsByProject = byProject(actions);
   const risksByProject = byProject(risks);
   const interfacesByProject = byProject(interfaces);
