@@ -8,6 +8,7 @@ const TABS = [
   ["/planning", "Planning"],
   ["/budget", "Budget"],
   ["/risks", "Risques"],
+  ["/changes", "Changements"],
   ["/actions", "Actions"],
   ["/deliverables", "Livrables"],
   ["/stakeholders", "Parties prenantes"],

@@ -224,6 +224,22 @@ async function main() {
     data: { projectId: project.id, name: "Taux de satisfaction formation", value: 82, unit: "%", target: 90, period: "Juillet 2026" },
   });
 
+  await prisma.changeRequest.create({
+    data: {
+      projectId: project.id,
+      titre: "Ajout d'un connecteur bidirectionnel avec le logiciel de biologie délocalisée",
+      origine: "audit",
+      demandeur: "Direction des soins",
+      justification: "Nouvelle exigence réglementaire suite à l'audit qualité de juin.",
+      perimetre: "Module interopérabilité",
+      impactFonctionnel: "Nouveau flux HL7 à spécifier",
+      impactPlanningJours: 10,
+      impactJh: 15,
+      impactInterop: "Ajout d'une interface",
+      decision: "en_etude",
+    },
+  });
+
   console.log("Seed terminé. Projet créé :", project.id);
   console.log("Risque lié à l'interface bloquante :", risk.id);
 }

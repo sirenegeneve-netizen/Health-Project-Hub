@@ -84,6 +84,7 @@ model Project {
   deliverables     Deliverable[]
   stakeholders     Stakeholder[]
   kpis             Kpi[]
+  changeRequests   ChangeRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -338,4 +339,26 @@ model Kpi {
   period         String?
   alertThreshold Float?
   createdAt      DateTime @default(now())
+}
+
+model ChangeRequest {
+  id                  String    @id @default(cuid())
+  projectId           String
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  titre               String
+  origine             String? // reunion | mail | audit | reglementaire | autre
+  demandeur           String?
+  justification       String?
+  perimetre           String?
+  impactFonctionnel   String?
+  impactPlanningJours Int?
+  impactJh            Float?
+  impactInterop       String?
+  impactFormation     String?
+  impactRisque        String?
+  nouvelleDateCible   DateTime?
+  decision            String    @default("en_etude") // en_etude | accepte | rejete
+  decideur            String?
+  dateDecision        DateTime?
+  createdAt           DateTime  @default(now())
 }

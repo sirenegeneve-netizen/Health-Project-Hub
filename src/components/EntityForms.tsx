@@ -627,3 +627,95 @@ export function KpiForm({ projectId }: { projectId: string }) {
     </Toggle>
   );
 }
+
+export function ChangeForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({
+    titre: "",
+    origine: "reunion",
+    demandeur: "",
+    justification: "",
+    perimetre: "",
+    impactFonctionnel: "",
+    impactPlanningJours: "",
+    impactJh: "",
+    impactInterop: "",
+    impactFormation: "",
+    impactRisque: "",
+    nouvelleDateCible: "",
+  });
+  return (
+    <Toggle label="+ Nouvelle demande de changement">
+      {(close) => (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Titre du changement">
+              <input className={inputCls} value={f.titre} onChange={(e) => setF({ ...f, titre: e.target.value })} />
+            </Field>
+            <Field label="Origine">
+              <select className={inputCls} value={f.origine} onChange={(e) => setF({ ...f, origine: e.target.value })}>
+                <option value="reunion">Réunion</option>
+                <option value="mail">Mail</option>
+                <option value="audit">Audit</option>
+                <option value="reglementaire">Réglementaire</option>
+                <option value="autre">Autre</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Demandeur">
+              <input className={inputCls} value={f.demandeur} onChange={(e) => setF({ ...f, demandeur: e.target.value })} />
+            </Field>
+            <Field label="Périmètre concerné">
+              <input className={inputCls} value={f.perimetre} onChange={(e) => setF({ ...f, perimetre: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Justification">
+            <textarea className={inputCls} rows={2} value={f.justification} onChange={(e) => setF({ ...f, justification: e.target.value })} />
+          </Field>
+          <Field label="Impact fonctionnel">
+            <input className={inputCls} value={f.impactFonctionnel} onChange={(e) => setF({ ...f, impactFonctionnel: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Impact planning (jours)">
+              <input type="number" className={inputCls} value={f.impactPlanningJours} onChange={(e) => setF({ ...f, impactPlanningJours: e.target.value })} />
+            </Field>
+            <Field label="Impact JH">
+              <input type="number" className={inputCls} value={f.impactJh} onChange={(e) => setF({ ...f, impactJh: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Impact interop">
+              <input className={inputCls} value={f.impactInterop} onChange={(e) => setF({ ...f, impactInterop: e.target.value })} />
+            </Field>
+            <Field label="Impact formation">
+              <input className={inputCls} value={f.impactFormation} onChange={(e) => setF({ ...f, impactFormation: e.target.value })} />
+            </Field>
+            <Field label="Impact risque">
+              <input className={inputCls} value={f.impactRisque} onChange={(e) => setF({ ...f, impactRisque: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Nouvelle date cible si accepté (optionnel)">
+            <input type="date" className={inputCls} value={f.nouvelleDateCible} onChange={(e) => setF({ ...f, nouvelleDateCible: e.target.value })} />
+          </Field>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.titre) return;
+                await post("/api/changes", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Enregistrer
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
