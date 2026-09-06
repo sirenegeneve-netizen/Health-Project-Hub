@@ -8,6 +8,8 @@ import { ActorForm } from "@/components/ActorForms";
 import { BudgetTargetsForm, BudgetLineForm, BudgetLinesTable } from "@/components/BudgetForms";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
+import { computeCadrageReadiness } from "@/lib/readiness";
+import { HealthBadge } from "@/components/HealthBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +47,32 @@ export default async function CadragePage({ params }: { params: { id: string } }
   const dependencies = findSinglePointsOfFailure(raciEntries, actorsById);
   const budget = computeBudgetSummary(project.budgetInitialEur, project.budgetReviseEur, project.budgetLines);
 
+  const readiness = computeCadrageReadiness({
+    hasObjectifs: !!project.description && project.description.trim().length > 0,
+    stakeholdersCount: stakeholders.length,
+    actorsCount: actors.length,
+    hasBudget: budget !== null,
+    hasTargetDate: !!project.targetDate,
+  });
+
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <div className="mb-1">
-        <h1 className="font-display text-2xl text-ink">Cadrage</h1>
-        <p className="text-sm text-muted">Ce qui définit le projet : objectifs, parties prenantes, gouvernance, budget et planning de départ.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Cadrage</h1>
+          <p className="text-sm text-muted">Le projet est-il suffisamment cadré pour être lancé ?</p>
+        </div>
+        <HealthBadge level={readiness.level} label={readiness.label} />
       </div>
+      <ul className="text-sm text-body mt-3 mb-2 space-y-1">
+        {readiness.reasons.map((r, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="text-muted">·</span>
+            {r}
+          </li>
+        ))}
+      </ul>
 
       <section className="mt-8">
         <SectionTitle>Objectifs & périmètre</SectionTitle>

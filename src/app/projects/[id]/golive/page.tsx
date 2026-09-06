@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { Pill } from "@/components/Pill";
 import { GoNoGoDecisionForm } from "@/components/GoNoGoDecisionForm";
+import { computeDeploymentReadiness } from "@/lib/readiness";
+import { HealthBadge } from "@/components/HealthBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +30,26 @@ export default async function GoLivePage({ params }: { params: { id: string } })
   ];
 
   const lastGoNoGo = project.decisions.find((d) => d.subject.toLowerCase().includes("go/no go") || d.subject.toLowerCase().includes("go no go"));
+  const readiness = computeDeploymentReadiness(checklist);
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-ink mb-4">Déploiement — Checklist Go / No Go</h1>
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Déploiement</h1>
+          <p className="text-sm text-muted">Peut-on passer en production ?</p>
+        </div>
+        <HealthBadge level={readiness.level} label={readiness.label} />
+      </div>
+      <ul className="text-sm text-body mt-3 mb-6 space-y-1">
+        {readiness.reasons.map((r, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="text-muted">·</span>
+            {r}
+          </li>
+        ))}
+      </ul>
 
       <div className="card p-0 overflow-hidden mb-6">
         <table className="table-hp">

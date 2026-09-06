@@ -49,6 +49,22 @@ La navigation d'un projet suit désormais l'histoire du projet plutôt qu'une li
 
 Un fil de progression (🟢 fait · 🟠 en cours · ⚪ à venir) s'affiche sous le titre du projet dans la Vue d'ensemble, calculé à partir de la phase réelle du projet.
 
+## Chaque écran répond à une question
+
+Les onglets de projet ne sont pas des formulaires de saisie : chacun répond à une question de pilotage, avec un indicateur 🟢/🟠/🔴 calculé à partir des vraies données (jamais un statut choisi à la main) et la liste des raisons qui l'expliquent.
+
+| Onglet | Question |
+|---|---|
+| Cadrage | Le projet est-il suffisamment cadré pour être lancé ? |
+| Conception | Le projet est-il prêt à passer en réalisation ? |
+| Interopérabilité | Les interfaces sont-elles prêtes ? |
+| Réalisation | Sommes-nous en train d'avancer ? |
+| Validation | Sommes-nous prêts à déployer ? |
+| Accompagnement | Les utilisateurs seront-ils prêts ? |
+| Déploiement | Peut-on passer en production ? |
+| Run & Évolutions | Le projet est-il stabilisé ? Que doit-on améliorer ? |
+| Mémoire | Que s'est-il passé, et pourquoi ? |
+
 ## Gouvernance & RACI
 
 La matrice RACI est l'écran principal du module — pas une conséquence d'une liste d'acteurs. Les lignes suivent une trame standard de gouvernance projet SI santé (Gouvernance, Analyse, Réalisation, Validation, Déploiement, Run), visibles dès l'ouverture même avant toute saisie, complétée par des activités personnalisées si besoin. Cliquer sur une cellule fait cycler le rôle R → A → C → I → vide, avec un code couleur immédiat. Le système signale automatiquement : activité sans responsable (R), sans décisionnaire (A), plusieurs décisionnaires, ou rôles en doublon pour un même acteur. La gestion des acteurs (fiche, disponibilité) reste accessible dans un panneau secondaire repliable, en dessous de la matrice.

@@ -38,7 +38,7 @@ export default async function ConceptionPage({ params }: { params: { id: string 
       <ProjectTabs projectId={params.id} />
       <div className="mb-1">
         <h1 className="font-display text-2xl text-ink">Conception & Préparation</h1>
-        <p className="text-sm text-muted">Ce qui se conçoit et se décide avant la réalisation.</p>
+        <p className="text-sm text-muted">Le projet est-il prêt à passer en réalisation ?</p>
       </div>
 
       <section className="mt-8">

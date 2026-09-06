@@ -5,6 +5,8 @@ import { ProjectTabs } from "@/components/ProjectTabs";
 import { ActionForm, DecisionForm } from "@/components/EntityForms";
 import { ActionsKanban } from "@/components/ActionsKanban";
 import { InlineSelect } from "@/components/InlineSelect";
+import { computeRealisationMomentum } from "@/lib/readiness";
+import { HealthBadge } from "@/components/HealthBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +30,30 @@ export default async function RealisationPage({ params }: { params: { id: string
     prisma.meeting.findMany({ where: { projectId: params.id }, orderBy: { date: "desc" }, take: 5 }),
   ]);
 
+  const now = new Date();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const lateActions = actions.filter((a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status)).length;
+  const recentActivityCount = await prisma.timelineEvent.count({ where: { projectId: params.id, date: { gte: fourteenDaysAgo } } });
+  const readiness = computeRealisationMomentum({ totalActions: actions.length, lateActions, recentActivityCount });
+
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <div className="mb-1">
-        <h1 className="font-display text-2xl text-ink">Réalisation</h1>
-        <p className="text-sm text-muted">Le quotidien du chef de projet : actions, décisions, réunions.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Réalisation</h1>
+          <p className="text-sm text-muted">Sommes-nous en train d'avancer ?</p>
+        </div>
+        <HealthBadge level={readiness.level} label={readiness.label} />
       </div>
+      <ul className="text-sm text-body mt-3 mb-2 space-y-1">
+        {readiness.reasons.map((r, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="text-muted">·</span>
+            {r}
+          </li>
+        ))}
+      </ul>
 
       <section className="mt-8">
         <div className="flex items-center justify-between mb-3">

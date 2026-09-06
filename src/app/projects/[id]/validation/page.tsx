@@ -4,6 +4,8 @@ import { ProjectTabs } from "@/components/ProjectTabs";
 import { AnomalyForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
+import { computeValidationReadiness } from "@/lib/readiness";
+import { HealthBadge } from "@/components/HealthBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +21,28 @@ export default async function ValidationPage({ params }: { params: { id: string 
   if (!project) notFound();
   const anomalies = await prisma.anomaly.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
 
+  const openAnomalies = anomalies.filter((a) => !["corrigee", "validee"].includes(a.status));
+  const criticalOpenAnomalies = openAnomalies.filter((a) => a.criticite === "critique");
+  const readiness = computeValidationReadiness({ openAnomalies: openAnomalies.length, criticalOpenAnomalies: criticalOpenAnomalies.length });
+
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <div className="mb-1">
-        <h1 className="font-display text-2xl text-ink">Validation</h1>
-        <p className="text-sm text-muted">Ce qui prépare le Go-Live : anomalies identifiées, corrigées, validées.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Validation</h1>
+          <p className="text-sm text-muted">Sommes-nous prêts à déployer ?</p>
+        </div>
+        <HealthBadge level={readiness.level} label={readiness.label} />
       </div>
+      <ul className="text-sm text-body mt-3 mb-2 space-y-1">
+        {readiness.reasons.map((r, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="text-muted">·</span>
+            {r}
+          </li>
+        ))}
+      </ul>
 
       <section className="mt-8 mb-4">
         <AnomalyForm projectId={params.id} />
