@@ -49,7 +49,8 @@ src/
 - **Portefeuille** épuré : recherche, filtres (statut, niveau de santé), consolidation budgétaire réelle (uniquement sur les projets budgétisés)
 - **Cockpit projet** contextuel : chaque bloc (avancement, budget, échéance, risques, alertes, prochaines échéances) n'apparaît que si la donnée existe — aucun indicateur fictif
 - **Fiche projet** complète : type, statut, phase, priorité, chef de projet, sponsor
-- **Planning** : tâches/jalons en vue Liste ou Timeline, historique des révisions de baseline
+- **Planning** : tâches/jalons en vue Liste, Timeline ou **Gantt** (barres calculées à partir des vraies dates de début/échéance), historique des révisions de baseline
+- **Tâches en vue Kanban** (glisser-déposer natif, sans dépendance) en plus de la vue liste, au niveau projet et au niveau portefeuille
 - **Budget en euros** : budget initial/révisé, lignes budgétaires par catégorie et fournisseur, calcul automatique de l'engagé/réel/reste/taux de consommation
 - **Réunions** avec synthèse automatique de préparation et saisie rapide pendant la séance (§16-18)
 - **Registres** Actions, Risques (+ matrice probabilité × impact), Décisions, Interfaces, Anomalies

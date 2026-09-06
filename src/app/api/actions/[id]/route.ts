@@ -9,6 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.responsable !== undefined) data.responsable = body.responsable;
+  if (body.dateDebut !== undefined) data.dateDebut = body.dateDebut ? new Date(body.dateDebut) : null;
   if (body.echeance !== undefined) {
     // Report d'échéance : on trace le nombre de reports (§19).
     if (body.echeance && before.echeance && new Date(body.echeance).getTime() !== before.echeance.getTime()) {

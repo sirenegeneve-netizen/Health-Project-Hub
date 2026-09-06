@@ -111,6 +111,7 @@ async function main() {
       meetingId: meeting1.id,
       title: "Valider le mapping laboratoire avec l'éditeur",
       responsable: "Équipe interop",
+      dateDebut: new Date("2026-08-06"),
       echeance: new Date("2026-08-20"),
       priority: "haute",
       origine: "reunion",
@@ -123,10 +124,24 @@ async function main() {
       projectId: project.id,
       title: "Préparer le plan de communication Go-Live",
       responsable: "Chef de projet",
+      dateDebut: new Date("2026-06-15"),
       echeance: new Date("2026-07-01"),
       priority: "normale",
       origine: "manuel",
-      status: "en_cours",
+      status: "termine",
+    },
+  });
+
+  await prisma.action.create({
+    data: {
+      projectId: project.id,
+      title: "Recette fonctionnelle module urgences",
+      responsable: "Équipe métier",
+      dateDebut: new Date("2026-08-10"),
+      echeance: new Date("2026-09-05"),
+      priority: "haute",
+      origine: "manuel",
+      status: "a_faire",
     },
   });
 

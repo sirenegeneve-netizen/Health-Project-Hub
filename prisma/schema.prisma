@@ -135,6 +135,7 @@ model Action {
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
   title          String
   responsable    String?
+  dateDebut      DateTime?
   echeance       DateTime?
   priority       String    @default("normale")
   origine        String?   // reunion | mail | document | manuel

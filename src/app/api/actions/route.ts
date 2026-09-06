@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
       meetingId: body.meetingId || null,
       title: body.title,
       responsable: body.responsable || null,
+      dateDebut: body.dateDebut ? new Date(body.dateDebut) : null,
       echeance: body.echeance ? new Date(body.echeance) : null,
       priority: body.priority || "normale",
       origine: body.origine || "manuel",

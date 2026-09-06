@@ -31,7 +31,7 @@ async function post(url: string, body: unknown) {
 
 export function ActionForm({ projectId, meetingId, label }: { projectId: string; meetingId?: string; label?: string }) {
   const router = useRouter();
-  const [f, setF] = useState({ title: "", responsable: "", echeance: "", priority: "normale", comments: "" });
+  const [f, setF] = useState({ title: "", responsable: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
   return (
     <Toggle label={label || "+ Nouvelle action"}>
       {(close) => (
@@ -39,9 +39,12 @@ export function ActionForm({ projectId, meetingId, label }: { projectId: string;
           <Field label="Intitulé">
             <input className={inputCls} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
           </Field>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Field label="Responsable">
               <input className={inputCls} value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} />
+            </Field>
+            <Field label="Début (optionnel)">
+              <input type="date" className={inputCls} value={f.dateDebut} onChange={(e) => setF({ ...f, dateDebut: e.target.value })} />
             </Field>
             <Field label="Échéance">
               <input type="date" className={inputCls} value={f.echeance} onChange={(e) => setF({ ...f, echeance: e.target.value })} />
