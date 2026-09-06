@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { PortfolioList } from "@/components/PortfolioList";
+import { IconBadge, IconBriefcase, IconAlert, IconClock, IconEuro } from "@/components/IconBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -67,12 +68,12 @@ export default async function HomePage() {
 
       {projects.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Projets" value={String(projects.length)} />
-          <StatCard label="En cours" value={String(enCours)} />
-          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} tone="bad" />}
-          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} tone="bad" />}
+          <StatCard label="Projets" value={String(projects.length)} icon={<IconBriefcase />} color="blue" />
+          <StatCard label="En cours" value={String(enCours)} icon={<IconClock />} color="teal" />
+          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={<IconAlert />} color="red" />}
+          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={<IconAlert />} color="orange" />}
           {budgetSummaries.length > 0 && (
-            <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} />
+            <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={<IconEuro />} color="purple" />
           )}
         </div>
       )}
@@ -82,18 +83,21 @@ export default async function HomePage() {
           {alerts.length > 0 && (
             <div className="card">
               <div className="font-medium text-sm mb-3">Alertes prioritaires</div>
-              <ul className="space-y-2.5">
-                {alerts.map((a, i) => (
-                  <li key={i} className="flex items-start justify-between gap-3 text-sm">
-                    <div>
-                      <Link href={`/projects/${a.project.id}`} className="text-teal-700 hover:underline">
-                        {a.project.name}
-                      </Link>
-                      <div className="text-ink/60">{a.reason}</div>
-                    </div>
-                    <span className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${a.level === "rouge" ? "bg-bad" : "bg-warn"}`} />
-                  </li>
-                ))}
+              <ul className="space-y-3">
+                {alerts.map((a, i) => {
+                  const severity = severityFor(a.reason, a.level);
+                  return (
+                    <li key={i} className="flex items-start justify-between gap-3 text-sm">
+                      <div>
+                        <Link href={`/projects/${a.project.id}`} className="text-teal-700 hover:underline">
+                          {a.project.name}
+                        </Link>
+                        <div className="text-ink/60">{a.reason}</div>
+                      </div>
+                      <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${severity.cls}`}>{severity.label}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -127,12 +131,36 @@ export default async function HomePage() {
   );
 }
 
-function StatCard({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "bad" }) {
+function severityFor(reason: string, level: "vert" | "orange" | "rouge") {
+  if (level === "rouge" && (reason.includes("bloquante") || reason.includes("critique"))) {
+    return { label: "Critique", cls: "bg-bad/10 text-bad" };
+  }
+  if (reason.includes("retard")) return { label: "Haute", cls: "bg-clay-50 text-clay" };
+  if (reason.includes("décision")) return { label: "Moyenne", cls: "bg-purple-50 text-purple" };
+  return { label: "Info", cls: "bg-blue-50 text-blue" };
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: React.ReactNode;
+  color: "blue" | "red" | "orange" | "purple" | "teal" | "green";
+}) {
   return (
-    <div className="card">
-      <div className="label">{label}</div>
-      <div className={`font-display text-2xl mt-1 ${tone === "bad" ? "text-bad" : "text-ink"}`}>{value}</div>
-      {sub && <div className="text-xs text-ink/45 mt-0.5">{sub}</div>}
+    <div className="card flex items-start gap-3">
+      <IconBadge color={color}>{icon}</IconBadge>
+      <div className="min-w-0">
+        <div className="label">{label}</div>
+        <div className="font-display text-2xl mt-0.5 truncate">{value}</div>
+        {sub && <div className="text-xs text-ink/45 mt-0.5">{sub}</div>}
+      </div>
     </div>
   );
 }

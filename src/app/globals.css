@@ -8,7 +8,7 @@
     font-feature-settings: "ss01";
   }
   h1, h2, h3 {
-    @apply font-display tracking-tightish;
+    @apply font-display font-bold tracking-tightish;
   }
   ::selection {
     @apply bg-clay/20;

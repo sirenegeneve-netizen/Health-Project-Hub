@@ -55,17 +55,27 @@ export function Sidebar() {
                 active ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <Icon />
+              <span className={active ? "text-clay" : ""}>
+                <Icon />
+              </span>
               {label}
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-3 pb-5">
-        <Link href="/projects/new" className="flex items-center gap-2 justify-center rounded-full px-4 py-2 text-sm font-medium bg-clay hover:bg-clay-600 transition-colors">
+      <div className="px-3 pb-5 relative">
+        <Link href="/projects/new" className="relative z-10 flex items-center gap-2 justify-center rounded-full px-4 py-2 text-sm font-medium bg-clay hover:bg-clay-600 transition-colors">
           + Nouveau projet
         </Link>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-6 -left-10 -right-10 h-40 opacity-60 blur-2xl"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(124,92,224,0.55), transparent), radial-gradient(closest-side at 70% 30%, rgba(47,111,237,0.4), transparent)",
+          }}
+        />
       </div>
     </div>
   );
