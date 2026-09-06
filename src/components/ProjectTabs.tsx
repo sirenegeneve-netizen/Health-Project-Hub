@@ -10,7 +10,8 @@ import { usePathname } from "next/navigation";
 // actif via `match`.
 const TABS: { href: string; label: string; match: string[] }[] = [
   { href: "", label: "Vue d'ensemble", match: [""] },
-  { href: "/cadrage", label: "Cadrage", match: ["/cadrage", "/stakeholders", "/actors", "/budget"] },
+  { href: "/cadrage", label: "Cadrage", match: ["/cadrage", "/stakeholders", "/budget"] },
+  { href: "/actors", label: "Gouvernance & RACI", match: ["/actors"] },
   { href: "/conception", label: "Conception", match: ["/conception", "/deliverables", "/changes"] },
   { href: "/interfaces", label: "Interopérabilité", match: ["/interfaces"] },
   { href: "/realisation", label: "Réalisation", match: ["/realisation", "/actions", "/planning", "/decisions", "/meetings"] },

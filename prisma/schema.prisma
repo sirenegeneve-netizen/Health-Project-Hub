@@ -56,6 +56,8 @@ model RaciEntry {
   activite  String
   role      String // R | A | C | I
   createdAt DateTime @default(now())
+
+  @@unique([actorId, activite])
 }
 
 model Project {

@@ -252,11 +252,14 @@ async function main() {
 
   await prisma.raciEntry.createMany({
     data: [
-      { projectId: project.id, actorId: actorCdp.id, activite: "Recette laboratoire", role: "A" },
-      { projectId: project.id, actorId: actorInterop.id, activite: "Recette laboratoire", role: "R" },
-      { projectId: project.id, actorId: actorMetier.id, activite: "Recette laboratoire", role: "C" },
-      { projectId: project.id, actorId: actorCdp.id, activite: "Formation utilisateurs", role: "R" },
-      { projectId: project.id, actorId: actorMetier.id, activite: "Formation utilisateurs", role: "I" },
+      { projectId: project.id, actorId: actorCdp.id, activite: "Recette fonctionnelle", role: "A" },
+      { projectId: project.id, actorId: actorInterop.id, activite: "Recette fonctionnelle", role: "R" },
+      { projectId: project.id, actorId: actorMetier.id, activite: "Recette fonctionnelle", role: "C" },
+      { projectId: project.id, actorId: actorCdp.id, activite: "Formation", role: "R" },
+      { projectId: project.id, actorId: actorMetier.id, activite: "Formation", role: "I" },
+      { projectId: project.id, actorId: actorCdp.id, activite: "Kick-off", role: "A" },
+      { projectId: project.id, actorId: actorInterop.id, activite: "Interfaces", role: "R" },
+      { projectId: project.id, actorId: actorCdp.id, activite: "Interfaces", role: "A" },
     ],
   });
 

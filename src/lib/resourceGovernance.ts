@@ -11,6 +11,47 @@ export interface RaciLike {
   role: string;
 }
 
+// Trame standard d'un projet SI santé — sert de checklist de gouvernance même
+// avant toute saisie : les lignes apparaissent, à compléter, plutôt que d'être
+// inventées une à une par l'utilisateur.
+export const RACI_TEMPLATE: [string, string[]][] = [
+  ["Gouvernance", ["Kick-off", "COPIL", "Comité projet"]],
+  ["Analyse", ["Recueil besoins", "Validation besoins"]],
+  ["Réalisation", ["Paramétrage", "Interfaces", "Migration"]],
+  ["Validation", ["Recette fonctionnelle", "Validation recette"]],
+  ["Déploiement", ["Formation", "Go/No Go", "Mise en production"]],
+  ["Run", ["Support", "Évolutions"]],
+];
+
+export interface RaciIssue {
+  activite: string;
+  type: "sans_r" | "sans_a" | "plusieurs_a" | "doublon";
+  detail?: string;
+}
+
+export function computeRaciIssues(rows: string[], entries: RaciLike[]): RaciIssue[] {
+  const issues: RaciIssue[] = [];
+  for (const activite of rows) {
+    const cellEntries = entries.filter((e) => e.activite === activite);
+    const rCount = cellEntries.filter((e) => e.role === "R").length;
+    const aCount = cellEntries.filter((e) => e.role === "A").length;
+
+    if (rCount === 0) issues.push({ activite, type: "sans_r" });
+    if (aCount === 0) issues.push({ activite, type: "sans_a" });
+    if (aCount > 1) issues.push({ activite, type: "plusieurs_a", detail: `${aCount} décisionnaires` });
+
+    const byActor = new Map<string, string[]>();
+    for (const e of cellEntries) {
+      if (!byActor.has(e.actorId)) byActor.set(e.actorId, []);
+      byActor.get(e.actorId)!.push(e.role);
+    }
+    for (const roles of byActor.values()) {
+      if (roles.length > 1) issues.push({ activite, type: "doublon", detail: roles.join("+") });
+    }
+  }
+  return issues;
+}
+
 export interface WorkloadInputs {
   actions: { responsable: string | null; status: string }[];
   risks: { proprietaire: string | null; status: string }[];

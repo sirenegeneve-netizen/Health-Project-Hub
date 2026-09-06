@@ -4,11 +4,10 @@ import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProjectDescriptionEditor } from "@/components/ProjectDescriptionEditor";
 import { StakeholderForm } from "@/components/EntityForms";
-import { ActorForm, RaciMatrix } from "@/components/ActorForms";
+import { ActorForm } from "@/components/ActorForms";
 import { BudgetTargetsForm, BudgetLineForm, BudgetLinesTable } from "@/components/BudgetForms";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
-import { computeActorWorkload, findSinglePointsOfFailure } from "@/lib/resourceGovernance";
-import { AlertTriangle } from "lucide-react";
+import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +24,6 @@ const ROLE_LABELS: Record<string, string> = {
   referent_etablissement: "Référent établissement",
 };
 
-function initials(name: string) {
-  return name.split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
-}
-
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="font-display text-lg text-ink mb-3">{children}</h2>;
 }
@@ -40,18 +35,12 @@ export default async function CadragePage({ params }: { params: { id: string } }
   });
   if (!project) notFound();
 
-  const [stakeholders, actors, raciEntries, actions, risks, interfaces, deliverables] = await Promise.all([
+  const [stakeholders, actors, raciEntries] = await Promise.all([
     prisma.stakeholder.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.actor.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.raciEntry.findMany({ where: { projectId: params.id } }),
-    prisma.action.findMany({ where: { projectId: params.id }, select: { responsable: true, status: true } }),
-    prisma.risk.findMany({ where: { projectId: params.id }, select: { proprietaire: true, status: true } }),
-    prisma.interface.findMany({ where: { projectId: params.id }, select: { responsable: true, status: true } }),
-    prisma.deliverable.findMany({ where: { projectId: params.id }, select: { responsable: true, status: true } }),
   ]);
 
-  const workloadInputs = { actions, risks, interfaces, deliverables };
-  const workloads = new Map(actors.map((a) => [a.id, computeActorWorkload(a, workloadInputs, raciEntries)]));
   const actorsById = new Map(actors.map((a) => [a.id, a.name]));
   const dependencies = findSinglePointsOfFailure(raciEntries, actorsById);
   const budget = computeBudgetSummary(project.budgetInitialEur, project.budgetReviseEur, project.budgetLines);
@@ -106,53 +95,36 @@ export default async function CadragePage({ params }: { params: { id: string } }
         <div className="flex items-center justify-between mb-3">
           <SectionTitle>Gouvernance & RACI</SectionTitle>
           <Link href={`/projects/${params.id}/actors`} className="text-sm text-blue hover:underline">
-            Vue détaillée →
+            Ouvrir la matrice →
           </Link>
         </div>
-        <ActorForm projectId={params.id} />
 
-        {dependencies.length > 0 && (
-          <div className="card mb-4 border-bad/20">
-            <div className="flex items-center gap-2 font-medium text-bad mb-2 text-sm">
-              <AlertTriangle size={15} />
-              Points de dépendance uniques
-            </div>
-            <ul className="text-sm space-y-1">
-              {dependencies.map((d, i) => (
-                <li key={i}>
-                  <span className="font-medium">{d.activite}</span> repose entièrement sur <span className="font-medium">{d.actorName}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {actors.length > 0 ? (
+        {actors.length === 0 ? (
           <>
-            <div className="grid md:grid-cols-2 gap-3 mb-4">
-              {actors.map((a) => {
-                const w = workloads.get(a.id)!;
-                return (
-                  <div key={a.id} className="card flex gap-3">
-                    <div className="w-9 h-9 rounded-full bg-primary-50 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
-                      {initials(a.name)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-medium text-ink text-sm truncate">{a.name}</div>
-                      <div className="text-xs text-muted">
-                        {a.roleProjet ? ROLE_LABELS[a.roleProjet] || a.roleProjet : "Rôle non renseigné"}
-                        {a.disponibiliteJh !== null && ` · ${a.disponibiliteJh} JH dispo`}
-                      </div>
-                      {w.totalOwned > 0 && <div className="text-xs text-body mt-1">{w.totalOwned} élément(s) porté(s)</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <RaciMatrix projectId={params.id} actors={actors.map((a) => ({ id: a.id, name: a.name }))} entries={raciEntries} />
+            <p className="text-sm text-body mb-3">Aucun acteur renseigné pour ce projet.</p>
+            <ActorForm projectId={params.id} />
           </>
         ) : (
-          <div className="card text-center text-ink/50 py-8">Aucun acteur renseigné pour ce projet.</div>
+          <div className="card">
+            <div className="text-sm text-body">
+              {actors.length} acteur(s) impliqué(s)
+              {dependencies.length > 0 && (
+                <span className="text-bad">
+                  {" "}
+                  · {dependencies.length} dépendance(s) critique(s) (
+                  {dependencies.map((d) => d.actorName).join(", ")})
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {actors.map((a) => (
+                <span key={a.id} className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-1">
+                  {a.name}
+                  {a.roleProjet && ` · ${ROLE_LABELS[a.roleProjet] || a.roleProjet}`}
+                </span>
+              ))}
+            </div>
+          </div>
         )}
       </section>
 
