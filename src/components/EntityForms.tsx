@@ -64,7 +64,7 @@ export function ActionForm({ projectId, meetingId, label }: { projectId: string;
               onClick={async () => {
                 if (!f.title) return;
                 await post("/api/actions", { projectId, meetingId, origine: meetingId ? "reunion" : "manuel", ...f });
-                setF({ title: "", responsable: "", echeance: "", priority: "normale", comments: "" });
+                setF({ title: "", responsable: "", , datrDebut: "", echeance: "", priority: "normale", comments: "" });
                 close();
                 router.refresh();
               }}
