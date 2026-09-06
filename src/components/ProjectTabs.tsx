@@ -12,7 +12,7 @@ const TABS = [
   ["/actions", "Actions"],
   ["/deliverables", "Livrables"],
   ["/stakeholders", "Parties prenantes"],
-  ["/actors", "Acteurs & RACI"],
+  ["/actors", "Ressources"],
   ["/kpis", "Indicateurs"],
   ["/meetings", "Réunions"],
   ["/decisions", "Décisions"],

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutGrid, CalendarDays, CheckSquare, ShieldAlert, Search, Plus } from "lucide-react";
+import { LayoutGrid, CalendarDays, CheckSquare, ShieldAlert, Users, Search, Plus } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Portefeuille", Icon: LayoutGrid },
   { href: "/meetings", label: "Réunions", Icon: CalendarDays },
   { href: "/actions", label: "Actions", Icon: CheckSquare },
   { href: "/risks", label: "Risques", Icon: ShieldAlert },
+  { href: "/resources", label: "Ressources", Icon: Users },
 ];
 
 export function Sidebar() {
