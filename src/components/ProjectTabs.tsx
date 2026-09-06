@@ -33,7 +33,7 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
             key={href}
             href={href}
             className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
-              active ? "bg-teal-700 text-white" : "text-ink/60 hover:bg-teal-50 hover:text-teal-700"
+              active ? "bg-primary text-white" : "text-ink/60 hover:bg-teal-50 hover:text-blue"
             }`}
           >
             {label}

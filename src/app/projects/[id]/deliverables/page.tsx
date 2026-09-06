@@ -21,7 +21,7 @@ export default async function DeliverablesPage({ params }: { params: { id: strin
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Livrables</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Livrables</h1>
       <DeliverableForm projectId={params.id} />
 
       {deliverables.length > 0 ? (

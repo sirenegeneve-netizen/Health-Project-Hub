@@ -23,7 +23,7 @@ export default async function InterfacesPage({ params }: { params: { id: string 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Interfaces & interopérabilité</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Interfaces & interopérabilité</h1>
       <InterfaceForm projectId={params.id} />
 
       <div className="card p-0 overflow-hidden">

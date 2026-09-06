@@ -23,7 +23,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Risques</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Risques</h1>
       <RiskForm projectId={params.id} />
       <RiskMatrix risks={risks} />
 

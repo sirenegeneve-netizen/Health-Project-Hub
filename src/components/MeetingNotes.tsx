@@ -20,7 +20,7 @@ export function MeetingNotes({ meetingId, initial }: { meetingId: string; initia
       <div className="flex items-center justify-between mb-2">
         <div className="font-medium">Notes de séance</div>
         {!saved && (
-          <button className="text-xs text-teal-700 underline" onClick={save}>
+          <button className="text-xs text-ink underline" onClick={save}>
             Enregistrer
           </button>
         )}

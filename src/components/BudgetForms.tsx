@@ -42,7 +42,7 @@ export function BudgetTargetsForm({
 
   if (!open) {
     return (
-      <button className="text-sm text-teal-700 hover:underline mb-4" onClick={() => setOpen(true)}>
+      <button className="text-sm text-blue hover:underline mb-4" onClick={() => setOpen(true)}>
         Modifier le budget cible
       </button>
     );

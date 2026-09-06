@@ -35,7 +35,7 @@ function SearchInner() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Recherche globale</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Recherche globale</h1>
       <input
         autoFocus
         className="input mb-6"

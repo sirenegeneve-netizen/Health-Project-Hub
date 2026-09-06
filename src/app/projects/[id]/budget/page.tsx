@@ -15,7 +15,7 @@ export default async function BudgetPage({ params }: { params: { id: string } })
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Budget</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Budget</h1>
 
       <BudgetTargetsForm projectId={params.id} budgetInitialEur={project.budgetInitialEur} budgetReviseEur={project.budgetReviseEur} />
 

@@ -13,7 +13,7 @@ export default async function KpisPage({ params }: { params: { id: string } }) {
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Indicateurs</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Indicateurs</h1>
       <KpiForm projectId={params.id} />
 
       {kpis.length === 0 ? (

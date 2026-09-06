@@ -26,7 +26,7 @@ export default async function PlanningPage({ params, searchParams }: { params: {
     return (
       <div>
         <ProjectTabs projectId={params.id} />
-        <h1 className="font-display text-2xl text-teal-700 mb-4">Planning</h1>
+        <h1 className="font-display text-2xl text-ink mb-4">Planning</h1>
         <ActionForm projectId={params.id} label="+ Ajouter une tâche" />
         <div className="card text-center text-ink/50 py-10">
           Aucune tâche ni jalon planifié pour l'instant. Ajoutez des actions avec une échéance pour construire le planning.
@@ -39,12 +39,12 @@ export default async function PlanningPage({ params, searchParams }: { params: {
     <div>
       <ProjectTabs projectId={params.id} />
       <div className="flex items-center justify-between mb-4">
-        <h1 className="font-display text-2xl text-teal-700">Planning</h1>
+        <h1 className="font-display text-2xl text-ink">Planning</h1>
         <div className="flex gap-1 text-sm">
-          <a href="?vue=liste" className={`px-3 py-1.5 rounded-full ${vue === "liste" ? "bg-teal-700 text-white" : "text-ink/60 hover:bg-teal-50"}`}>
+          <a href="?vue=liste" className={`px-3 py-1.5 rounded-full ${vue === "liste" ? "bg-primary text-white" : "text-ink/60 hover:bg-teal-50"}`}>
             Liste
           </a>
-          <a href="?vue=timeline" className={`px-3 py-1.5 rounded-full ${vue === "timeline" ? "bg-teal-700 text-white" : "text-ink/60 hover:bg-teal-50"}`}>
+          <a href="?vue=timeline" className={`px-3 py-1.5 rounded-full ${vue === "timeline" ? "bg-primary text-white" : "text-ink/60 hover:bg-teal-50"}`}>
             Timeline
           </a>
         </div>

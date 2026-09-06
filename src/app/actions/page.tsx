@@ -23,7 +23,7 @@ export default async function GlobalActionsPage() {
   if (actions.length === 0) {
     return (
       <div>
-        <h1 className="font-display text-2xl text-teal-700 mb-4">Actions</h1>
+        <h1 className="font-display text-2xl text-ink mb-4">Actions</h1>
         <div className="card text-center text-ink/50 py-14">
           Aucune action pour l'instant. Ouvrez un projet pour en créer.
         </div>
@@ -36,7 +36,7 @@ export default async function GlobalActionsPage() {
   return (
     <div>
       <div className="flex items-end justify-between mb-6">
-        <h1 className="font-display text-2xl text-teal-700">Actions</h1>
+        <h1 className="font-display text-2xl text-ink">Actions</h1>
         {late.length > 0 && <span className="text-sm text-bad">{late.length} en retard</span>}
       </div>
 
@@ -58,7 +58,7 @@ export default async function GlobalActionsPage() {
                 <tr key={a.id} className={isLate ? "bg-bad/5" : ""}>
                   <td className="pl-4">{a.title}</td>
                   <td>
-                    <Link href={`/projects/${a.projectId}`} className="text-teal-700 hover:underline">
+                    <Link href={`/projects/${a.projectId}`} className="text-blue hover:underline">
                       {a.project.name}
                     </Link>
                   </td>

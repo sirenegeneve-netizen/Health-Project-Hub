@@ -42,7 +42,7 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
       <ProjectTabs projectId={params.id} />
       <div className="mb-4">
         <div className="text-xs text-ink/50 capitalize">{meeting.type.replace(/_/g, " ")}</div>
-        <h1 className="font-display text-2xl text-teal-700">{meeting.title}</h1>
+        <h1 className="font-display text-2xl text-ink">{meeting.title}</h1>
         <div className="text-sm text-ink/60">{new Date(meeting.date).toLocaleString("fr-FR")} — {meeting.participants || "participants non renseignés"}</div>
       </div>
 

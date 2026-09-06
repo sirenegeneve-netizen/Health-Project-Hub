@@ -33,7 +33,7 @@ export default async function GoLivePage({ params }: { params: { id: string } })
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Checklist Go / No Go</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Checklist Go / No Go</h1>
 
       <div className="card p-0 overflow-hidden mb-6">
         <table className="table-hp">
@@ -72,7 +72,7 @@ export default async function GoLivePage({ params }: { params: { id: string } })
 
       <GoNoGoDecisionForm projectId={params.id} />
 
-      <h2 className="font-display text-xl text-teal-700 mt-10 mb-4">Anomalies</h2>
+      <h2 className="font-display text-xl text-ink mt-10 mb-4">Anomalies</h2>
       <AnomalyForm projectId={params.id} />
       <div className="card p-0 overflow-hidden">
         <table className="table-hp">

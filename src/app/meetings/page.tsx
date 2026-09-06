@@ -9,7 +9,7 @@ export default async function GlobalMeetingsPage() {
   if (meetings.length === 0) {
     return (
       <div>
-        <h1 className="font-display text-2xl text-teal-700 mb-4">Réunions</h1>
+        <h1 className="font-display text-2xl text-ink mb-4">Réunions</h1>
         <div className="card text-center text-ink/50 py-14">Aucune réunion planifiée pour l'instant.</div>
       </div>
     );
@@ -21,7 +21,7 @@ export default async function GlobalMeetingsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl text-teal-700 mb-6">Réunions</h1>
+      <h1 className="font-display text-2xl text-ink mb-6">Réunions</h1>
 
       {upcoming.length > 0 && (
         <div className="mb-8">

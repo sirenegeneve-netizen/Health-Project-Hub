@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { PortfolioList } from "@/components/PortfolioList";
-import { IconBadge, IconBriefcase, IconAlert, IconClock, IconEuro } from "@/components/IconBadge";
+import { IconBadge } from "@/components/IconBadge";
+import { Briefcase, TriangleAlert, Clock, Euro } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,7 @@ export default async function HomePage() {
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
           <div className="label mb-2">Portefeuille</div>
-          <h1 className="font-display text-4xl text-teal-700 leading-tight">Vue d'ensemble</h1>
+          <h1 className="font-display text-4xl text-ink leading-tight">Vue d'ensemble</h1>
         </div>
         <Link href="/projects/new" className="btn">
           + Nouveau projet
@@ -68,12 +69,12 @@ export default async function HomePage() {
 
       {projects.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Projets" value={String(projects.length)} icon={<IconBriefcase />} color="blue" />
-          <StatCard label="En cours" value={String(enCours)} icon={<IconClock />} color="teal" />
-          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={<IconAlert />} color="red" />}
-          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={<IconAlert />} color="orange" />}
+          <StatCard label="Projets" value={String(projects.length)} icon={Briefcase} color="primary" />
+          <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" />
+          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" />}
+          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" />}
           {budgetSummaries.length > 0 && (
-            <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={<IconEuro />} color="purple" />
+            <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={Euro} color="neutral" />
           )}
         </div>
       )}
@@ -89,7 +90,7 @@ export default async function HomePage() {
                   return (
                     <li key={i} className="flex items-start justify-between gap-3 text-sm">
                       <div>
-                        <Link href={`/projects/${a.project.id}`} className="text-teal-700 hover:underline">
+                        <Link href={`/projects/${a.project.id}`} className="text-blue hover:underline">
                           {a.project.name}
                         </Link>
                         <div className="text-ink/60">{a.reason}</div>
@@ -135,9 +136,9 @@ function severityFor(reason: string, level: "vert" | "orange" | "rouge") {
   if (level === "rouge" && (reason.includes("bloquante") || reason.includes("critique"))) {
     return { label: "Critique", cls: "bg-bad/10 text-bad" };
   }
-  if (reason.includes("retard")) return { label: "Haute", cls: "bg-clay-50 text-clay" };
-  if (reason.includes("décision")) return { label: "Moyenne", cls: "bg-purple-50 text-purple" };
-  return { label: "Info", cls: "bg-blue-50 text-blue" };
+  if (reason.includes("retard")) return { label: "Haute", cls: "bg-warn/10 text-warn" };
+  if (reason.includes("décision")) return { label: "Moyenne", cls: "bg-ink/5 text-ink/70" };
+  return { label: "Info", cls: "bg-info-50 text-info" };
 }
 
 function StatCard({
@@ -150,16 +151,16 @@ function StatCard({
   label: string;
   value: string;
   sub?: string;
-  icon: React.ReactNode;
-  color: "blue" | "red" | "orange" | "purple" | "teal" | "green";
+  icon: import("lucide-react").LucideIcon;
+  color: "primary" | "blue" | "red" | "orange" | "purple" | "neutral" | "green";
 }) {
   return (
     <div className="card flex items-start gap-3">
-      <IconBadge color={color}>{icon}</IconBadge>
+      <IconBadge color={color} icon={icon} />
       <div className="min-w-0">
         <div className="label">{label}</div>
         <div className="font-display text-2xl mt-0.5 truncate">{value}</div>
-        {sub && <div className="text-xs text-ink/45 mt-0.5">{sub}</div>}
+        {sub && <div className="text-xs text-muted mt-0.5">{sub}</div>}
       </div>
     </div>
   );

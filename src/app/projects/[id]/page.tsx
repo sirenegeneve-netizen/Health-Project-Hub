@@ -55,7 +55,7 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
       <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
         <div>
           <div className="text-xs text-ink/45">{project.reference}</div>
-          <h1 className="font-display text-3xl text-teal-700">{project.name}</h1>
+          <h1 className="font-display text-3xl text-ink">{project.name}</h1>
         </div>
         <HealthBadge level={score.level} label={score.label} />
       </div>
@@ -93,7 +93,7 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="font-medium text-sm">Prochaines échéances</div>
-            <Link href={`/projects/${project.id}/planning`} className="text-xs text-teal-700 hover:underline">
+            <Link href={`/projects/${project.id}/planning`} className="text-xs text-blue hover:underline">
               Planning →
             </Link>
           </div>
@@ -112,7 +112,7 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
           {pendingDecisions.length > 0 && (
             <div className="mt-4 pt-4 border-t border-teal-50">
               <div className="text-sm text-ink/60 mb-1.5">{pendingDecisions.length} décision(s) en attente</div>
-              <Link href={`/projects/${project.id}/decisions`} className="text-xs text-teal-700 hover:underline">
+              <Link href={`/projects/${project.id}/decisions`} className="text-xs text-blue hover:underline">
                 Voir les décisions →
               </Link>
             </div>
@@ -122,7 +122,7 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="font-medium text-sm">Dernières activités</div>
-            <Link href={`/projects/${project.id}/timeline`} className="text-xs text-teal-700 hover:underline">
+            <Link href={`/projects/${project.id}/timeline`} className="text-xs text-blue hover:underline">
               Tout voir →
             </Link>
           </div>

@@ -18,7 +18,7 @@ export default async function MeetingsPage({ params }: { params: { id: string } 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Réunions</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Réunions</h1>
       <MeetingForm projectId={params.id} />
 
       <div className="space-y-2">

@@ -17,7 +17,7 @@ export default async function StakeholdersPage({ params }: { params: { id: strin
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Parties prenantes</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Parties prenantes</h1>
       <StakeholderForm projectId={params.id} />
 
       {stakeholders.length === 0 ? (

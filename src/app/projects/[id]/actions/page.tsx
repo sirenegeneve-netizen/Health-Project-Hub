@@ -24,7 +24,7 @@ export default async function ActionsPage({ params }: { params: { id: string } }
   return (
     <div>
       <ProjectTabs projectId={params.id} />
-      <h1 className="font-display text-2xl text-teal-700 mb-4">Actions</h1>
+      <h1 className="font-display text-2xl text-ink mb-4">Actions</h1>
       <ActionForm projectId={params.id} />
 
       <div className="card p-0 overflow-hidden">
