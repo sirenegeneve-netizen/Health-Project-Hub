@@ -240,6 +240,26 @@ async function main() {
     },
   });
 
+  const actorCdp = await prisma.actor.create({
+    data: { projectId: project.id, name: "M. Lefèvre", roleProjet: "chef_de_projet", fonction: "Chef de projet SI", disponibiliteJh: 40 },
+  });
+  const actorInterop = await prisma.actor.create({
+    data: { projectId: project.id, name: "S. Nguyen", roleProjet: "consultant_interop", organisation: "Prestataire externe", disponibiliteJh: 15 },
+  });
+  const actorMetier = await prisma.actor.create({
+    data: { projectId: project.id, name: "Dr. Aris", roleProjet: "expert_metier", fonction: "Médecin référent DPI", disponibiliteJh: 5 },
+  });
+
+  await prisma.raciEntry.createMany({
+    data: [
+      { projectId: project.id, actorId: actorCdp.id, activite: "Recette laboratoire", role: "A" },
+      { projectId: project.id, actorId: actorInterop.id, activite: "Recette laboratoire", role: "R" },
+      { projectId: project.id, actorId: actorMetier.id, activite: "Recette laboratoire", role: "C" },
+      { projectId: project.id, actorId: actorCdp.id, activite: "Formation utilisateurs", role: "R" },
+      { projectId: project.id, actorId: actorMetier.id, activite: "Formation utilisateurs", role: "I" },
+    ],
+  });
+
   console.log("Seed terminé. Projet créé :", project.id);
   console.log("Risque lié à l'interface bloquante :", risk.id);
 }

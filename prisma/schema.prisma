@@ -32,12 +32,30 @@ model Establishment {
 }
 
 model Actor {
-  id             String @id @default(cuid())
-  name           String
-  fonction       String?
-  organisation   String?
-  email          String?
-  telephone      String?
+  id              String      @id @default(cuid())
+  projectId       String
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name            String
+  fonction        String?
+  organisation    String?
+  roleProjet      String? // chef_de_projet | consultant | consultant_fonctionnel | consultant_interop | expert_metier | developpeur | formateur | support | expert_externe | referent_etablissement
+  email           String?
+  telephone       String?
+  disponibiliteJh Float?
+  competences     String?
+  raciEntries     RaciEntry[]
+  createdAt       DateTime    @default(now())
+}
+
+model RaciEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  activite  String
+  role      String // R | A | C | I
+  createdAt DateTime @default(now())
 }
 
 model Project {
@@ -85,6 +103,8 @@ model Project {
   stakeholders     Stakeholder[]
   kpis             Kpi[]
   changeRequests   ChangeRequest[]
+  actors           Actor[]
+  raciEntries      RaciEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
