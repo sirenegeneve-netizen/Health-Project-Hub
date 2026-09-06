@@ -64,7 +64,14 @@ model Project {
   id          String   @id @default(cuid())
   reference   String
   name        String
-  description String?
+  description String? // sert de "Contexte" dans l'écran Cadrage
+  enjeux          String?
+  objectifs       String?
+  perimetre       String?
+  exclusions      String?
+  hypotheses      String?
+  contraintes     String?
+  criteresSucces  String?
   type        String // deploiement | migration | evolution | interoperabilite | changement_version | remplacement | mise_en_conformite | optimisation | autre
   groupId     String
   group       Group    @relation(fields: [groupId], references: [id])

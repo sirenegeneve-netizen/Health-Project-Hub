@@ -2,14 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { ProjectDescriptionEditor } from "@/components/ProjectDescriptionEditor";
-import { StakeholderForm } from "@/components/EntityForms";
+import { EditableField } from "@/components/ProjectDescriptionEditor";
+import { StakeholderForm, RiskForm } from "@/components/EntityForms";
 import { ActorForm } from "@/components/ActorForms";
 import { BudgetTargetsForm, BudgetLineForm, BudgetLinesTable } from "@/components/BudgetForms";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 import { computeCadrageReadiness } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
+import { Pill } from "@/components/Pill";
 
 export const dynamic = "force-dynamic";
 
@@ -37,18 +38,20 @@ export default async function CadragePage({ params }: { params: { id: string } }
   });
   if (!project) notFound();
 
-  const [stakeholders, actors, raciEntries] = await Promise.all([
+  const [stakeholders, actors, raciEntries, risks] = await Promise.all([
     prisma.stakeholder.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.actor.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.raciEntry.findMany({ where: { projectId: params.id } }),
+    prisma.risk.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "asc" } }),
   ]);
 
   const actorsById = new Map(actors.map((a) => [a.id, a.name]));
   const dependencies = findSinglePointsOfFailure(raciEntries, actorsById);
   const budget = computeBudgetSummary(project.budgetInitialEur, project.budgetReviseEur, project.budgetLines);
 
+  const filled = (v: string | null) => !!v && v.trim().length > 0;
   const readiness = computeCadrageReadiness({
-    hasObjectifs: !!project.description && project.description.trim().length > 0,
+    hasObjectifs: filled(project.description) && filled(project.objectifs) && filled(project.perimetre),
     stakeholdersCount: stakeholders.length,
     actorsCount: actors.length,
     hasBudget: budget !== null,
@@ -75,8 +78,42 @@ export default async function CadragePage({ params }: { params: { id: string } }
       </ul>
 
       <section className="mt-8">
-        <SectionTitle>Objectifs & périmètre</SectionTitle>
-        <ProjectDescriptionEditor projectId={params.id} initial={project.description || ""} />
+        <SectionTitle>Contexte & enjeux</SectionTitle>
+        <div className="grid md:grid-cols-2 gap-4">
+          <EditableField projectId={params.id} field="description" label="Contexte" placeholder="Pourquoi ce projet, dans quel contexte ?" initial={project.description || ""} />
+          <EditableField projectId={params.id} field="enjeux" label="Enjeux" placeholder="Ce qui est en jeu pour l'établissement, les équipes, les patients…" initial={project.enjeux || ""} />
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <SectionTitle>Objectifs & critères de succès</SectionTitle>
+        <div className="grid md:grid-cols-2 gap-4">
+          <EditableField projectId={params.id} field="objectifs" label="Objectifs" placeholder="Ce que le projet doit permettre d'atteindre" initial={project.objectifs || ""} />
+          <EditableField projectId={params.id} field="criteresSucces" label="Critères de succès" placeholder="Comment saura-t-on que le projet a réussi ?" initial={project.criteresSucces || ""} />
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <SectionTitle>Périmètre</SectionTitle>
+        <div className="grid md:grid-cols-2 gap-4">
+          <EditableField projectId={params.id} field="perimetre" label="Périmètre" placeholder="Ce qui est couvert par le projet" initial={project.perimetre || ""} />
+          <EditableField projectId={params.id} field="exclusions" label="Exclusions" placeholder="Ce qui est explicitement hors périmètre" initial={project.exclusions || ""} />
+        </div>
+        {project.establishments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {project.establishments.map((e) => (
+              <Pill key={e.id} text={e.establishment.name} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8 mb-4">
+        <SectionTitle>Hypothèses & contraintes</SectionTitle>
+        <div className="grid md:grid-cols-2 gap-4">
+          <EditableField projectId={params.id} field="hypotheses" label="Hypothèses" placeholder="Ce qu'on suppose vrai au démarrage" initial={project.hypotheses || ""} />
+          <EditableField projectId={params.id} field="contraintes" label="Contraintes" placeholder="Délais, budget, ressources, réglementation…" initial={project.contraintes || ""} />
+        </div>
       </section>
 
       <section className="mt-10">
@@ -146,6 +183,29 @@ export default async function CadragePage({ params }: { params: { id: string } }
               ))}
             </div>
           </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Risques initiaux</SectionTitle>
+          <Link href={`/projects/${params.id}/risks`} className="text-sm text-blue hover:underline">
+            Registre complet →
+          </Link>
+        </div>
+        <RiskForm projectId={params.id} />
+        {risks.length > 0 ? (
+          <div className="space-y-2">
+            {risks.slice(0, 5).map((r) => (
+              <div key={r.id} className="card flex items-center justify-between gap-4">
+                <span className="text-sm">{r.description}</span>
+                <Pill text={r.criticite} tone={["forte", "critique"].includes(r.criticite) ? "bad" : "neutral"} />
+              </div>
+            ))}
+            {risks.length > 5 && <div className="text-xs text-muted">+ {risks.length - 5} autre(s) — voir le registre complet</div>}
+          </div>
+        ) : (
+          <div className="card text-center text-ink/50 py-8">Aucun risque identifié à ce stade.</div>
         )}
       </section>
 

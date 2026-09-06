@@ -53,6 +53,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: {
       name: body.name,
       description: body.description,
+      enjeux: body.enjeux,
+      objectifs: body.objectifs,
+      perimetre: body.perimetre,
+      exclusions: body.exclusions,
+      hypotheses: body.hypotheses,
+      contraintes: body.contraintes,
+      criteresSucces: body.criteresSucces,
       type: body.type,
       chefDeProjet: body.chefDeProjet,
       sponsor: body.sponsor,
