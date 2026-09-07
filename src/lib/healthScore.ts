@@ -76,14 +76,14 @@ export async function computeHealthScore(projectId: string): Promise<HealthScore
   }
 
   const reasons: string[] = [];
-  if (lateActions.length > 0) reasons.push(`${lateActions.length} action(s) en retard`);
-  if (criticalOpenRisks.length > 0) reasons.push(`${criticalOpenRisks.length} risque(s) fort/critique ouvert(s)`);
+  if (lateActions.length > 0) reasons.push(`Retard sur ${lateActions.length} action(s)`);
+  if (criticalOpenRisks.length > 0) reasons.push(`Risque critique ouvert (${criticalOpenRisks.length})`);
   if (blockingInterfaces.length > 0) reasons.push(`${blockingInterfaces.length} interface(s) bloquante(s)`);
-  if (pendingDecisions.length > 0) reasons.push(`${pendingDecisions.length} décision(s) en attente`);
+  if (pendingDecisions.length > 0) reasons.push(`Décision bloquante en attente (${pendingDecisions.length})`);
   if (openCriticalAnomalies.length > 0) reasons.push(`${openCriticalAnomalies.length} anomalie(s) critique(s) non corrigée(s)`);
-  if (autonomyRate !== null) reasons.push(`autonomie utilisateurs : ${Math.round(autonomyRate * 100)} %`);
+  if (autonomyRate !== null) reasons.push(`Autonomie utilisateurs : ${Math.round(autonomyRate * 100)} %`);
   if (planningDeltaDays !== null && planningDeltaDays !== 0) {
-    reasons.push(`prévision : ${planningDeltaDays > 0 ? "+" : ""}${planningDeltaDays} jour(s) vs baseline initiale`);
+    reasons.push(planningDeltaDays > 0 ? `Retard de ${planningDeltaDays} jour(s) vs plan initial` : `Avance de ${Math.abs(planningDeltaDays)} jour(s) vs plan initial`);
   }
 
   let level: HealthLevel = "vert";

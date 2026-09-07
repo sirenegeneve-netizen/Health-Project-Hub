@@ -16,6 +16,7 @@ export interface PortfolioProject {
   priority: string;
   targetDate: string | null;
   establishments: string[];
+  chefDeProjet: string | null;
   healthLevel: HealthLevel;
   healthLabel: string;
   progress: number | null;
@@ -25,15 +26,26 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("tous");
   const [health, setHealth] = useState("tous");
+  const [sort, setSort] = useState("recent");
 
   const statuses = useMemo(() => Array.from(new Set(projects.map((p) => p.status))), [projects]);
 
-  const filtered = projects.filter((p) => {
-    if (query && !`${p.name} ${p.reference}`.toLowerCase().includes(query.toLowerCase())) return false;
-    if (status !== "tous" && p.status !== status) return false;
-    if (health !== "tous" && p.healthLevel !== health) return false;
-    return true;
-  });
+  const filtered = projects
+    .filter((p) => {
+      if (query && !`${p.name} ${p.reference} ${p.chefDeProjet || ""}`.toLowerCase().includes(query.toLowerCase())) return false;
+      if (status !== "tous" && p.status !== status) return false;
+      if (health !== "tous" && p.healthLevel !== health) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sort === "echeance") return (a.targetDate ? new Date(a.targetDate).getTime() : Infinity) - (b.targetDate ? new Date(b.targetDate).getTime() : Infinity);
+      if (sort === "nom") return a.name.localeCompare(b.name);
+      if (sort === "sante") {
+        const order = { rouge: 0, orange: 1, vert: 2 };
+        return order[a.healthLevel] - order[b.healthLevel];
+      }
+      return 0; // "recent" = ordre reçu (déjà trié par date de création)
+    });
 
   return (
     <div>
@@ -58,6 +70,12 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
           <option value="orange">À surveiller</option>
           <option value="rouge">À risque</option>
         </select>
+        <select className="input w-auto" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="recent">Plus récents</option>
+          <option value="echeance">Échéance</option>
+          <option value="nom">Nom</option>
+          <option value="sante">Santé</option>
+        </select>
       </div>
 
       <div className="space-y-2.5">
@@ -69,6 +87,7 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
                 <div className="font-display text-lg text-ink truncate">{p.name}</div>
                 <div className="text-xs text-ink/45 mt-0.5">
                   {p.reference} · {p.establishments.join(", ") || "établissement non défini"}
+                  {p.chefDeProjet && ` · ${p.chefDeProjet}`}
                 </div>
                 {p.progress !== null && (
                   <div className="mt-2 h-1.5 max-w-[220px] rounded-full bg-teal-50 overflow-hidden">
