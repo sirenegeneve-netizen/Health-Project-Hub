@@ -65,6 +65,10 @@ Les onglets de projet ne sont pas des formulaires de saisie : chacun répond à 
 | Run & Évolutions | Le projet est-il stabilisé ? Que doit-on améliorer ? |
 | Mémoire | Que s'est-il passé, et pourquoi ? |
 
+## Accompagnement
+
+L'écran répond à « les utilisateurs sont-ils prêts à utiliser la solution en autonomie lors du Go-Live ? ». Chaque population (établissement × service × métier) porte son propre indicateur de préparation, calculé sur 4 critères réels : référent nommé, au moins une session réalisée, taux de présence ≥ 80 % (calculé à partir des sessions réelles, pas d'un chiffre déclaratif), et niveau d'autonomie constaté ≥ 2. Les sessions réalisées sont tracées individuellement (date, formateur, format, inscrits/présents) plutôt que résumées en un seul total. Les indicateurs d'adoption (tickets support, taux d'usage réel…) sont libres et suivis séparément des KPI génériques du module Run.
+
 ## Conception & Préparation
 
 L'écran répond à « la solution est-elle suffisamment conçue et validée pour entrer en réalisation ? ». Il commence par les besoins exprimés, les écarts identifiés (avec options envisagées et décision retenue), les arbitrages en attente et les changements dont l'impact n'a pas été évalué — les livrables apparaissent en fin de page, comme le résultat de ce travail plutôt que le point d'entrée.

@@ -149,7 +149,7 @@ async function main() {
     data: { projectId: project.id, description: "Disponibilité du consultant interop en septembre à confirmer" },
   });
 
-  await prisma.trainingRecord.create({
+  const pop1 = await prisma.trainingRecord.create({
     data: {
       projectId: project.id,
       establishmentId: etab1.id,
@@ -159,10 +159,12 @@ async function main() {
       nbUsers: 60,
       nbFormes: 60,
       autonomyLevel: 2,
+      referent: "C. Morel",
+      referentContact: "c.morel@ch-nord.fr",
       dateFormation: new Date("2026-07-10"),
     },
   });
-  await prisma.trainingRecord.create({
+  const pop2 = await prisma.trainingRecord.create({
     data: {
       projectId: project.id,
       establishmentId: etab2.id,
@@ -174,6 +176,18 @@ async function main() {
       autonomyLevel: 1,
       dateFormation: new Date("2026-07-12"),
     },
+  });
+
+  await prisma.trainingSession.createMany({
+    data: [
+      { projectId: project.id, trainingRecordId: pop1.id, date: new Date("2026-07-08"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 62, nbPresents: 58 },
+      { projectId: project.id, trainingRecordId: pop1.id, date: new Date("2026-07-10"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 20, nbPresents: 18 },
+      { projectId: project.id, trainingRecordId: pop2.id, date: new Date("2026-07-12"), formateur: "Équipe interne", format: "distanciel", dureeHeures: 2, nbInscrits: 45, nbPresents: 32 },
+    ],
+  });
+
+  await prisma.kpi.create({
+    data: { projectId: project.id, name: "Tickets support / semaine", value: 14, unit: "tickets", target: 5, period: "Semaine post Go-Live", categorie: "adoption" },
   });
 
   await prisma.documentRef.create({

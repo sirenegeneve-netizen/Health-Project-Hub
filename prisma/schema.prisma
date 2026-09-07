@@ -103,6 +103,7 @@ model Project {
   vigilancePoints  VigilancePoint[]
   anomalies        Anomaly[]
   trainings        TrainingRecord[]
+  trainingSessions TrainingSession[]
   documents        DocumentRef[]
   timelineEvents   TimelineEvent[]
   baselines        PlanningBaseline[]
@@ -276,8 +277,27 @@ model TrainingRecord {
   nbUsers         Int            @default(0)
   nbFormes        Int            @default(0)
   autonomyLevel   Int            @default(0) // 0..4 cf. échelle §27
+  referent        String?
+  referentContact String?
   dateFormation   DateTime?
+  sessions        TrainingSession[]
   createdAt       DateTime       @default(now())
+}
+
+model TrainingSession {
+  id               String         @id @default(cuid())
+  projectId        String
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  trainingRecordId String
+  trainingRecord   TrainingRecord @relation(fields: [trainingRecordId], references: [id], onDelete: Cascade)
+  date             DateTime
+  dureeHeures      Float?
+  formateur        String?
+  format           String? // presentiel | distanciel | elearning
+  nbInscrits       Int            @default(0)
+  nbPresents       Int            @default(0)
+  notes            String?
+  createdAt        DateTime       @default(now())
 }
 
 model DocumentRef {
@@ -368,6 +388,7 @@ model Kpi {
   unit           String?
   target         Float?
   period         String?
+  categorie      String? // adoption | avancement | qualite | autre
   alertThreshold Float?
   createdAt      DateTime @default(now())
 }
