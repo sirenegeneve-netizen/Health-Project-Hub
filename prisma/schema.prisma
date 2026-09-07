@@ -23,12 +23,15 @@ model Group {
 }
 
 model Establishment {
-  id       String                 @id @default(cuid())
-  name     String
-  groupId  String
-  group    Group                  @relation(fields: [groupId], references: [id])
-  projects ProjectEstablishment[]
-  trainings TrainingRecord[]
+  id           String                 @id @default(cuid())
+  name         String
+  groupId      String
+  group        Group                  @relation(fields: [groupId], references: [id])
+  type         String? // hopital | clinique | ehpad | cabinet | ght | autre
+  localisation String?
+  projects     ProjectEstablishment[]
+  trainings    TrainingRecord[]
+  createdAt    DateTime               @default(now())
 }
 
 model Actor {

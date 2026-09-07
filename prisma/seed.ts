@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 async function main() {
   const group = await prisma.group.create({ data: { name: "GHT Exemple" } });
 
-  const etab1 = await prisma.establishment.create({ data: { name: "CH Nord", groupId: group.id } });
-  const etab2 = await prisma.establishment.create({ data: { name: "CH Sud", groupId: group.id } });
+  const etab1 = await prisma.establishment.create({ data: { name: "CH Nord", groupId: group.id, type: "hopital", localisation: "Lille" } });
+  const etab2 = await prisma.establishment.create({ data: { name: "CH Sud", groupId: group.id, type: "hopital", localisation: "Marseille" } });
 
   const project = await prisma.project.create({
     data: {
