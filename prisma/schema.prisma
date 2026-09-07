@@ -114,6 +114,8 @@ model Project {
   changeRequests   ChangeRequest[]
   actors           Actor[]
   raciEntries      RaciEntry[]
+  requirements     Requirement[]
+  gaps             Gap[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -390,4 +392,31 @@ model ChangeRequest {
   decideur            String?
   dateDecision        DateTime?
   createdAt           DateTime  @default(now())
+}
+
+model Requirement {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  titre       String
+  description String?
+  origine     String? // atelier_metier | reglementaire | technique | utilisateur | autre
+  priorite    String   @default("normale") // basse | normale | haute
+  statut      String   @default("a_analyser") // a_analyser | retenu | rejete | en_attente_arbitrage
+  gaps        Gap[]
+  createdAt   DateTime @default(now())
+}
+
+model Gap {
+  id                  String       @id @default(cuid())
+  projectId           String
+  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirementId       String?
+  requirement         Requirement? @relation(fields: [requirementId], references: [id])
+  description         String
+  optionsEnvisagees   String?
+  decisionRetenue     String?
+  impact              String?
+  statut              String       @default("identifie") // identifie | arbitre | resolu
+  createdAt           DateTime     @default(now())
 }

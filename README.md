@@ -65,6 +65,10 @@ Les onglets de projet ne sont pas des formulaires de saisie : chacun répond à 
 | Run & Évolutions | Le projet est-il stabilisé ? Que doit-on améliorer ? |
 | Mémoire | Que s'est-il passé, et pourquoi ? |
 
+## Conception & Préparation
+
+L'écran répond à « la solution est-elle suffisamment conçue et validée pour entrer en réalisation ? ». Il commence par les besoins exprimés, les écarts identifiés (avec options envisagées et décision retenue), les arbitrages en attente et les changements dont l'impact n'a pas été évalué — les livrables apparaissent en fin de page, comme le résultat de ce travail plutôt que le point d'entrée.
+
 ## Gouvernance & RACI
 
 La matrice RACI est l'écran principal du module — pas une conséquence d'une liste d'acteurs. Les lignes suivent une trame standard de gouvernance projet SI santé (Gouvernance, Analyse, Réalisation, Validation, Déploiement, Run), visibles dès l'ouverture même avant toute saisie, complétée par des activités personnalisées si besoin. Cliquer sur une cellule fait cycler le rôle R → A → C → I → vide, avec un code couleur immédiat. Le système signale automatiquement : activité sans responsable (R), sans décisionnaire (A), plusieurs décisionnaires, ou rôles en doublon pour un même acteur. La gestion des acteurs (fiche, disponibilité) reste accessible dans un panneau secondaire repliable, en dessous de la matrice.

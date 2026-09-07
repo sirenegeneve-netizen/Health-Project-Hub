@@ -263,6 +263,38 @@ async function main() {
     ],
   });
 
+  const reqLabo = await prisma.requirement.create({
+    data: {
+      projectId: project.id,
+      titre: "Envoi automatique des résultats critiques aux urgences",
+      description: "Les résultats de biologie critiques doivent générer une alerte visible côté urgences.",
+      origine: "atelier_metier",
+      priorite: "haute",
+      statut: "retenu",
+    },
+  });
+  await prisma.requirement.create({
+    data: {
+      projectId: project.id,
+      titre: "Archivage des comptes rendus au format PDF/A",
+      origine: "reglementaire",
+      priorite: "normale",
+      statut: "en_attente_arbitrage",
+    },
+  });
+
+  await prisma.gap.create({
+    data: {
+      projectId: project.id,
+      requirementId: reqLabo.id,
+      description: "Le SIL ne supporte pas nativement les alertes temps réel demandées",
+      optionsEnvisagees: "Développement spécifique éditeur / Contournement par polling toutes les 2 min / Report en V2",
+      decisionRetenue: "Contournement par polling en attendant la V2 de l'éditeur",
+      impact: "Délai d'alerte de 2 minutes au lieu du temps réel",
+      statut: "arbitre",
+    },
+  });
+
   console.log("Seed terminé. Projet créé :", project.id);
   console.log("Risque lié à l'interface bloquante :", risk.id);
 }
