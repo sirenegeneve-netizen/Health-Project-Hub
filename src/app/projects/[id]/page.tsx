@@ -45,9 +45,9 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
 
   const alerts: string[] = [];
   if (budget && budget.consumptionRate >= 90) alerts.push(`Budget proche du seuil (${budget.consumptionRate}% consommé)`);
-  if (lateActions.length > 0) alerts.push(`${lateActions.length} action(s) en retard`);
-  if (criticalRisks.length > 0) alerts.push(`${criticalRisks.length} risque(s) critique(s) non traité(s)`);
-  if (blockingInterfaces.length > 0) alerts.push(`${blockingInterfaces.length} interface(s) bloquante(s)`);
+  if (lateActions.length > 0) alerts.push(`Retard sur ${lateActions.length} action(s)`);
+  if (criticalRisks.length > 0) alerts.push(`Risque critique ouvert (${criticalRisks.length})`);
+  if (blockingInterfaces.length > 0) alerts.push(`Interface bloquante (${blockingInterfaces.length})`);
 
   return (
     <div>

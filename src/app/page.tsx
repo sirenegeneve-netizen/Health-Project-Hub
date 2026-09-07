@@ -30,13 +30,39 @@ export default async function HomePage() {
     take: 6,
   });
 
+  const now = new Date();
+  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const [pendingDecisions, dueSoonActions, imminentDeliverables] = await Promise.all([
+    prisma.decision.findMany({ where: { status: { not: "decision_prise" } }, include: { project: true }, orderBy: { createdAt: "desc" } }),
+    prisma.action.findMany({
+      where: { echeance: { gte: now, lte: in7Days }, status: { notIn: ["termine", "abandonne"] } },
+      include: { project: true },
+      orderBy: { echeance: "asc" },
+    }),
+    prisma.deliverable.findMany({
+      where: { datePrevue: { gte: now, lte: in14Days }, status: { not: "valide" } },
+      include: { project: true },
+      orderBy: { datePrevue: "asc" },
+    }),
+  ]);
+
+  const priorities = [
+    ...pendingDecisions.map((d) => ({ label: d.subject, projectName: d.project.name, projectId: d.projectId, kind: "Décision à trancher", date: null as string | null })),
+    ...dueSoonActions.map((a) => ({ label: a.title, projectName: a.project.name, projectId: a.projectId, kind: "Action due", date: a.echeance!.toISOString() })),
+    ...imminentDeliverables.map((d) => ({ label: d.name, projectName: d.project.name, projectId: d.projectId, kind: "Livrable attendu", date: d.datePrevue!.toISOString() })),
+  ]
+    .sort((a, b) => (a.date ? new Date(a.date).getTime() : 0) - (b.date ? new Date(b.date).getTime() : 0))
+    .slice(0, 8);
+
   // Alertes portefeuille : agrégées à partir des vraies raisons calculées par projet.
   const alerts = projects
     .map((p, i) => ({ project: p, score: scores[i] }))
     .filter(({ score }) => score.level !== "vert")
     .flatMap(({ project, score }) =>
       score.reasons
-        .filter((r) => !r.startsWith("autonomie") && !r.startsWith("aucun"))
+        .filter((r) => !r.toLowerCase().startsWith("autonomie") && !r.toLowerCase().startsWith("aucun"))
         .map((reason) => ({ project, reason, level: score.level }))
     )
     .slice(0, 6);
@@ -50,6 +76,7 @@ export default async function HomePage() {
     priority: p.priority,
     targetDate: p.targetDate ? p.targetDate.toISOString() : null,
     establishments: p.establishments.map((e) => e.establishment.name),
+    chefDeProjet: p.chefDeProjet,
     healthLevel: scores[i].level,
     healthLabel: scores[i].label,
     progress: p.actions.length > 0 ? Math.round((p.actions.filter((a) => a.status === "termine").length / p.actions.length) * 100) : null,
@@ -79,11 +106,11 @@ export default async function HomePage() {
         </div>
       )}
 
-      {(alerts.length > 0 || recentEvents.length > 0) && (
-        <div className="grid md:grid-cols-2 gap-4">
+      {(alerts.length > 0 || priorities.length > 0 || recentEvents.length > 0) && (
+        <div className="grid md:grid-cols-3 gap-4">
           {alerts.length > 0 && (
             <div className="card">
-              <div className="font-medium text-sm mb-3">Alertes prioritaires</div>
+              <div className="font-medium text-sm mb-3">Santé du portefeuille</div>
               <ul className="space-y-3">
                 {alerts.map((a, i) => {
                   const severity = severityFor(a.reason, a.level);
@@ -99,6 +126,29 @@ export default async function HomePage() {
                     </li>
                   );
                 })}
+              </ul>
+            </div>
+          )}
+          {priorities.length > 0 && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-medium text-sm">Priorités du jour</div>
+                <Link href="/me" className="text-xs text-blue hover:underline">
+                  Mon activité →
+                </Link>
+              </div>
+              <ul className="space-y-3">
+                {priorities.map((p, i) => (
+                  <li key={i} className="text-sm">
+                    <Link href={`/projects/${p.projectId}`} className="text-blue hover:underline">
+                      {p.projectName}
+                    </Link>
+                    <div className="text-ink/60 flex items-center justify-between gap-2">
+                      <span>{p.label}</span>
+                      <span className="text-xs text-muted shrink-0">{p.date ? new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : p.kind}</span>
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
           )}
@@ -133,11 +183,12 @@ export default async function HomePage() {
 }
 
 function severityFor(reason: string, level: "vert" | "orange" | "rouge") {
-  if (level === "rouge" && (reason.includes("bloquante") || reason.includes("critique"))) {
+  const r = reason.toLowerCase();
+  if (level === "rouge" && (r.includes("bloquante") || r.includes("critique"))) {
     return { label: "Critique", cls: "bg-bad/10 text-bad" };
   }
-  if (reason.includes("retard")) return { label: "Haute", cls: "bg-warn/10 text-warn" };
-  if (reason.includes("décision")) return { label: "Moyenne", cls: "bg-ink/5 text-ink/70" };
+  if (r.includes("retard")) return { label: "Haute", cls: "bg-warn/10 text-warn" };
+  if (r.includes("décision")) return { label: "Moyenne", cls: "bg-ink/5 text-ink/70" };
   return { label: "Info", cls: "bg-info-50 text-info" };
 }
 
