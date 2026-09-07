@@ -305,9 +305,19 @@ export function MeetingForm({ projectId }: { projectId: string }) {
 
 export function TrainingForm({ projectId, establishments }: { projectId: string; establishments: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ establishmentId: "", service: "", metier: "", profil: "", nbUsers: "", nbFormes: "", autonomyLevel: "0" });
+  const [f, setF] = useState({
+    establishmentId: "",
+    service: "",
+    metier: "",
+    profil: "",
+    nbUsers: "",
+    nbFormes: "",
+    autonomyLevel: "0",
+    referent: "",
+    referentContact: "",
+  });
   return (
-    <Toggle label="+ Suivi formation">
+    <Toggle label="+ Nouvelle population">
       {(close) => (
         <>
           <div className="grid grid-cols-2 gap-3">
@@ -321,18 +331,31 @@ export function TrainingForm({ projectId, establishments }: { projectId: string;
                 ))}
               </select>
             </Field>
-            <Field label="Profil / métier">
-              <input className={inputCls} value={f.profil} onChange={(e) => setF({ ...f, profil: e.target.value })} />
+            <Field label="Service">
+              <input className={inputCls} value={f.service} onChange={(e) => setF({ ...f, service: e.target.value })} />
             </Field>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Utilisateurs concernés">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Métier / profil">
+              <input className={inputCls} value={f.profil} onChange={(e) => setF({ ...f, profil: e.target.value })} />
+            </Field>
+            <Field label="Utilisateurs concernés (population cible)">
               <input type="number" className={inputCls} value={f.nbUsers} onChange={(e) => setF({ ...f, nbUsers: e.target.value })} />
             </Field>
-            <Field label="Formés">
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Référent">
+              <input className={inputCls} value={f.referent} onChange={(e) => setF({ ...f, referent: e.target.value })} />
+            </Field>
+            <Field label="Contact référent">
+              <input className={inputCls} value={f.referentContact} onChange={(e) => setF({ ...f, referentContact: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Formés à date">
               <input type="number" className={inputCls} value={f.nbFormes} onChange={(e) => setF({ ...f, nbFormes: e.target.value })} />
             </Field>
-            <Field label="Niveau d'autonomie">
+            <Field label="Niveau d'autonomie constaté">
               <select className={inputCls} value={f.autonomyLevel} onChange={(e) => setF({ ...f, autonomyLevel: e.target.value })}>
                 <option value="0">0 — Non formé</option>
                 <option value="1">1 — Formé mais accompagné</option>
@@ -582,7 +605,7 @@ export function StakeholderForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function KpiForm({ projectId }: { projectId: string }) {
+export function KpiForm({ projectId, defaultCategorie }: { projectId: string; defaultCategorie?: string }) {
   const router = useRouter();
   const [f, setF] = useState({ name: "", value: "", unit: "", target: "", period: "" });
   return (
@@ -611,7 +634,7 @@ export function KpiForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.name || !f.value) return;
-                await post("/api/kpis", { projectId, ...f });
+                await post("/api/kpis", { projectId, categorie: defaultCategorie, ...f });
                 close();
                 router.refresh();
               }}
@@ -805,6 +828,83 @@ export function GapForm({ projectId }: { projectId: string }) {
               }}
             >
               Ajouter
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
+
+export function TrainingSessionForm({ projectId, populations }: { projectId: string; populations: { id: string; label: string }[] }) {
+  const router = useRouter();
+  const [f, setF] = useState({
+    trainingRecordId: populations[0]?.id || "",
+    date: "",
+    dureeHeures: "",
+    formateur: "",
+    format: "presentiel",
+    nbInscrits: "",
+    nbPresents: "",
+  });
+
+  if (populations.length === 0) return null;
+
+  return (
+    <Toggle label="+ Session réalisée">
+      {(close) => (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Population">
+              <select className={inputCls} value={f.trainingRecordId} onChange={(e) => setF({ ...f, trainingRecordId: e.target.value })}>
+                {populations.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Date">
+              <input type="date" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Formateur">
+              <input className={inputCls} value={f.formateur} onChange={(e) => setF({ ...f, formateur: e.target.value })} />
+            </Field>
+            <Field label="Format">
+              <select className={inputCls} value={f.format} onChange={(e) => setF({ ...f, format: e.target.value })}>
+                <option value="presentiel">Présentiel</option>
+                <option value="distanciel">Distanciel</option>
+                <option value="elearning">E-learning</option>
+              </select>
+            </Field>
+            <Field label="Durée (h)">
+              <input type="number" className={inputCls} value={f.dureeHeures} onChange={(e) => setF({ ...f, dureeHeures: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Inscrits">
+              <input type="number" className={inputCls} value={f.nbInscrits} onChange={(e) => setF({ ...f, nbInscrits: e.target.value })} />
+            </Field>
+            <Field label="Présents">
+              <input type="number" className={inputCls} value={f.nbPresents} onChange={(e) => setF({ ...f, nbPresents: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.date || !f.trainingRecordId) return;
+                await post("/api/training-sessions", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Enregistrer
             </button>
             <button className="btn-secondary" onClick={close}>
               Annuler

@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
       nbUsers: Number(body.nbUsers) || 0,
       nbFormes: Number(body.nbFormes) || 0,
       autonomyLevel: Number(body.autonomyLevel) || 0,
+      referent: body.referent || null,
+      referentContact: body.referentContact || null,
       dateFormation: body.dateFormation ? new Date(body.dateFormation) : null,
     },
   });

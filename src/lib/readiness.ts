@@ -113,6 +113,50 @@ export function computeConceptionReadiness(inputs: {
   return { level, label, reasons: reasons.length ? reasons : ["besoins traités, écarts résolus, décisions et validations à jour"] };
 }
 
+export interface PopulationReadiness extends Readiness {
+  populationId: string;
+  presenceRate: number | null;
+}
+
+// Accompagnement, par population — référent nommé, au moins une session réalisée,
+// taux de présence ≥ 80 %, autonomie constatée ≥ 2.
+export function computePopulationReadiness(
+  population: { id: string; referent: string | null; autonomyLevel: number },
+  sessions: { nbInscrits: number; nbPresents: number }[]
+): PopulationReadiness {
+  const totalInscrits = sessions.reduce((s, ses) => s + ses.nbInscrits, 0);
+  const totalPresents = sessions.reduce((s, ses) => s + ses.nbPresents, 0);
+  const presenceRate = totalInscrits > 0 ? totalPresents / totalInscrits : null;
+
+  const checks: [boolean, string][] = [
+    [!!population.referent, "aucun référent nommé"],
+    [sessions.length > 0, "aucune session réalisée"],
+    [presenceRate === null || presenceRate >= 0.8, presenceRate !== null ? `taux de présence à ${Math.round(presenceRate * 100)}%` : "taux de présence non mesurable"],
+    [population.autonomyLevel >= 2, "autonomie constatée insuffisante"],
+  ];
+  const passed = checks.filter(([ok]) => ok).length;
+  const level = levelFromScore(passed, checks.length);
+  const label = level === "vert" ? "Prête" : level === "orange" ? "En préparation" : "Non prête";
+  const reasons = checks.filter(([ok]) => !ok).map(([, r]) => r);
+  return { populationId: population.id, level, label, reasons, presenceRate };
+}
+
+// Agrégat projet — « les utilisateurs sont-ils prêts à utiliser la solution en autonomie lors du Go-Live ? »
+export function computeAccompagnementReadiness(populationReadiness: Readiness[]): Readiness {
+  if (populationReadiness.length === 0) {
+    return { level: "rouge", label: "Aucune population définie", reasons: ["aucun établissement, service ou métier renseigné"] };
+  }
+  const readyCount = populationReadiness.filter((p) => p.level === "vert").length;
+  const level = levelFromScore(readyCount, populationReadiness.length);
+  const label = level === "vert" ? "Utilisateurs prêts" : level === "orange" ? "Préparation en cours" : "Préparation insuffisante";
+  const notReady = populationReadiness.length - readyCount;
+  return {
+    level,
+    label,
+    reasons: notReady > 0 ? [`${notReady}/${populationReadiness.length} population(s) pas encore prête(s)`] : ["toutes les populations sont prêtes"],
+  };
+}
+
 // Évolutions — « Que doit-on améliorer ? » (lecture du backlog non trié plutôt qu'un indicateur de santé)
 export function computeBacklogTriage(untriagedCount: number): Readiness {
   let level: HealthLevel = "vert";

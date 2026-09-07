@@ -9,6 +9,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       nbUsers: body.nbUsers !== undefined ? Number(body.nbUsers) : undefined,
       nbFormes: body.nbFormes !== undefined ? Number(body.nbFormes) : undefined,
       autonomyLevel: body.autonomyLevel !== undefined ? Number(body.autonomyLevel) : undefined,
+      referent: body.referent ?? undefined,
+      referentContact: body.referentContact ?? undefined,
     },
   });
   return NextResponse.json(training);

@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       unit: body.unit || null,
       target: body.target ? Number(body.target) : null,
       period: body.period || null,
+      categorie: body.categorie || null,
       alertThreshold: body.alertThreshold ? Number(body.alertThreshold) : null,
     },
   });
