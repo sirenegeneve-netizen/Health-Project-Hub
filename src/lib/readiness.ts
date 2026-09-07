@@ -91,6 +91,28 @@ export function computeStabilityReadiness(inputs: { blockingInterfaces: number; 
   return { level, label, reasons: reasons.length ? reasons : ["aucun signal d'instabilité"] };
 }
 
+// Conception — « La solution est-elle suffisamment conçue et validée pour entrer en réalisation ? »
+export function computeConceptionReadiness(inputs: {
+  openRequirements: number;
+  unresolvedGaps: number;
+  pendingDecisions: number;
+  unvalidatedDeliverables: number;
+  changesWithoutImpact: number;
+}): Readiness {
+  const checks: [boolean, string][] = [
+    [inputs.openRequirements === 0, `${inputs.openRequirements} besoin(s) non traité(s)`],
+    [inputs.unresolvedGaps === 0, `${inputs.unresolvedGaps} écart(s) non résolu(s)`],
+    [inputs.pendingDecisions === 0, `${inputs.pendingDecisions} arbitrage(s) en attente`],
+    [inputs.unvalidatedDeliverables === 0, `${inputs.unvalidatedDeliverables} livrable(s) non validé(s)`],
+    [inputs.changesWithoutImpact === 0, `${inputs.changesWithoutImpact} changement(s) accepté(s) sans impact évalué`],
+  ];
+  const passed = checks.filter(([ok]) => ok).length;
+  const level = levelFromScore(passed, checks.length);
+  const label = level === "vert" ? "Prêt pour la réalisation" : level === "orange" ? "Conception en cours" : "Zones d'incertitude importantes";
+  const reasons = checks.filter(([ok]) => !ok).map(([, r]) => r);
+  return { level, label, reasons: reasons.length ? reasons : ["besoins traités, écarts résolus, décisions et validations à jour"] };
+}
+
 // Évolutions — « Que doit-on améliorer ? » (lecture du backlog non trié plutôt qu'un indicateur de santé)
 export function computeBacklogTriage(untriagedCount: number): Readiness {
   let level: HealthLevel = "vert";

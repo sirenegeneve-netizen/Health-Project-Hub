@@ -719,3 +719,99 @@ export function ChangeForm({ projectId }: { projectId: string }) {
     </Toggle>
   );
 }
+
+export function RequirementForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ titre: "", description: "", origine: "atelier_metier", priorite: "normale" });
+  return (
+    <Toggle label="+ Nouveau besoin">
+      {(close) => (
+        <>
+          <Field label="Intitulé du besoin">
+            <input className={inputCls} value={f.titre} onChange={(e) => setF({ ...f, titre: e.target.value })} />
+          </Field>
+          <Field label="Description">
+            <textarea className={inputCls} rows={2} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Origine">
+              <select className={inputCls} value={f.origine} onChange={(e) => setF({ ...f, origine: e.target.value })}>
+                <option value="atelier_metier">Atelier métier</option>
+                <option value="reglementaire">Réglementaire</option>
+                <option value="technique">Technique</option>
+                <option value="utilisateur">Utilisateur</option>
+                <option value="autre">Autre</option>
+              </select>
+            </Field>
+            <Field label="Priorité">
+              <select className={inputCls} value={f.priorite} onChange={(e) => setF({ ...f, priorite: e.target.value })}>
+                <option value="basse">Basse</option>
+                <option value="normale">Normale</option>
+                <option value="haute">Haute</option>
+              </select>
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.titre) return;
+                await post("/api/requirements", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Ajouter
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
+
+export function GapForm({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ description: "", optionsEnvisagees: "", decisionRetenue: "", impact: "" });
+  return (
+    <Toggle label="+ Nouvel écart">
+      {(close) => (
+        <>
+          <Field label="Écart constaté">
+            <input className={inputCls} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+          </Field>
+          <Field label="Options envisagées">
+            <textarea className={inputCls} rows={2} value={f.optionsEnvisagees} onChange={(e) => setF({ ...f, optionsEnvisagees: e.target.value })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Décision retenue (si arbitré)">
+              <input className={inputCls} value={f.decisionRetenue} onChange={(e) => setF({ ...f, decisionRetenue: e.target.value })} />
+            </Field>
+            <Field label="Impact">
+              <input className={inputCls} value={f.impact} onChange={(e) => setF({ ...f, impact: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.description) return;
+                await post("/api/gaps", { projectId, ...f });
+                close();
+                router.refresh();
+              }}
+            >
+              Ajouter
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
