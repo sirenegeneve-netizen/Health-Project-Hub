@@ -2,10 +2,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
+import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
+import { computeDimensionColors } from "@/lib/portfolioHealth";
+import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
 import { PortfolioList } from "@/components/PortfolioList";
+import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { IconBadge } from "@/components/IconBadge";
 import { getScope, projectScopeWhere } from "@/lib/scope";
-import { Briefcase, TriangleAlert, Clock, Euro } from "lucide-react";
+import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +18,16 @@ export default async function HomePage() {
 
   const projects = await prisma.project.findMany({
     where: projectScopeWhere(scope),
-    include: { establishments: { include: { establishment: true } }, budgetLines: true, actions: true },
+    include: {
+      establishments: { include: { establishment: true } },
+      budgetLines: true,
+      actions: true,
+      risks: true,
+      interfaces: true,
+      deliverables: true,
+      actors: true,
+      raciEntries: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -23,10 +36,18 @@ export default async function HomePage() {
   const atRisk = scores.filter((s) => s.level === "rouge").length;
   const enCours = projects.filter((p) => p.status === "actif").length;
   const lateActionsTotal = scores.reduce((s, sc) => s + sc.metrics.lateActions, 0);
+  const blockedCount = scores.filter((s) => s.metrics.blockingInterfaces > 0).length;
 
-  const budgetSummaries = projects.map((p) => computeBudgetSummary(p.budgetInitialEur, p.budgetReviseEur, p.budgetLines)).filter((b) => b !== null);
-  const totalBudget = budgetSummaries.reduce((s, b) => s + b!.budget, 0);
-  const totalReel = budgetSummaries.reduce((s, b) => s + b!.reel, 0);
+  const budgetSummaries = projects.map((p) => computeBudgetSummary(p.budgetInitialEur, p.budgetReviseEur, p.budgetLines));
+  const totalBudget = budgetSummaries.reduce((s, b) => s + (b?.budget ?? 0), 0);
+  const totalReel = budgetSummaries.reduce((s, b) => s + (b?.reel ?? 0), 0);
+
+  // Dépendances critiques : activités RACI portées par un seul acteur ("R"),
+  // agrégées sur tout le périmètre — cf. §11/§F du diagnostic.
+  const criticalDependencies = projects.reduce((sum, p) => {
+    const actorsById = new Map(p.actors.map((a) => [a.id, a.name]));
+    return sum + findSinglePointsOfFailure(p.raciEntries, actorsById).length;
+  }, 0);
 
   const scopedProject = scope.establishmentId ? { establishments: { some: { establishmentId: scope.establishmentId } } } : undefined;
 
@@ -101,6 +122,44 @@ export default async function HomePage() {
     progress: p.actions.length > 0 ? Math.round((p.actions.filter((a) => a.status === "termine").length / p.actions.length) * 100) : null,
   }));
 
+  const healthRows: HealthRow[] = projects.map((p, i) => {
+    const dims = computeDimensionColors(
+      scores[i],
+      budgetSummaries[i],
+      p.actors,
+      { actions: p.actions, risks: p.risks, interfaces: p.interfaces, deliverables: p.deliverables },
+      p.raciEntries
+    );
+    return {
+      id: p.id,
+      name: p.name,
+      progress: portfolioProjects[i].progress,
+      ...dims,
+      sante: scores[i].level,
+      santeLabel: scores[i].label,
+    };
+  });
+
+  const resourceConflicts = detectResourceConflicts(
+    projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      actors: p.actors,
+      workloadInputs: { actions: p.actions, risks: p.risks, interfaces: p.interfaces, deliverables: p.deliverables },
+      raciEntries: p.raciEntries,
+    }))
+  );
+  const scheduleConflicts = detectScheduleConflicts(
+    projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      targetDate: p.targetDate,
+      establishments: p.establishments.map((e) => e.establishment),
+    }))
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex items-end justify-between gap-6 flex-wrap">
@@ -121,18 +180,24 @@ export default async function HomePage() {
           <StatCard label="Projets" value={String(projects.length)} icon={Briefcase} color="primary" />
           <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" />
           {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" />}
+          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" />}
           {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" />}
-          {budgetSummaries.length > 0 && (
+          {criticalDependencies > 0 && (
+            <StatCard label="Dépendances critiques" value={String(criticalDependencies)} icon={GitFork} color="purple" />
+          )}
+          {totalBudget > 0 && (
             <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={Euro} color="neutral" />
           )}
         </div>
       )}
 
+      {healthRows.length > 0 && <PortfolioHealthTable rows={healthRows} />}
+
       {(alerts.length > 0 || priorities.length > 0 || recentEvents.length > 0) && (
         <div className="grid md:grid-cols-3 gap-4">
           {alerts.length > 0 && (
             <div className="card">
-              <div className="font-medium text-sm mb-3">Santé du portefeuille</div>
+              <div className="font-medium text-sm mb-3">Alertes</div>
               <ul className="space-y-3">
                 {alerts.map((a, i) => {
                   const severity = severityFor(a.reason, a.level);
@@ -187,6 +252,62 @@ export default async function HomePage() {
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {(resourceConflicts.length > 0 || scheduleConflicts.length > 0) && (
+        <div className="card">
+          <div className="flex items-center gap-2 mb-1">
+            <IconBadge color="orange" icon={Users} />
+            <div className="font-medium text-sm">Conflits interprojets</div>
+          </div>
+          <p className="text-xs text-ink/40 mb-4">
+            Détection par rapprochement de nom — indicative tant que les ressources ne sont pas rattachées au groupe (Phase 4).
+          </p>
+          <div className="grid md:grid-cols-2 gap-6">
+            {resourceConflicts.length > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wide text-ink/40 font-medium mb-2">Ressources partagées en tension</div>
+                <ul className="space-y-3">
+                  {resourceConflicts.map((c, i) => (
+                    <li key={i} className="text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${c.level === "rouge" ? "bg-bad" : "bg-warn"}`} />
+                        <span className="font-medium text-ink">{c.name}</span>
+                        <span className="text-ink/40 text-xs">{c.combinedWorkload} objets ouverts cumulés</span>
+                      </div>
+                      <div className="text-ink/60 text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1 pl-4">
+                        {c.projects.map((p) => (
+                          <Link key={p.id} href={`/projects/${p.id}`} className="hover:underline hover:text-primary">
+                            {p.name} ({p.workload})
+                          </Link>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {scheduleConflicts.length > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wide text-ink/40 font-medium mb-2">Échéances concentrées</div>
+                <ul className="space-y-3">
+                  {scheduleConflicts.map((c, i) => (
+                    <li key={i} className="text-sm">
+                      <div className="font-medium text-ink">{c.establishmentName}</div>
+                      <div className="text-ink/60 text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                        {c.projects.map((p) => (
+                          <Link key={p.id} href={`/projects/${p.id}`} className="hover:underline hover:text-primary">
+                            {p.name} — {new Date(p.targetDate).toLocaleDateString("fr-FR")}
+                          </Link>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
