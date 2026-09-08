@@ -4,12 +4,16 @@ import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { PortfolioList } from "@/components/PortfolioList";
 import { IconBadge } from "@/components/IconBadge";
+import { getScope, projectScopeWhere } from "@/lib/scope";
 import { Briefcase, TriangleAlert, Clock, Euro } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const scope = await getScope();
+
   const projects = await prisma.project.findMany({
+    where: projectScopeWhere(scope),
     include: { establishments: { include: { establishment: true } }, budgetLines: true, actions: true },
     orderBy: { createdAt: "desc" },
   });
@@ -24,7 +28,10 @@ export default async function HomePage() {
   const totalBudget = budgetSummaries.reduce((s, b) => s + b!.budget, 0);
   const totalReel = budgetSummaries.reduce((s, b) => s + b!.reel, 0);
 
+  const scopedProject = scope.establishmentId ? { establishments: { some: { establishmentId: scope.establishmentId } } } : undefined;
+
   const recentEvents = await prisma.timelineEvent.findMany({
+    where: scopedProject ? { project: scopedProject } : undefined,
     include: { project: true },
     orderBy: { date: "desc" },
     take: 6,
@@ -35,14 +42,26 @@ export default async function HomePage() {
   const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
   const [pendingDecisions, dueSoonActions, imminentDeliverables] = await Promise.all([
-    prisma.decision.findMany({ where: { status: { not: "decision_prise" } }, include: { project: true }, orderBy: { createdAt: "desc" } }),
+    prisma.decision.findMany({
+      where: { status: { not: "decision_prise" }, ...(scopedProject ? { project: scopedProject } : {}) },
+      include: { project: true },
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.action.findMany({
-      where: { echeance: { gte: now, lte: in7Days }, status: { notIn: ["termine", "abandonne"] } },
+      where: {
+        echeance: { gte: now, lte: in7Days },
+        status: { notIn: ["termine", "abandonne"] },
+        ...(scopedProject ? { project: scopedProject } : {}),
+      },
       include: { project: true },
       orderBy: { echeance: "asc" },
     }),
     prisma.deliverable.findMany({
-      where: { datePrevue: { gte: now, lte: in14Days }, status: { not: "valide" } },
+      where: {
+        datePrevue: { gte: now, lte: in14Days },
+        status: { not: "valide" },
+        ...(scopedProject ? { project: scopedProject } : {}),
+      },
       include: { project: true },
       orderBy: { datePrevue: "asc" },
     }),
@@ -88,6 +107,9 @@ export default async function HomePage() {
         <div>
           <div className="label mb-2">Portefeuille</div>
           <h1 className="font-display text-4xl text-ink leading-tight">Vue d'ensemble</h1>
+          {scope.establishmentName && (
+            <p className="text-sm text-muted mt-1">Filtré sur {scope.establishmentName}</p>
+          )}
         </div>
         <Link href="/projects/new" className="btn">
           + Nouveau projet
