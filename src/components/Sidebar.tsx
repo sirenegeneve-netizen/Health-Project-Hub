@@ -3,25 +3,77 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutGrid, CalendarDays, CheckSquare, ShieldAlert, Users, GanttChartSquare, Calendar, Building2, BarChart3, UserCircle, Search, Plus } from "lucide-react";
+import {
+  LayoutGrid,
+  FolderKanban,
+  CalendarDays,
+  CheckSquare,
+  ShieldAlert,
+  Users,
+  Route,
+  Calendar,
+  Building2,
+  BarChart3,
+  UserCircle,
+  Search,
+  Plus,
+  Settings,
+} from "lucide-react";
 
-const NAV = [
-  { href: "/", label: "Portefeuille", Icon: LayoutGrid },
-  { href: "/roadmap", label: "Roadmap", Icon: GanttChartSquare },
-  { href: "/calendar", label: "Calendrier", Icon: Calendar },
-  { href: "/meetings", label: "Réunions", Icon: CalendarDays },
-  { href: "/actions", label: "Actions", Icon: CheckSquare },
-  { href: "/risks", label: "Risques", Icon: ShieldAlert },
-  { href: "/resources", label: "Ressources", Icon: Users },
-  { href: "/establishments", label: "Établissements", Icon: Building2 },
-  { href: "/reports", label: "Rapports", Icon: BarChart3 },
+interface NavItem {
+  href: string;
+  label: string;
+  Icon: typeof LayoutGrid;
+}
+
+// Navigation regroupée par intention plutôt qu'en liste plate : Pilotage (vue
+// synthétique), Planification (dans le temps), Exécution (le quotidien),
+// Périmètre (l'organisation), Analyse (regard en arrière / reporting).
+const SECTIONS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Pilotage",
+    items: [
+      { href: "/", label: "Portefeuille", Icon: LayoutGrid },
+      { href: "/projects", label: "Projets", Icon: FolderKanban },
+    ],
+  },
+  {
+    title: "Planification",
+    items: [
+      { href: "/roadmap", label: "Roadmap", Icon: Route },
+      { href: "/calendar", label: "Calendrier", Icon: Calendar },
+      { href: "/resources", label: "Ressources & charge", Icon: Users },
+    ],
+  },
+  {
+    title: "Exécution",
+    items: [
+      { href: "/actions", label: "Actions", Icon: CheckSquare },
+      { href: "/meetings", label: "Réunions", Icon: CalendarDays },
+      { href: "/risks", label: "Risques", Icon: ShieldAlert },
+    ],
+  },
+  {
+    title: "Périmètre",
+    items: [{ href: "/establishments", label: "Établissements", Icon: Building2 }],
+  },
+  {
+    title: "Analyse",
+    items: [{ href: "/reports", label: "Reporting", Icon: BarChart3 }],
+  },
+];
+
+const FOOTER_NAV: NavItem[] = [
   { href: "/me", label: "Mon activité", Icon: UserCircle },
+  { href: "/settings", label: "Paramètres", Icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [q, setQ] = useState("");
+
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <div
@@ -57,9 +109,39 @@ export function Sidebar() {
         </div>
       </form>
 
-      <nav className="flex-1 px-3 space-y-0.5 relative z-10">
-        {NAV.map(({ href, label, Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+      <nav className="flex-1 px-3 space-y-4 relative z-10 overflow-y-auto pb-2">
+        {SECTIONS.map((section) => (
+          <div key={section.title}>
+            <div className="px-3 mb-1 text-[10px] font-semibold tracking-wider text-white/35 uppercase">
+              {section.title}
+            </div>
+            <div className="space-y-0.5">
+              {section.items.map(({ href, label, Icon }) => {
+                const active = isActive(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 pl-3 pr-3 py-2 text-sm transition-colors border-l-4 ${
+                      active
+                        ? "border-primary text-white font-medium"
+                        : "border-transparent text-white/60 hover:bg-white/5 hover:text-white"
+                    }`}
+                    style={active ? { backgroundColor: "rgba(14,165,168,0.15)" } : undefined}
+                  >
+                    <Icon size={17} className={active ? "text-primary" : ""} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="px-3 pt-3 border-t border-white/10 space-y-0.5 relative z-10">
+        {FOOTER_NAV.map(({ href, label, Icon }) => {
+          const active = isActive(href);
           return (
             <Link
               key={href}
@@ -76,10 +158,13 @@ export function Sidebar() {
             </Link>
           );
         })}
-      </nav>
+      </div>
 
-      <div className="px-4 pb-6 relative z-10">
-        <Link href="/projects/new" className="flex items-center gap-2 justify-center rounded-lg px-4 py-2.5 text-sm font-medium bg-primary hover:bg-primary-600 transition-colors">
+      <div className="px-4 py-4 relative z-10">
+        <Link
+          href="/projects/new"
+          className="flex items-center gap-2 justify-center rounded-lg px-4 py-2.5 text-sm font-medium bg-primary hover:bg-primary-600 transition-colors"
+        >
           <Plus size={16} />
           Nouveau projet
         </Link>
