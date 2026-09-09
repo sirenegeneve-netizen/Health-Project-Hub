@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { RiskForm } from "@/components/EntityForms";
+import { RiskForm, ActionForm } from "@/components/EntityForms";
 import { RiskMatrix } from "@/components/RiskMatrix";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
@@ -18,7 +18,11 @@ const STATUS_OPTIONS = [
 export default async function RisksPage({ params }: { params: { id: string } }) {
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
-  const risks = await prisma.risk.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
+  const risks = await prisma.risk.findMany({
+    where: { projectId: params.id },
+    include: { actions: { orderBy: { createdAt: "desc" } } },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div>
@@ -35,6 +39,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
               <th>Propriétaire</th>
               <th>Criticité</th>
               <th>Plan d'action</th>
+              <th>Actions liées</th>
               <th>Statut</th>
             </tr>
           </thead>
@@ -50,6 +55,18 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
                   <Pill text={r.criticite} tone={["forte", "critique"].includes(r.criticite) ? "bad" : "neutral"} />
                 </td>
                 <td className="text-sm">{r.planAction || "—"}</td>
+                <td className="text-xs min-w-[180px]">
+                  {r.actions.length > 0 && (
+                    <ul className="space-y-1 mb-1.5">
+                      {r.actions.map((a) => (
+                        <li key={a.id} className="text-ink/70">
+                          {a.title} <span className="text-ink/40">— {a.status.replace(/_/g, " ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <ActionForm projectId={params.id} riskId={r.id} label="+ Action liée" />
+                </td>
                 <td>
                   <InlineSelect endpoint={`/api/risks/${r.id}`} field="status" value={r.status} options={STATUS_OPTIONS} />
                 </td>
@@ -57,7 +74,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
             ))}
             {risks.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-ink/50">
+                <td colSpan={6} className="text-center py-8 text-ink/50">
                   Aucun risque identifié pour ce projet.
                 </td>
               </tr>

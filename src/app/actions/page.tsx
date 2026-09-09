@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { InlineSelect } from "@/components/InlineSelect";
 import { ActionsKanban } from "@/components/ActionsKanban";
+import { resolveActionOrigin } from "@/lib/actionOrigin";
+import { getScope, projectScopeWhere } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +16,10 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function GlobalActionsPage({ searchParams }: { searchParams: { vue?: string } }) {
+  const scope = await getScope();
   const actions = await prisma.action.findMany({
-    include: { project: true },
+    where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined,
+    include: { project: true, meeting: true, risk: true, decision: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
@@ -37,7 +41,10 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
   return (
     <div>
       <div className="flex items-end justify-between mb-4">
-        <h1 className="font-display text-2xl text-ink">Actions</h1>
+        <div>
+          <h1 className="font-display text-2xl text-ink">Actions</h1>
+          {scope.establishmentName && <p className="text-sm text-muted">Filtré sur {scope.establishmentName}</p>}
+        </div>
         {late.length > 0 && <span className="text-sm text-bad">{late.length} en retard</span>}
       </div>
 
@@ -71,6 +78,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                 <th>Projet</th>
                 <th>Responsable</th>
                 <th>Échéance</th>
+                <th>Origine</th>
                 <th>Statut</th>
               </tr>
             </thead>
@@ -88,6 +96,18 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                     <td>{a.responsable || "—"}</td>
                     <td className={isLate ? "text-bad font-medium" : ""}>
                       {a.echeance ? new Date(a.echeance).toLocaleDateString("fr-FR") : "—"}
+                    </td>
+                    <td className="text-ink/50 text-xs">
+                      {(() => {
+                        const o = resolveActionOrigin(a, a.projectId);
+                        return o.href ? (
+                          <Link href={o.href} className="hover:underline hover:text-primary">
+                            {o.label}
+                          </Link>
+                        ) : (
+                          o.label
+                        );
+                      })()}
                     </td>
                     <td>
                       <InlineSelect endpoint={`/api/actions/${a.id}`} field="status" value={a.status} options={STATUS_OPTIONS} />

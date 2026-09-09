@@ -58,7 +58,12 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
           <div className="text-xs text-ink/45">{project.reference}</div>
           <h1 className="font-display text-3xl text-ink">{project.name}</h1>
         </div>
-        <HealthBadge level={score.level} label={score.label} />
+        <div className="flex items-center gap-3">
+          <Link href={`/projects/${project.id}/copil`} className="btn-secondary text-sm print:hidden">
+            Générer le COPIL
+          </Link>
+          <HealthBadge level={score.level} label={score.label} />
+        </div>
       </div>
 
       <div className="mb-6">

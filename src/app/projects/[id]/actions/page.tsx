@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
@@ -5,6 +6,7 @@ import { ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { ActionsKanban } from "@/components/ActionsKanban";
+import { resolveActionOrigin } from "@/lib/actionOrigin";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +21,11 @@ const STATUS_OPTIONS = [
 export default async function ActionsPage({ params, searchParams }: { params: { id: string }; searchParams: { vue?: string } }) {
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
-  const actions = await prisma.action.findMany({ where: { projectId: params.id }, orderBy: [{ status: "asc" }, { echeance: "asc" }] });
+  const actions = await prisma.action.findMany({
+    where: { projectId: params.id },
+    include: { meeting: true, risk: true, decision: true },
+    orderBy: [{ status: "asc" }, { echeance: "asc" }],
+  });
   const now = new Date();
   const vue = searchParams.vue === "kanban" ? "kanban" : "liste";
 
@@ -82,7 +88,18 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
                     <td>
                       <Pill text={a.priority} tone={a.priority === "critique" ? "bad" : "neutral"} />
                     </td>
-                    <td className="text-ink/50 text-xs">{a.origine}</td>
+                <td className="text-ink/50 text-xs">
+                  {(() => {
+                    const o = resolveActionOrigin(a, params.id);
+                    return o.href ? (
+                      <Link href={o.href} className="hover:underline hover:text-primary">
+                        {o.label}
+                      </Link>
+                    ) : (
+                      o.label
+                    );
+                  })()}
+                </td>
                     <td>
                       <InlineSelect endpoint={`/api/actions/${a.id}`} field="status" value={a.status} options={STATUS_OPTIONS} />
                     </td>

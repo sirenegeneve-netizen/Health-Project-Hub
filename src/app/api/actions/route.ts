@@ -8,6 +8,8 @@ export async function POST(req: NextRequest) {
     data: {
       projectId: body.projectId,
       meetingId: body.meetingId || null,
+      riskId: body.riskId || null,
+      decisionId: body.decisionId || null,
       title: body.title,
       responsable: body.responsable || null,
       dateDebut: body.dateDebut ? new Date(body.dateDebut) : null,

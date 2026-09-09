@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { DecisionForm } from "@/components/EntityForms";
+import { DecisionForm, ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,11 @@ const STATUS_OPTIONS = [
 export default async function DecisionsPage({ params }: { params: { id: string } }) {
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
-  const decisions = await prisma.decision.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
+  const decisions = await prisma.decision.findMany({
+    where: { projectId: params.id },
+    include: { actions: { orderBy: { createdAt: "desc" } } },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div>
@@ -34,6 +38,18 @@ export default async function DecisionsPage({ params }: { params: { id: string }
                 {d.decideur && <div className="text-xs text-ink/50 mt-1">Décideur : {d.decideur}</div>}
               </div>
               <InlineSelect endpoint={`/api/decisions/${d.id}`} field="status" value={d.status} options={STATUS_OPTIONS} />
+            </div>
+            {d.actions.length > 0 && (
+              <ul className="text-xs text-ink/70 mt-3 pt-3 border-t border-line space-y-1">
+                {d.actions.map((a) => (
+                  <li key={a.id}>
+                    {a.title} <span className="text-ink/40">— {a.status.replace(/_/g, " ")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-2">
+              <ActionForm projectId={params.id} decisionId={d.id} label="+ Action issue de cette décision" />
             </div>
           </div>
         ))}

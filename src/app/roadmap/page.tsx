@@ -9,7 +9,7 @@ const HEALTH_COLOR: Record<string, string> = { vert: "bg-ok", orange: "bg-warn",
 export default async function RoadmapPage() {
   const projects = await prisma.project.findMany({
     where: { status: { not: "cloture" } },
-    include: { establishments: { include: { establishment: true } } },
+    include: { establishments: { include: { establishment: true } }, deliverables: true },
     orderBy: { startDate: "asc" },
   });
 
@@ -87,6 +87,22 @@ export default async function RoadmapPage() {
                       style={{ left: `${left}%`, width: `${width}%` }}
                       title={`${p.name} — ${scores[i].label}`}
                     />
+                    {p.deliverables
+                      .filter((d) => d.datePrevue)
+                      .map((d) => {
+                        const pct = ((d.datePrevue!.getTime() - rangeStart) / span) * 100;
+                        if (pct < 0 || pct > 100) return null;
+                        return (
+                          <span
+                            key={d.id}
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-ink/70 text-xs leading-none"
+                            style={{ left: `${pct}%` }}
+                            title={`Jalon : ${d.name} — ${d.datePrevue!.toLocaleDateString("fr-FR")}`}
+                          >
+                            ◆
+                          </span>
+                        );
+                      })}
                   </div>
                 </div>
               );
@@ -100,6 +116,7 @@ export default async function RoadmapPage() {
         <span><span className="inline-block w-3 h-3 rounded bg-warn align-middle mr-1" />À surveiller</span>
         <span><span className="inline-block w-3 h-3 rounded bg-bad align-middle mr-1" />À risque</span>
         <span><span className="inline-block w-px h-3 bg-bad/40 align-middle mr-1" />Aujourd'hui</span>
+        <span><span className="align-middle mr-1">◆</span>Jalon / livrable</span>
       </div>
 
       {projects.length > dated.length && (
