@@ -29,9 +29,22 @@ async function post(url: string, body: unknown) {
   return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 }
 
-export function ActionForm({ projectId, meetingId, label }: { projectId: string; meetingId?: string; label?: string }) {
+export function ActionForm({
+  projectId,
+  meetingId,
+  riskId,
+  decisionId,
+  label,
+}: {
+  projectId: string;
+  meetingId?: string;
+  riskId?: string;
+  decisionId?: string;
+  label?: string;
+}) {
   const router = useRouter();
   const [f, setF] = useState({ title: "", responsable: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
+  const origine = meetingId ? "reunion" : riskId ? "risque" : decisionId ? "decision" : "manuel";
   return (
     <Toggle label={label || "+ Nouvelle action"}>
       {(close) => (
@@ -63,7 +76,7 @@ export function ActionForm({ projectId, meetingId, label }: { projectId: string;
               className="btn"
               onClick={async () => {
                 if (!f.title) return;
-                await post("/api/actions", { projectId, meetingId, origine: meetingId ? "reunion" : "manuel", ...f });
+                await post("/api/actions", { projectId, meetingId, riskId, decisionId, origine, ...f });
                 setF({ title: "", responsable: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
                 close();
                 router.refresh();
