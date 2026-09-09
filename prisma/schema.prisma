@@ -169,12 +169,16 @@ model Action {
   project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   meetingId      String?
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
+  riskId         String?
+  risk           Risk?     @relation(fields: [riskId], references: [id])
+  decisionId     String?
+  decision       Decision? @relation(fields: [decisionId], references: [id])
   title          String
   responsable    String?
   dateDebut      DateTime?
   echeance       DateTime?
   priority       String    @default("normale")
-  origine        String?   // reunion | mail | document | manuel
+  origine        String?   // reunion | risque | decision | mail | document | manuel
   status         String    @default("a_faire") // a_faire | en_cours | en_attente | termine | abandonne
   comments       String?
   postponedCount Int       @default(0)
@@ -201,6 +205,7 @@ model Risk {
   echeance     DateTime?
   status       String @default("ouvert") // ouvert | en_traitement | maitrise | cloture
   createdAt    DateTime @default(now())
+  actions      Action[]
 }
 
 model Decision {
@@ -219,6 +224,7 @@ model Decision {
   impact         String?
   status         String @default("en_attente") // decision_prise | en_attente | arbitrage_necessaire
   createdAt      DateTime @default(now())
+  actions        Action[]
 }
 
 model Interface {
