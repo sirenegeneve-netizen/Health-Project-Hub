@@ -46,10 +46,18 @@ export function PortfolioHealthTable({ rows }: { rows: HealthRow[] }) {
                 </Link>
               </td>
               <td className="px-4 py-2.5 text-ink/60">{r.progress !== null ? `${r.progress} %` : "—"}</td>
-              <td className="px-4 py-2.5"><Dot level={r.planning} /></td>
-              <td className="px-4 py-2.5"><Dot level={r.budget} /></td>
-              <td className="px-4 py-2.5"><Dot level={r.risques} /></td>
-              <td className="px-4 py-2.5"><Dot level={r.ressources} /></td>
+              <td className="px-4 py-2.5">
+                <Link href={`/projects/${r.id}/planning`}><Dot level={r.planning} /></Link>
+              </td>
+              <td className="px-4 py-2.5">
+                <Link href={`/projects/${r.id}/budget`}><Dot level={r.budget} /></Link>
+              </td>
+              <td className="px-4 py-2.5">
+                <Link href={`/projects/${r.id}/risks`}><Dot level={r.risques} /></Link>
+              </td>
+              <td className="px-4 py-2.5">
+                <Link href={`/projects/${r.id}/actors`}><Dot level={r.ressources} /></Link>
+              </td>
               <td className="px-4 py-2.5"><Dot level={r.sante} /></td>
             </tr>
           ))}

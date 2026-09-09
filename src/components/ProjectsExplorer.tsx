@@ -19,16 +19,18 @@ export interface ExplorerProject {
   establishments: string[];
   healthLevel: HealthLevel;
   healthLabel: string;
+  blocked: boolean;
   progress: number | null;
   stageLabel: string;
 }
 
-type TabKey = "tous" | "mes_projets" | "actifs" | "a_risque" | "termines";
+type TabKey = "tous" | "mes_projets" | "actifs" | "a_risque" | "bloques" | "termines";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "tous", label: "Tous les projets" },
   { key: "actifs", label: "Actifs" },
   { key: "a_risque", label: "À risque" },
+  { key: "bloques", label: "Bloqués" },
   { key: "termines", label: "Terminés" },
   { key: "mes_projets", label: "Mes projets" },
 ];
@@ -40,8 +42,10 @@ const PRIORITY_LABELS: Record<string, string> = {
   critique: "Critique",
 };
 
-export function ProjectsExplorer({ projects }: { projects: ExplorerProject[] }) {
-  const [tab, setTab] = useState<TabKey>("tous");
+const VALID_TABS: TabKey[] = ["tous", "actifs", "a_risque", "bloques", "termines", "mes_projets"];
+
+export function ProjectsExplorer({ projects, initialTab }: { projects: ExplorerProject[]; initialTab?: string }) {
+  const [tab, setTab] = useState<TabKey>(VALID_TABS.includes(initialTab as TabKey) ? (initialTab as TabKey) : "tous");
   const [query, setQuery] = useState("");
   const [establishment, setEstablishment] = useState("tous");
   const [type, setType] = useState("tous");
@@ -58,6 +62,7 @@ export function ProjectsExplorer({ projects }: { projects: ExplorerProject[] }) 
       tous: projects.length,
       actifs: projects.filter((p) => p.status === "actif").length,
       a_risque: projects.filter((p) => p.healthLevel === "rouge").length,
+      bloques: projects.filter((p) => p.blocked).length,
       termines: projects.filter((p) => p.status === "cloture").length,
       mes_projets: nom.trim()
         ? projects.filter((p) => (p.chefDeProjet || "").toLowerCase().includes(nom.trim().toLowerCase())).length
@@ -70,6 +75,7 @@ export function ProjectsExplorer({ projects }: { projects: ExplorerProject[] }) 
     .filter((p) => {
       if (tab === "actifs" && p.status !== "actif") return false;
       if (tab === "a_risque" && p.healthLevel !== "rouge") return false;
+      if (tab === "bloques" && !p.blocked) return false;
       if (tab === "termines" && p.status !== "cloture") return false;
       if (tab === "mes_projets" && !(nom.trim() && (p.chefDeProjet || "").toLowerCase().includes(nom.trim().toLowerCase()))) return false;
       if (query && !`${p.name} ${p.reference} ${p.chefDeProjet || ""}`.toLowerCase().includes(query.toLowerCase())) return false;

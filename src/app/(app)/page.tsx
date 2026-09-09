@@ -89,9 +89,9 @@ export default async function HomePage() {
   ]);
 
   const priorities = [
-    ...pendingDecisions.map((d) => ({ label: d.subject, projectName: d.project.name, projectId: d.projectId, kind: "Décision à trancher", date: null as string | null })),
-    ...dueSoonActions.map((a) => ({ label: a.title, projectName: a.project.name, projectId: a.projectId, kind: "Action due", date: a.echeance!.toISOString() })),
-    ...imminentDeliverables.map((d) => ({ label: d.name, projectName: d.project.name, projectId: d.projectId, kind: "Livrable attendu", date: d.datePrevue!.toISOString() })),
+    ...pendingDecisions.map((d) => ({ label: d.subject, projectName: d.project.name, projectId: d.projectId, kind: "Décision à trancher", date: null as string | null, href: `/projects/${d.projectId}/decisions` })),
+    ...dueSoonActions.map((a) => ({ label: a.title, projectName: a.project.name, projectId: a.projectId, kind: "Action due", date: a.echeance!.toISOString(), href: `/projects/${a.projectId}/actions` })),
+    ...imminentDeliverables.map((d) => ({ label: d.name, projectName: d.project.name, projectId: d.projectId, kind: "Livrable attendu", date: d.datePrevue!.toISOString(), href: `/projects/${d.projectId}/conception` })),
   ]
     .sort((a, b) => (a.date ? new Date(a.date).getTime() : 0) - (b.date ? new Date(b.date).getTime() : 0))
     .slice(0, 8);
@@ -177,13 +177,13 @@ export default async function HomePage() {
 
       {projects.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Projets" value={String(projects.length)} icon={Briefcase} color="primary" />
-          <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" />
-          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" />}
-          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" />}
-          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" />}
+          <StatCard label="Projets" value={String(projects.length)} icon={Briefcase} color="primary" href="/projects" />
+          <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" href="/projects?vue=actifs" />
+          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" href="/projects?vue=a_risque" />}
+          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" href="/projects?vue=bloques" />}
+          {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" href="/actions?filtre=retard" />}
           {criticalDependencies > 0 && (
-            <StatCard label="Dépendances critiques" value={String(criticalDependencies)} icon={GitFork} color="purple" />
+            <StatCard label="Dépendances critiques" value={String(criticalDependencies)} icon={GitFork} color="purple" href="/resources?vue=dependances" />
           )}
           {totalBudget > 0 && (
             <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={Euro} color="neutral" />
@@ -207,7 +207,11 @@ export default async function HomePage() {
                         <Link href={`/projects/${a.project.id}`} className="text-blue hover:underline">
                           {a.project.name}
                         </Link>
-                        <div className="text-ink/60">{a.reason}</div>
+                        <div className="text-ink/60">
+                          <Link href={reasonHref(a.project.id, a.reason)} className="hover:underline hover:text-ink">
+                            {a.reason}
+                          </Link>
+                        </div>
                       </div>
                       <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${severity.cls}`}>{severity.label}</span>
                     </li>
@@ -231,7 +235,9 @@ export default async function HomePage() {
                       {p.projectName}
                     </Link>
                     <div className="text-ink/60 flex items-center justify-between gap-2">
-                      <span>{p.label}</span>
+                      <Link href={p.href} className="hover:underline hover:text-ink">
+                        {p.label}
+                      </Link>
                       <span className="text-xs text-muted shrink-0">{p.date ? new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : p.kind}</span>
                     </div>
                   </li>
@@ -325,6 +331,17 @@ export default async function HomePage() {
   );
 }
 
+function reasonHref(projectId: string, reason: string): string {
+  const r = reason.toLowerCase();
+  if (r.includes("retard")) return `/projects/${projectId}/actions`;
+  if (r.includes("risque")) return `/projects/${projectId}/risks`;
+  if (r.includes("décision")) return `/projects/${projectId}/decisions`;
+  if (r.includes("interface") || r.includes("bloquante")) return `/projects/${projectId}/interfaces`;
+  if (r.includes("budget")) return `/projects/${projectId}/budget`;
+  if (r.includes("planning")) return `/projects/${projectId}/planning`;
+  return `/projects/${projectId}`;
+}
+
 function severityFor(reason: string, level: "vert" | "orange" | "rouge") {
   const r = reason.toLowerCase();
   if (level === "rouge" && (r.includes("bloquante") || r.includes("critique"))) {
@@ -341,15 +358,17 @@ function StatCard({
   sub,
   icon,
   color,
+  href,
 }: {
   label: string;
   value: string;
   sub?: string;
   icon: import("lucide-react").LucideIcon;
   color: "primary" | "blue" | "red" | "orange" | "purple" | "neutral" | "green";
+  href?: string;
 }) {
-  return (
-    <div className="card flex items-start gap-3">
+  const content = (
+    <div className="card flex items-start gap-3 h-full">
       <IconBadge color={color} icon={icon} />
       <div className="min-w-0">
         <div className="label">{label}</div>
@@ -357,5 +376,12 @@ function StatCard({
         {sub && <div className="text-xs text-muted mt-0.5">{sub}</div>}
       </div>
     </div>
+  );
+  return href ? (
+    <Link href={href} className="hover:opacity-80 transition-opacity">
+      {content}
+    </Link>
+  ) : (
+    content
   );
 }

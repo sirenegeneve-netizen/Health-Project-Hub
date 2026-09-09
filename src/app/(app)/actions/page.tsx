@@ -15,7 +15,7 @@ const STATUS_OPTIONS = [
   ["abandonne", "Abandonné"],
 ].map(([value, label]) => ({ value, label }));
 
-export default async function GlobalActionsPage({ searchParams }: { searchParams: { vue?: string } }) {
+export default async function GlobalActionsPage({ searchParams }: { searchParams: { vue?: string; filtre?: string } }) {
   const scope = await getScope();
   const actions = await prisma.action.findMany({
     where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined,
@@ -24,6 +24,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
   });
   const now = new Date();
   const vue = searchParams.vue === "kanban" ? "kanban" : "liste";
+  const filtreRetard = searchParams.filtre === "retard";
 
   if (actions.length === 0) {
     return (
@@ -37,6 +38,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
   }
 
   const late = actions.filter((a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status));
+  const displayed = filtreRetard ? late : actions;
 
   return (
     <div>
@@ -45,8 +47,16 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
           <h1 className="font-display text-2xl text-ink">Actions</h1>
           {scope.establishmentName && <p className="text-sm text-muted">Filtré sur {scope.establishmentName}</p>}
         </div>
-        {late.length > 0 && <span className="text-sm text-bad">{late.length} en retard</span>}
+        {late.length > 0 && (
+          <Link href={filtreRetard ? "/actions" : "/actions?filtre=retard"} className="text-sm text-bad hover:underline">
+            {filtreRetard ? "← Toutes les actions" : `${late.length} en retard →`}
+          </Link>
+        )}
       </div>
+
+      {filtreRetard && (
+        <p className="text-xs text-muted mb-3">Filtré sur les actions en retard.</p>
+      )}
 
       <div className="flex gap-1 text-sm mb-4">
         <a href="?vue=liste" className={`px-3 py-1.5 rounded-lg ${vue === "liste" ? "bg-primary text-white" : "text-ink/60 hover:bg-teal-50"}`}>
@@ -57,9 +67,11 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
         </a>
       </div>
 
-      {vue === "kanban" ? (
+      {displayed.length === 0 ? (
+        <div className="card text-center text-ink/50 py-14">Aucune action en retard actuellement.</div>
+      ) : vue === "kanban" ? (
         <ActionsKanban
-          actions={actions.map((a) => ({
+          actions={displayed.map((a) => ({
             id: a.id,
             title: a.title,
             responsable: a.responsable,
@@ -83,7 +95,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
               </tr>
             </thead>
             <tbody>
-              {actions.map((a) => {
+              {displayed.map((a) => {
                 const isLate = a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status);
                 return (
                   <tr key={a.id} className={isLate ? "bg-bad/5" : ""}>

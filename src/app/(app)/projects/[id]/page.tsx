@@ -43,11 +43,11 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
     .sort((a, b) => a.echeance!.getTime() - b.echeance!.getTime())
     .slice(0, 5);
 
-  const alerts: string[] = [];
-  if (budget && budget.consumptionRate >= 90) alerts.push(`Budget proche du seuil (${budget.consumptionRate}% consommé)`);
-  if (lateActions.length > 0) alerts.push(`Retard sur ${lateActions.length} action(s)`);
-  if (criticalRisks.length > 0) alerts.push(`Risque critique ouvert (${criticalRisks.length})`);
-  if (blockingInterfaces.length > 0) alerts.push(`Interface bloquante (${blockingInterfaces.length})`);
+  const alerts: { label: string; href: string }[] = [];
+  if (budget && budget.consumptionRate >= 90) alerts.push({ label: `Budget proche du seuil (${budget.consumptionRate}% consommé)`, href: `/projects/${project.id}/budget` });
+  if (lateActions.length > 0) alerts.push({ label: `Retard sur ${lateActions.length} action(s)`, href: `/projects/${project.id}/actions` });
+  if (criticalRisks.length > 0) alerts.push({ label: `Risque critique ouvert (${criticalRisks.length})`, href: `/projects/${project.id}/risks` });
+  if (blockingInterfaces.length > 0) alerts.push({ label: `Interface bloquante (${blockingInterfaces.length})`, href: `/projects/${project.id}/interfaces` });
 
   return (
     <div>
@@ -80,9 +80,9 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
       {/* Synthèse — uniquement les indicateurs disponibles */}
       <div className="flex flex-wrap gap-8 mb-8 pb-8 border-b border-teal-100">
         {progress !== null && <Metric label="Avancement" value={`${progress}%`} />}
-        {budget && <Metric label="Budget" value={`${budget.consumptionRate}%`} sub={formatEur(budget.reste) + " restants"} />}
-        {project.targetDate && <Metric label="Échéance" value={new Date(project.targetDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} />}
-        {openRisks.length > 0 && <Metric label="Risques ouverts" value={String(openRisks.length)} tone={criticalRisks.length > 0 ? "bad" : undefined} />}
+        {budget && <Metric label="Budget" value={`${budget.consumptionRate}%`} sub={formatEur(budget.reste) + " restants"} href={`/projects/${project.id}/budget`} />}
+        {project.targetDate && <Metric label="Échéance" value={new Date(project.targetDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} href={`/projects/${project.id}/planning`} />}
+        {openRisks.length > 0 && <Metric label="Risques ouverts" value={String(openRisks.length)} tone={criticalRisks.length > 0 ? "bad" : undefined} href={`/projects/${project.id}/risks`} />}
       </div>
 
       {alerts.length > 0 && (
@@ -92,7 +92,9 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
             {alerts.map((a, i) => (
               <li key={i} className="text-sm text-bad flex items-start gap-2">
                 <span>⚠</span>
-                <span>{a}</span>
+                <Link href={a.href} className="hover:underline">
+                  {a.label}
+                </Link>
               </li>
             ))}
           </ul>
@@ -171,12 +173,19 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
   );
 }
 
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "bad" }) {
-  return (
+function Metric({ label, value, sub, tone, href }: { label: string; value: string; sub?: string; tone?: "bad"; href?: string }) {
+  const content = (
     <div>
       <div className="label">{label}</div>
       <div className={`font-display text-2xl mt-0.5 ${tone === "bad" ? "text-bad" : "text-ink"}`}>{value}</div>
       {sub && <div className="text-xs text-ink/45 mt-0.5">{sub}</div>}
     </div>
+  );
+  return href ? (
+    <Link href={href} className="hover:opacity-70 transition-opacity">
+      {content}
+    </Link>
+  ) : (
+    content
   );
 }

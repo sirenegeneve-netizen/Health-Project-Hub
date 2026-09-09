@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   autre: "Autre",
 };
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({ searchParams }: { searchParams: { vue?: string } }) {
   const scope = await getScope();
 
   const projects = await prisma.project.findMany({
@@ -45,6 +45,7 @@ export default async function ProjectsPage() {
       establishments: p.establishments.map((e) => e.establishment.name),
       healthLevel: scores[i].level,
       healthLabel: scores[i].label,
+      blocked: scores[i].metrics.blockingInterfaces > 0,
       progress: p.actions.length > 0 ? Math.round((p.actions.filter((a) => a.status === "termine").length / p.actions.length) * 100) : null,
       stageLabel: currentIdx >= 0 ? stages[currentIdx].label : stages[0].label,
     };
@@ -60,7 +61,7 @@ export default async function ProjectsPage() {
             : "Tous les projets du groupe, tous établissements confondus."}
         </p>
       </div>
-      <ProjectsExplorer projects={items} />
+      <ProjectsExplorer projects={items} initialTab={searchParams.vue} />
     </div>
   );
 }
