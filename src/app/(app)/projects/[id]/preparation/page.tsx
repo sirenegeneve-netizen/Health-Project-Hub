@@ -17,7 +17,7 @@ export default async function PreparationPage({ params }: { params: { id: string
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
 
-  await ensureStageCriteria(params.id, "preparation");
+  await ensureStageCriteria(params.id, "preparation", project.type);
 
   const [criteria, interfaces, deliverables] = await Promise.all([
     prisma.stageCriterion.findMany({ where: { projectId: params.id, stageKey: "preparation" }, orderBy: { order: "asc" } }),

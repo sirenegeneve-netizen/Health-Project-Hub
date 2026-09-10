@@ -17,7 +17,7 @@ export default async function CloturePage({ params }: { params: { id: string } }
   const project = await prisma.project.findUnique({ where: { id: params.id }, include: { budgetLines: true } });
   if (!project) notFound();
 
-  await ensureStageCriteria(params.id, "cloture");
+  await ensureStageCriteria(params.id, "cloture", project.type);
 
   const [criteria, openActions, openRisks] = await Promise.all([
     prisma.stageCriterion.findMany({ where: { projectId: params.id, stageKey: "cloture" }, orderBy: { order: "asc" } }),

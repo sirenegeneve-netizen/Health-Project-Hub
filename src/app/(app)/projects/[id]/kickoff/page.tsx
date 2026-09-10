@@ -25,7 +25,7 @@ export default async function KickoffPage({ params }: { params: { id: string } }
   });
   if (!project) notFound();
 
-  await ensureStageCriteria(params.id, "kickoff");
+  await ensureStageCriteria(params.id, "kickoff", project.type);
 
   const [stakeholders, actors, meetings, criteria] = await Promise.all([
     prisma.stakeholder.findMany({ where: { projectId: params.id } }),

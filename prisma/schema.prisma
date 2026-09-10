@@ -156,6 +156,21 @@ model Project {
 // Préparation et Clôture n'ont pas d'équivalent — ce modèle sert de checklist
 // manuelle pour ces trois étapes, une checklist par défaut étant amorcée à la
 // première visite de la page (voir src/lib/stageCriteria.ts).
+// Modèles de checklist par étape, personnalisables par type de projet (§17 du
+// cahier des charges : « Prévoir des checklists configurables par type de
+// projet »). "defaut" est le modèle de repli utilisé par tout projet dont le
+// type n'a pas (encore) sa propre liste — gérable depuis Paramètres > Critères.
+model StageCriterionTemplate {
+  id          String   @id @default(cuid())
+  projectType String // deploiement | migration | evolution | ... | defaut
+  stageKey    String // kickoff | preparation | cloture
+  label       String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([projectType, stageKey, label])
+}
+
 model StageCriterion {
   id        String   @id @default(cuid())
   projectId String
