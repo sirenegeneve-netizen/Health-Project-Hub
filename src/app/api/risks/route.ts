@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       projectId: body.projectId,
       meetingId: body.meetingId || null,
       interfaceId: body.interfaceId || null,
+      establishmentId: body.establishmentId || null,
       description: body.description,
       cause: body.cause || null,
       consequence: body.consequence || null,

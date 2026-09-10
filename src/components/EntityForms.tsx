@@ -97,9 +97,30 @@ export function ActionForm({
   );
 }
 
-export function RiskForm({ projectId, meetingId, actors, label }: { projectId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
+export function RiskForm({
+  projectId,
+  meetingId,
+  actors,
+  establishments,
+  label,
+}: {
+  projectId: string;
+  meetingId?: string;
+  actors: { id: string; name: string }[];
+  establishments?: { id: string; name: string }[];
+  label?: string;
+}) {
   const router = useRouter();
-  const [f, setF] = useState({ description: "", cause: "", proprietaireActorId: "", probabilite: "moyenne", impact: "moyen", criticite: "moyenne", planAction: "" });
+  const [f, setF] = useState({
+    description: "",
+    cause: "",
+    proprietaireActorId: "",
+    probabilite: "moyenne",
+    impact: "moyen",
+    criticite: "moyenne",
+    planAction: "",
+    establishmentId: "",
+  });
   return (
     <Toggle label={label || "+ Nouveau risque"}>
       {(close) => (
@@ -137,6 +158,18 @@ export function RiskForm({ projectId, meetingId, actors, label }: { projectId: s
               </select>
             </Field>
           </div>
+          {establishments && establishments.length > 1 && (
+            <Field label="Établissement (optionnel)">
+              <select className={inputCls} value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
+                <option value="">Tous établissements</option>
+                {establishments.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Plan d'action">
             <input className={inputCls} value={f.planAction} onChange={(e) => setF({ ...f, planAction: e.target.value })} />
           </Field>
@@ -145,7 +178,7 @@ export function RiskForm({ projectId, meetingId, actors, label }: { projectId: s
               className="btn"
               onClick={async () => {
                 if (!f.description) return;
-                await post("/api/risks", { projectId, meetingId, ...f });
+                await post("/api/risks", { projectId, meetingId, ...f, establishmentId: f.establishmentId || null });
                 close();
                 router.refresh();
               }}

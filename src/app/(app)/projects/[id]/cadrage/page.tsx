@@ -193,7 +193,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
             Registre complet →
           </Link>
         </div>
-        <RiskForm projectId={params.id} actors={actors} />
+        <RiskForm projectId={params.id} actors={actors} establishments={project.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }))} />
         {risks.length > 0 ? (
           <div className="space-y-2">
             {risks.slice(0, 5).map((r) => (

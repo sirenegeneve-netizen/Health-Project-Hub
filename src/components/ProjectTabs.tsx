@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 const TABS: { href: string; label: string; match: string[] }[] = [
   { href: "", label: "Vue d'ensemble", match: [""] },
   { href: "/cadrage", label: "Cadrage", match: ["/cadrage", "/stakeholders", "/budget"] },
+  { href: "/etablissements", label: "Établissements", match: ["/etablissements"] },
   { href: "/actors", label: "Gouvernance & RACI", match: ["/actors"] },
   { href: "/kickoff", label: "Kick-off", match: ["/kickoff"] },
   { href: "/preparation", label: "Préparation", match: ["/preparation", "/conception", "/deliverables", "/changes", "/interfaces"] },

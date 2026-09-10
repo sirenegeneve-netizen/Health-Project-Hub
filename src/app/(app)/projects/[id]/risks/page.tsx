@@ -16,7 +16,10 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function RisksPage({ params }: { params: { id: string } }) {
-  const project = await prisma.project.findUnique({ where: { id: params.id } });
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: { establishments: { include: { establishment: true } } },
+  });
   if (!project) notFound();
   const risks = await prisma.risk.findMany({
     where: { projectId: params.id },
@@ -24,12 +27,13 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
     orderBy: { createdAt: "desc" },
   });
   const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const establishments = project.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-4">Risques</h1>
-      <RiskForm projectId={params.id} actors={actors} />
+      <RiskForm projectId={params.id} actors={actors} establishments={establishments} />
       <RiskMatrix risks={risks} />
 
       <div className="card p-0 overflow-hidden">

@@ -31,6 +31,7 @@ model Establishment {
   localisation String?
   projects     ProjectEstablishment[]
   trainings    TrainingRecord[]
+  risks        Risk[]
   createdAt    DateTime               @default(now())
 }
 
@@ -191,6 +192,9 @@ model ProjectEstablishment {
   establishmentId String
   project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  phase           String? // surcharge optionnelle de la phase du projet pour ce site précis
+                           // (utilisée par la vue comparative multi-établissements) — hérite de
+                           // Project.phase tant qu'elle n'est pas renseignée.
 
   @@unique([projectId, establishmentId])
 }
@@ -257,6 +261,8 @@ model Risk {
   meeting      Meeting?  @relation(fields: [meetingId], references: [id])
   interfaceId  String?
   interfaceRef Interface? @relation(fields: [interfaceId], references: [id])
+  establishmentId String?
+  establishment   Establishment? @relation(fields: [establishmentId], references: [id])
   description  String
   cause        String?
   consequence  String?
