@@ -37,7 +37,7 @@ export default async function GoLivePage({ params }: { params: { id: string } })
       <ProjectTabs projectId={params.id} />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
-          <h1 className="font-display text-2xl text-ink">Déploiement</h1>
+          <h1 className="font-display text-2xl text-ink">Mise en production</h1>
           <p className="text-sm text-muted">Peut-on passer en production ?</p>
         </div>
         <HealthBadge level={readiness.level} label={readiness.label} />

@@ -22,13 +22,14 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
 
   const since = previousMeeting?.date ?? new Date(0);
 
-  const [allActions, allRisks, pendingDecisions, vigilancePoints, eventsSince, score] = await Promise.all([
+  const [allActions, allRisks, pendingDecisions, vigilancePoints, eventsSince, score, actors] = await Promise.all([
     prisma.action.findMany({ where: { projectId: params.id } }),
     prisma.risk.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.decision.findMany({ where: { projectId: params.id, status: { not: "decision_prise" } } }),
     prisma.vigilancePoint.findMany({ where: { projectId: params.id, status: "a_surveiller" } }),
     prisma.timelineEvent.findMany({ where: { projectId: params.id, date: { gte: since, lt: meeting.date } }, orderBy: { date: "asc" } }),
     computeHealthScore(params.id),
+    prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const now = new Date();
@@ -94,9 +95,9 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
         </div>
         <div className="space-y-3">
           <div className="font-medium text-sm">Saisie rapide pendant la réunion</div>
-          <ActionForm projectId={params.id} meetingId={meeting.id} label="+ Action" />
-          <RiskForm projectId={params.id} meetingId={meeting.id} label="+ Risque" />
-          <DecisionForm projectId={params.id} meetingId={meeting.id} label="+ Décision" />
+          <ActionForm projectId={params.id} meetingId={meeting.id} actors={actors} label="+ Action" />
+          <RiskForm projectId={params.id} meetingId={meeting.id} actors={actors} label="+ Risque" />
+          <DecisionForm projectId={params.id} meetingId={meeting.id} actors={actors} label="+ Décision" />
         </div>
       </div>
 

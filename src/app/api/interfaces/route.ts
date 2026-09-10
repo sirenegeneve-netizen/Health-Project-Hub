@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
+import { resolveActorName } from "@/lib/actorResolve";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -13,7 +14,8 @@ export async function POST(req: NextRequest) {
       flux: body.flux || null,
       protocole: body.protocole || null,
       standard: body.standard || null,
-      responsable: body.responsable || null,
+      responsableActorId: body.responsableActorId || null,
+      responsable: await resolveActorName(body.responsableActorId),
       fournisseur: body.fournisseur || null,
       datePrevue: body.datePrevue ? new Date(body.datePrevue) : null,
       isBlocking: !!body.isBlocking,

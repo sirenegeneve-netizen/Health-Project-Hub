@@ -19,13 +19,14 @@ export default async function InterfacesPage({ params }: { params: { id: string 
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
   const interfaces = await prisma.interface.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-1">Interopérabilité</h1>
       <p className="text-sm text-muted mb-4">Les interfaces sont-elles prêtes ?</p>
-      <InterfaceForm projectId={params.id} />
+      <InterfaceForm projectId={params.id} actors={actors} />
 
       <div className="card p-0 overflow-hidden">
         <table className="table-hp">

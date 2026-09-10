@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
+import { resolveActorName } from "@/lib/actorResolve";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -10,7 +11,8 @@ export async function POST(req: NextRequest) {
       trainingRecordId: body.trainingRecordId,
       date: new Date(body.date),
       dureeHeures: body.dureeHeures ? Number(body.dureeHeures) : null,
-      formateur: body.formateur || null,
+      formateurActorId: body.formateurActorId || null,
+      formateur: await resolveActorName(body.formateurActorId),
       format: body.format || null,
       nbInscrits: Number(body.nbInscrits) || 0,
       nbPresents: Number(body.nbPresents) || 0,

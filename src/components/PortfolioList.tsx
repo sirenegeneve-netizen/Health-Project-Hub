@@ -20,6 +20,7 @@ export interface PortfolioProject {
   healthLevel: HealthLevel;
   healthLabel: string;
   progress: number | null;
+  stageLabel: string;
 }
 
 export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
@@ -96,7 +97,7 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
                 )}
               </div>
               <div className="flex items-center gap-5 shrink-0">
-                <Pill text={p.phase.replace(/_/g, " ")} />
+                <Pill text={p.stageLabel} />
                 {p.progress !== null && <span className="text-sm text-ink/60 hidden md:inline">{p.progress}%</span>}
                 <span className="text-sm text-ink/60 hidden sm:inline">
                   {p.targetDate ? formatDaysRemaining(new Date(p.targetDate)) : "—"}

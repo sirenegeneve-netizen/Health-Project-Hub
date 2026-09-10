@@ -20,12 +20,13 @@ export default async function DecisionsPage({ params }: { params: { id: string }
     include: { actions: { orderBy: { createdAt: "desc" } } },
     orderBy: { createdAt: "desc" },
   });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-4">Décisions</h1>
-      <DecisionForm projectId={params.id} />
+      <DecisionForm projectId={params.id} actors={actors} />
 
       <div className="space-y-3">
         {decisions.map((d) => (
@@ -49,7 +50,7 @@ export default async function DecisionsPage({ params }: { params: { id: string }
               </ul>
             )}
             <div className="mt-2">
-              <ActionForm projectId={params.id} decisionId={d.id} label="+ Action issue de cette décision" />
+              <ActionForm projectId={params.id} decisionId={d.id} actors={actors} label="+ Action issue de cette décision" />
             </div>
           </div>
         ))}

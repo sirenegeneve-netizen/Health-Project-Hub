@@ -4,6 +4,13 @@ import { logTimelineEvent } from "@/lib/timeline";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+
+  let responsableName: string | null = null;
+  if (body.responsableActorId) {
+    const actor = await prisma.actor.findUnique({ where: { id: body.responsableActorId } });
+    responsableName = actor?.name || null;
+  }
+
   const action = await prisma.action.create({
     data: {
       projectId: body.projectId,
@@ -11,7 +18,8 @@ export async function POST(req: NextRequest) {
       riskId: body.riskId || null,
       decisionId: body.decisionId || null,
       title: body.title,
-      responsable: body.responsable || null,
+      responsableActorId: body.responsableActorId || null,
+      responsable: responsableName,
       dateDebut: body.dateDebut ? new Date(body.dateDebut) : null,
       echeance: body.echeance ? new Date(body.echeance) : null,
       priority: body.priority || "normale",

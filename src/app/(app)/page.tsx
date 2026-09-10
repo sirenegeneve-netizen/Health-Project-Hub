@@ -5,6 +5,7 @@ import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 import { computeDimensionColors } from "@/lib/portfolioHealth";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
+import { getLifecycleStages } from "@/lib/lifecycle";
 import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { IconBadge } from "@/components/IconBadge";
@@ -107,20 +108,25 @@ export default async function HomePage() {
     )
     .slice(0, 6);
 
-  const portfolioProjects = projects.map((p, i) => ({
-    id: p.id,
-    name: p.name,
-    reference: p.reference,
-    phase: p.phase,
-    status: p.status,
-    priority: p.priority,
-    targetDate: p.targetDate ? p.targetDate.toISOString() : null,
-    establishments: p.establishments.map((e) => e.establishment.name),
-    chefDeProjet: p.chefDeProjet,
-    healthLevel: scores[i].level,
-    healthLabel: scores[i].label,
-    progress: p.actions.length > 0 ? Math.round((p.actions.filter((a) => a.status === "termine").length / p.actions.length) * 100) : null,
-  }));
+  const portfolioProjects = projects.map((p, i) => {
+    const stages = getLifecycleStages(p.phase);
+    const currentStage = stages.find((s) => s.status === "current") || stages[0];
+    return {
+      id: p.id,
+      name: p.name,
+      reference: p.reference,
+      phase: p.phase,
+      status: p.status,
+      priority: p.priority,
+      targetDate: p.targetDate ? p.targetDate.toISOString() : null,
+      establishments: p.establishments.map((e) => e.establishment.name),
+      chefDeProjet: p.chefDeProjet,
+      healthLevel: scores[i].level,
+      healthLabel: scores[i].label,
+      progress: p.actions.length > 0 ? Math.round((p.actions.filter((a) => a.status === "termine").length / p.actions.length) * 100) : null,
+      stageLabel: currentStage.label,
+    };
+  });
 
   const healthRows: HealthRow[] = projects.map((p, i) => {
     const dims = computeDimensionColors(

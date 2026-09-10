@@ -20,15 +20,16 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
   if (!project) notFound();
   const risks = await prisma.risk.findMany({
     where: { projectId: params.id },
-    include: { actions: { orderBy: { createdAt: "desc" } } },
+    include: { actions: { orderBy: { createdAt: "desc" } }, proprietaireActor: true },
     orderBy: { createdAt: "desc" },
   });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-4">Risques</h1>
-      <RiskForm projectId={params.id} />
+      <RiskForm projectId={params.id} actors={actors} />
       <RiskMatrix risks={risks} />
 
       <div className="card p-0 overflow-hidden">
@@ -50,7 +51,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
                   {r.description}
                   {r.cause && <div className="text-xs text-ink/50">Cause : {r.cause}</div>}
                 </td>
-                <td>{r.proprietaire || "—"}</td>
+                <td>{r.proprietaireActor?.name || r.proprietaire || "—"}</td>
                 <td>
                   <Pill text={r.criticite} tone={["forte", "critique"].includes(r.criticite) ? "bad" : "neutral"} />
                 </td>
@@ -65,7 +66,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
                       ))}
                     </ul>
                   )}
-                  <ActionForm projectId={params.id} riskId={r.id} label="+ Action liée" />
+                  <ActionForm projectId={params.id} riskId={r.id} actors={actors} label="+ Action liée" />
                 </td>
                 <td>
                   <InlineSelect endpoint={`/api/risks/${r.id}`} field="status" value={r.status} options={STATUS_OPTIONS} />

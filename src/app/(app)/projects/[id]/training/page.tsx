@@ -26,10 +26,11 @@ export default async function AccompagnementPage({ params }: { params: { id: str
   });
   if (!project) notFound();
 
-  const [populations, sessions, adoptionKpis] = await Promise.all([
+  const [populations, sessions, adoptionKpis, actors] = await Promise.all([
     prisma.trainingRecord.findMany({ where: { projectId: params.id }, include: { establishment: true }, orderBy: { createdAt: "desc" } }),
     prisma.trainingSession.findMany({ where: { projectId: params.id }, include: { trainingRecord: true }, orderBy: { date: "desc" } }),
     prisma.kpi.findMany({ where: { projectId: params.id, categorie: "adoption" }, orderBy: { createdAt: "desc" } }),
+    prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const sessionsByPopulation = new Map<string, typeof sessions>();
@@ -51,7 +52,7 @@ export default async function AccompagnementPage({ params }: { params: { id: str
       <ProjectTabs projectId={params.id} />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
-          <h1 className="font-display text-2xl text-ink">Accompagnement</h1>
+          <h1 className="font-display text-2xl text-ink">Formation & Accompagnement</h1>
           <p className="text-sm text-muted">Les utilisateurs sont-ils prêts à utiliser la solution en autonomie lors du Go-Live ?</p>
         </div>
         <HealthBadge level={overall.level} label={overall.label} />
@@ -132,6 +133,7 @@ export default async function AccompagnementPage({ params }: { params: { id: str
         <TrainingSessionForm
           projectId={params.id}
           populations={populations.map((p) => ({ id: p.id, label: `${p.profil || p.metier || "Population"} (${p.establishment?.name || "—"})` }))}
+          actors={actors}
         />
         {sessions.length > 0 ? (
           <div className="card p-0 overflow-hidden">

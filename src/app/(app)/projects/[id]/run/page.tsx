@@ -31,7 +31,7 @@ export default async function RunPage({ params }: { params: { id: string } }) {
       <ProjectTabs projectId={params.id} />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
-          <h1 className="font-display text-2xl text-ink">Run & Évolutions</h1>
+          <h1 className="font-display text-2xl text-ink">Stabilisation</h1>
           <p className="text-sm text-muted">Le projet est-il stabilisé ?</p>
         </div>
         <HealthBadge level={stability.level} label={stability.label} />

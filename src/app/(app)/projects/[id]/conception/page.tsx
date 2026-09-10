@@ -44,12 +44,13 @@ export default async function ConceptionPage({ params }: { params: { id: string 
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
 
-  const [requirements, gaps, decisions, deliverables, changes] = await Promise.all([
+  const [requirements, gaps, decisions, deliverables, changes, actors] = await Promise.all([
     prisma.requirement.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.gap.findMany({ where: { projectId: params.id }, include: { requirement: true }, orderBy: { createdAt: "desc" } }),
     prisma.decision.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.deliverable.findMany({ where: { projectId: params.id }, orderBy: { datePrevue: "asc" } }),
     prisma.changeRequest.findMany({ where: { projectId: params.id }, orderBy: { createdAt: "desc" } }),
+    prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
 
   const openRequirements = requirements.filter((r) => ["a_analyser", "en_attente_arbitrage"].includes(r.statut)).length;
@@ -145,7 +146,7 @@ export default async function ConceptionPage({ params }: { params: { id: string 
             Toutes les décisions →
           </Link>
         </div>
-        <DecisionForm projectId={params.id} />
+        <DecisionForm projectId={params.id} actors={actors} />
         {pendingDecisions.length > 0 ? (
           <div className="space-y-2">
             {pendingDecisions.map((d) => (
@@ -196,7 +197,7 @@ export default async function ConceptionPage({ params }: { params: { id: string 
           <SectionTitle>Livrables produits</SectionTitle>
         </div>
         <p className="text-xs text-muted mb-3">Le résultat de ce travail de conception — pas le point de départ de l'écran.</p>
-        <DeliverableForm projectId={params.id} />
+        <DeliverableForm projectId={params.id} actors={actors} />
         {deliverables.length > 0 ? (
           <div className="card p-0 overflow-hidden">
             <table className="table-hp">

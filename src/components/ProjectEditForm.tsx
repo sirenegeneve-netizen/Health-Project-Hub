@@ -16,11 +16,17 @@ type Project = {
   sponsor: string | null;
 };
 
+// Le parcours affiché au chef de projet (9 étapes, cf. ProjectJourney) reste
+// simple ; cette liste détaillée n'est qu'un raffinement optionnel du champ
+// "phase" — chaque valeur se rattache automatiquement à l'une des 9 étapes
+// (voir src/lib/lifecycle.ts). "preparation", "formation_accompagnement" et
+// "mise_en_production" permettent de sélectionner directement l'étape
+// canonique sans repasser par une sous-phase historique.
 const PHASES = [
   "opportunite", "qualification", "cadrage", "kick_off", "analyse_ecosysteme", "recueil_besoins",
-  "analyse_ecarts", "conception", "parametrage", "interoperabilite", "migration", "tests", "formation",
-  "preparation_go_no_go", "go_no_go", "deploiement", "hypercare", "stabilisation", "run",
-  "amelioration_continue", "cloture", "retex",
+  "analyse_ecarts", "conception", "parametrage", "preparation", "interoperabilite", "migration", "tests",
+  "formation", "formation_accompagnement", "preparation_go_no_go", "go_no_go", "mise_en_production",
+  "deploiement", "hypercare", "stabilisation", "run", "amelioration_continue", "cloture", "retex",
 ];
 
 export function ProjectEditForm({ project }: { project: Project }) {

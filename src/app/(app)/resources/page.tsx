@@ -38,10 +38,10 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
   const [actors, raciEntries, actions, risks, interfaces, deliverables] = await Promise.all([
     prisma.actor.findMany({ where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined, include: { project: true }, orderBy: { name: "asc" } }),
     prisma.raciEntry.findMany(),
-    prisma.action.findMany({ select: { projectId: true, responsable: true, status: true } }),
-    prisma.risk.findMany({ select: { projectId: true, proprietaire: true, status: true } }),
-    prisma.interface.findMany({ select: { projectId: true, responsable: true, status: true } }),
-    prisma.deliverable.findMany({ select: { projectId: true, responsable: true, status: true } }),
+    prisma.action.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.risk.findMany({ select: { projectId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
+    prisma.interface.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.deliverable.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
   ]);
 
   if (actors.length === 0) {

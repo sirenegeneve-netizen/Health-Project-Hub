@@ -23,10 +23,11 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
   if (!project) notFound();
   const actions = await prisma.action.findMany({
     where: { projectId: params.id },
-    include: { meeting: true, risk: true, decision: true },
+    include: { meeting: true, risk: true, decision: true, responsableActor: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const vue = searchParams.vue === "kanban" ? "kanban" : "liste";
 
   return (
@@ -43,7 +44,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
           </a>
         </div>
       </div>
-      <ActionForm projectId={params.id} />
+      <ActionForm projectId={params.id} actors={actors} />
 
       {actions.length === 0 ? (
         <div className="card text-center text-ink/50 py-10">Aucune action pour ce projet.</div>
@@ -52,7 +53,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
           actions={actions.map((a) => ({
             id: a.id,
             title: a.title,
-            responsable: a.responsable,
+            responsable: a.responsableActor?.name || a.responsable,
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
@@ -79,9 +80,9 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
                     <td className="pl-4">
                       {a.title}
                       {a.postponedCount > 0 && <span className="text-xs text-warn ml-2">reportée ×{a.postponedCount}</span>}
-                      {!a.responsable && <div className="text-xs text-bad">responsable non renseigné</div>}
+                      {!a.responsableActor && !a.responsable && <div className="text-xs text-bad">responsable non renseigné</div>}
                     </td>
-                    <td>{a.responsable || "—"}</td>
+                    <td>{a.responsableActor?.name || a.responsable || "—"}</td>
                     <td className={late ? "text-bad font-medium" : ""}>
                       {a.echeance ? new Date(a.echeance).toLocaleDateString("fr-FR") : <span className="text-bad">non renseignée</span>}
                     </td>

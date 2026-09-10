@@ -19,7 +19,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
   const scope = await getScope();
   const actions = await prisma.action.findMany({
     where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined,
-    include: { project: true, meeting: true, risk: true, decision: true },
+    include: { project: true, meeting: true, risk: true, decision: true, responsableActor: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
@@ -74,7 +74,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
           actions={displayed.map((a) => ({
             id: a.id,
             title: a.title,
-            responsable: a.responsable,
+            responsable: a.responsableActor?.name || a.responsable,
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
@@ -105,7 +105,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                         {a.project.name}
                       </Link>
                     </td>
-                    <td>{a.responsable || "—"}</td>
+                    <td>{a.responsableActor?.name || a.responsable || "—"}</td>
                     <td className={isLate ? "text-bad font-medium" : ""}>
                       {a.echeance ? new Date(a.echeance).toLocaleDateString("fr-FR") : "—"}
                     </td>

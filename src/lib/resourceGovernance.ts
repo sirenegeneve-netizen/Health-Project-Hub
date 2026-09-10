@@ -53,10 +53,10 @@ export function computeRaciIssues(rows: string[], entries: RaciLike[]): RaciIssu
 }
 
 export interface WorkloadInputs {
-  actions: { responsable: string | null; status: string }[];
-  risks: { proprietaire: string | null; status: string }[];
-  interfaces: { responsable: string | null; status: string }[];
-  deliverables: { responsable: string | null; status: string }[];
+  actions: { responsable: string | null; responsableActorId?: string | null; status: string }[];
+  risks: { proprietaire: string | null; proprietaireActorId?: string | null; status: string }[];
+  interfaces: { responsable: string | null; responsableActorId?: string | null; status: string }[];
+  deliverables: { responsable: string | null; responsableActorId?: string | null; status: string }[];
 }
 
 export interface ActorWorkload {
@@ -70,12 +70,21 @@ export interface ActorWorkload {
 
 const norm = (s: string | null) => (s || "").trim().toLowerCase();
 
+// Un objet est "porté" par l'acteur si son lien direct (actorId) le désigne —
+// fiable — ou, à défaut (donnée pas encore migrée vers le référentiel), si le
+// nom en texte libre correspond encore. Le rapprochement par nom est donc une
+// voie de repli qui s'éteint au fur et à mesure que les données sont migrées,
+// pas le mécanisme principal.
+function owns(actorId: string, actorName: string, itemActorId: string | null | undefined, itemText: string | null): boolean {
+  if (itemActorId) return itemActorId === actorId;
+  return norm(itemText) === norm(actorName);
+}
+
 export function computeActorWorkload(actor: ActorLike, data: WorkloadInputs, raciEntries: RaciLike[]): ActorWorkload {
-  const n = norm(actor.name);
-  const openActions = data.actions.filter((a) => norm(a.responsable) === n && !["termine", "abandonne"].includes(a.status)).length;
-  const ownedRisks = data.risks.filter((r) => norm(r.proprietaire) === n && !["maitrise", "cloture"].includes(r.status)).length;
-  const ownedInterfaces = data.interfaces.filter((i) => norm(i.responsable) === n && i.status !== "valide").length;
-  const ownedDeliverables = data.deliverables.filter((d) => norm(d.responsable) === n && d.status !== "valide").length;
+  const openActions = data.actions.filter((a) => owns(actor.id, actor.name, a.responsableActorId, a.responsable) && !["termine", "abandonne"].includes(a.status)).length;
+  const ownedRisks = data.risks.filter((r) => owns(actor.id, actor.name, r.proprietaireActorId, r.proprietaire) && !["maitrise", "cloture"].includes(r.status)).length;
+  const ownedInterfaces = data.interfaces.filter((i) => owns(actor.id, actor.name, i.responsableActorId, i.responsable) && i.status !== "valide").length;
+  const ownedDeliverables = data.deliverables.filter((d) => owns(actor.id, actor.name, d.responsableActorId, d.responsable) && d.status !== "valide").length;
 
   const raci = { R: 0, A: 0, C: 0, I: 0 };
   for (const entry of raciEntries) {

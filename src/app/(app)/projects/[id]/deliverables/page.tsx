@@ -17,12 +17,13 @@ export default async function DeliverablesPage({ params }: { params: { id: strin
   const project = await prisma.project.findUnique({ where: { id: params.id } });
   if (!project) notFound();
   const deliverables = await prisma.deliverable.findMany({ where: { projectId: params.id }, orderBy: { datePrevue: "asc" } });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-4">Livrables</h1>
-      <DeliverableForm projectId={params.id} />
+      <DeliverableForm projectId={params.id} actors={actors} />
 
       {deliverables.length > 0 ? (
         <div className="card p-0 overflow-hidden">

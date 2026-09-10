@@ -14,12 +14,13 @@ export default async function MeetingsPage({ params }: { params: { id: string } 
     orderBy: { date: "desc" },
     include: { _count: { select: { actions: true, risks: true, decisions: true } } },
   });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
 
   return (
     <div>
       <ProjectTabs projectId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-4">Réunions</h1>
-      <MeetingForm projectId={params.id} />
+      <MeetingForm projectId={params.id} actors={actors} />
 
       <div className="space-y-2">
         {meetings.map((m) => (

@@ -22,6 +22,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export default async function RealisationPage({ params }: { params: { id: string } }) {
   const project = await prisma.project.findUnique({ where: { id: params.id } });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   if (!project) notFound();
 
   const [actions, decisions, meetings] = await Promise.all([
@@ -41,7 +42,7 @@ export default async function RealisationPage({ params }: { params: { id: string
       <ProjectTabs projectId={params.id} />
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
-          <h1 className="font-display text-2xl text-ink">Réalisation</h1>
+          <h1 className="font-display text-2xl text-ink">Déploiement</h1>
           <p className="text-sm text-muted">Sommes-nous en train d'avancer ?</p>
         </div>
         <HealthBadge level={readiness.level} label={readiness.label} />
@@ -67,7 +68,7 @@ export default async function RealisationPage({ params }: { params: { id: string
             </Link>
           </div>
         </div>
-        <ActionForm projectId={params.id} />
+        <ActionForm projectId={params.id} actors={actors} />
         {actions.length > 0 ? (
           <ActionsKanban
             actions={actions.map((a) => ({
@@ -86,7 +87,7 @@ export default async function RealisationPage({ params }: { params: { id: string
 
       <section className="mt-10">
         <SectionTitle>Décisions</SectionTitle>
-        <DecisionForm projectId={params.id} />
+        <DecisionForm projectId={params.id} actors={actors} />
         {decisions.length > 0 ? (
           <div className="space-y-2">
             {decisions.map((d) => (

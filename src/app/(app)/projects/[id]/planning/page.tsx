@@ -26,6 +26,7 @@ export default async function PlanningPage({ params, searchParams }: { params: {
   const project = await prisma.project.findUnique({ where: { id: params.id }, include: { baselines: { orderBy: { createdAt: "asc" } } } });
   if (!project) notFound();
   const actions = await prisma.action.findMany({ where: { projectId: params.id }, orderBy: { echeance: "asc" } });
+  const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const dated = actions.filter((a) => a.echeance);
   const vue = VIEWS.some(([v]) => v === searchParams.vue) ? searchParams.vue! : "liste";
 
@@ -34,7 +35,7 @@ export default async function PlanningPage({ params, searchParams }: { params: {
       <div>
         <ProjectTabs projectId={params.id} />
         <h1 className="font-display text-2xl text-ink mb-4">Planning</h1>
-        <ActionForm projectId={params.id} label="+ Ajouter une tâche" />
+        <ActionForm projectId={params.id} actors={actors} label="+ Ajouter une tâche" />
         <div className="card text-center text-ink/50 py-10">
           Aucune tâche ni jalon planifié pour l'instant. Ajoutez des actions avec une échéance pour construire le planning.
         </div>
@@ -56,7 +57,7 @@ export default async function PlanningPage({ params, searchParams }: { params: {
         </div>
       </div>
 
-      <ActionForm projectId={params.id} label="+ Ajouter une tâche" />
+      <ActionForm projectId={params.id} actors={actors} label="+ Ajouter une tâche" />
 
       {project.baselines.length > 1 && (
         <div className="card mb-6 text-sm">

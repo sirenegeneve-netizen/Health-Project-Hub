@@ -6,7 +6,8 @@ import { computeBudgetSummary, computeProgress, formatEur } from "@/lib/metrics"
 import { HealthBadge } from "@/components/HealthBadge";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProjectEditForm } from "@/components/ProjectEditForm";
-import { PhaseRail } from "@/components/PhaseRail";
+import { ProjectJourney } from "@/components/ProjectJourney";
+import { getLifecycleStages } from "@/lib/lifecycle";
 
 export const dynamic = "force-dynamic";
 
@@ -43,11 +44,12 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
     .sort((a, b) => a.echeance!.getTime() - b.echeance!.getTime())
     .slice(0, 5);
 
-  const alerts: { label: string; href: string }[] = [];
-  if (budget && budget.consumptionRate >= 90) alerts.push({ label: `Budget proche du seuil (${budget.consumptionRate}% consommé)`, href: `/projects/${project.id}/budget` });
-  if (lateActions.length > 0) alerts.push({ label: `Retard sur ${lateActions.length} action(s)`, href: `/projects/${project.id}/actions` });
-  if (criticalRisks.length > 0) alerts.push({ label: `Risque critique ouvert (${criticalRisks.length})`, href: `/projects/${project.id}/risks` });
-  if (blockingInterfaces.length > 0) alerts.push({ label: `Interface bloquante (${blockingInterfaces.length})`, href: `/projects/${project.id}/interfaces` });
+  const alerts: { label: string; href: string; tone: "bad" | "warn" }[] = [];
+  if (criticalRisks.length > 0) alerts.push({ label: `Risque critique ouvert (${criticalRisks.length})`, href: `/projects/${project.id}/risks`, tone: "bad" });
+  if (blockingInterfaces.length > 0) alerts.push({ label: `Interface bloquante (${blockingInterfaces.length})`, href: `/projects/${project.id}/interfaces`, tone: "bad" });
+  if (lateActions.length > 0) alerts.push({ label: `Retard sur ${lateActions.length} action(s)`, href: `/projects/${project.id}/actions`, tone: "warn" });
+  if (pendingDecisions.length > 0) alerts.push({ label: `${pendingDecisions.length} décision(s) attendue(s)`, href: `/projects/${project.id}/decisions`, tone: "warn" });
+  if (budget && budget.consumptionRate >= 90) alerts.push({ label: `Budget proche du seuil (${budget.consumptionRate}% consommé)`, href: `/projects/${project.id}/budget`, tone: "warn" });
 
   return (
     <div>
@@ -67,7 +69,7 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
       </div>
 
       <div className="mb-6">
-        <PhaseRail phase={project.phase} />
+        <ProjectJourney projectId={project.id} stages={getLifecycleStages(project.phase)} alerts={alerts} />
       </div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink/60 mb-8">
@@ -84,22 +86,6 @@ export default async function ProjectDashboard({ params }: { params: { id: strin
         {project.targetDate && <Metric label="Échéance" value={new Date(project.targetDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} href={`/projects/${project.id}/planning`} />}
         {openRisks.length > 0 && <Metric label="Risques ouverts" value={String(openRisks.length)} tone={criticalRisks.length > 0 ? "bad" : undefined} href={`/projects/${project.id}/risks`} />}
       </div>
-
-      {alerts.length > 0 && (
-        <div className="mb-8">
-          <div className="font-medium text-sm mb-2">Points d'attention</div>
-          <ul className="space-y-1.5">
-            {alerts.map((a, i) => (
-              <li key={i} className="text-sm text-bad flex items-start gap-2">
-                <span>⚠</span>
-                <Link href={a.href} className="hover:underline">
-                  {a.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <div>

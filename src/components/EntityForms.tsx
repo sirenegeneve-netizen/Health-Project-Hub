@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ActorSelect, ActorMultiSelect } from "@/components/ActorSelect";
 
 function Toggle({ label, children }: { label: string; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -34,16 +35,18 @@ export function ActionForm({
   meetingId,
   riskId,
   decisionId,
+  actors,
   label,
 }: {
   projectId: string;
   meetingId?: string;
   riskId?: string;
   decisionId?: string;
+  actors: { id: string; name: string }[];
   label?: string;
 }) {
   const router = useRouter();
-  const [f, setF] = useState({ title: "", responsable: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
+  const [f, setF] = useState({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
   const origine = meetingId ? "reunion" : riskId ? "risque" : decisionId ? "decision" : "manuel";
   return (
     <Toggle label={label || "+ Nouvelle action"}>
@@ -54,7 +57,7 @@ export function ActionForm({
           </Field>
           <div className="grid grid-cols-4 gap-3">
             <Field label="Responsable">
-              <input className={inputCls} value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} />
+              <ActorSelect actors={actors} value={f.responsableActorId} onChange={(id) => setF({ ...f, responsableActorId: id })} />
             </Field>
             <Field label="Début (optionnel)">
               <input type="date" className={inputCls} value={f.dateDebut} onChange={(e) => setF({ ...f, dateDebut: e.target.value })} />
@@ -77,7 +80,7 @@ export function ActionForm({
               onClick={async () => {
                 if (!f.title) return;
                 await post("/api/actions", { projectId, meetingId, riskId, decisionId, origine, ...f });
-                setF({ title: "", responsable: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
+                setF({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
                 close();
                 router.refresh();
               }}
@@ -94,9 +97,9 @@ export function ActionForm({
   );
 }
 
-export function RiskForm({ projectId, meetingId, label }: { projectId: string; meetingId?: string; label?: string }) {
+export function RiskForm({ projectId, meetingId, actors, label }: { projectId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
   const router = useRouter();
-  const [f, setF] = useState({ description: "", cause: "", proprietaire: "", probabilite: "moyenne", impact: "moyen", criticite: "moyenne", planAction: "" });
+  const [f, setF] = useState({ description: "", cause: "", proprietaireActorId: "", probabilite: "moyenne", impact: "moyen", criticite: "moyenne", planAction: "" });
   return (
     <Toggle label={label || "+ Nouveau risque"}>
       {(close) => (
@@ -109,7 +112,7 @@ export function RiskForm({ projectId, meetingId, label }: { projectId: string; m
           </Field>
           <div className="grid grid-cols-4 gap-3">
             <Field label="Propriétaire">
-              <input className={inputCls} value={f.proprietaire} onChange={(e) => setF({ ...f, proprietaire: e.target.value })} />
+              <ActorSelect actors={actors} value={f.proprietaireActorId} onChange={(id) => setF({ ...f, proprietaireActorId: id })} />
             </Field>
             <Field label="Probabilité">
               <select className={inputCls} value={f.probabilite} onChange={(e) => setF({ ...f, probabilite: e.target.value })}>
@@ -159,9 +162,9 @@ export function RiskForm({ projectId, meetingId, label }: { projectId: string; m
   );
 }
 
-export function DecisionForm({ projectId, meetingId, label }: { projectId: string; meetingId?: string; label?: string }) {
+export function DecisionForm({ projectId, meetingId, actors, label }: { projectId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
   const router = useRouter();
-  const [f, setF] = useState({ subject: "", context: "", options: "", recommendation: "", decideur: "" });
+  const [f, setF] = useState({ subject: "", context: "", options: "", recommendation: "", decideurActorId: "" });
   return (
     <Toggle label={label || "+ Nouvelle décision"}>
       {(close) => (
@@ -177,7 +180,7 @@ export function DecisionForm({ projectId, meetingId, label }: { projectId: strin
               <input className={inputCls} value={f.options} onChange={(e) => setF({ ...f, options: e.target.value })} />
             </Field>
             <Field label="Décideur">
-              <input className={inputCls} value={f.decideur} onChange={(e) => setF({ ...f, decideur: e.target.value })} />
+              <ActorSelect actors={actors} value={f.decideurActorId} onChange={(id) => setF({ ...f, decideurActorId: id })} />
             </Field>
           </div>
           <Field label="Recommandation">
@@ -205,9 +208,9 @@ export function DecisionForm({ projectId, meetingId, label }: { projectId: strin
   );
 }
 
-export function InterfaceForm({ projectId }: { projectId: string }) {
+export function InterfaceForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ name: "", systemeSource: "", systemeCible: "", flux: "", protocole: "", responsable: "", fournisseur: "", datePrevue: "" });
+  const [f, setF] = useState({ name: "", systemeSource: "", systemeCible: "", flux: "", protocole: "", responsableActorId: "", fournisseur: "", datePrevue: "" });
   return (
     <Toggle label="+ Nouvelle interface">
       {(close) => (
@@ -228,7 +231,7 @@ export function InterfaceForm({ projectId }: { projectId: string }) {
               <input className={inputCls} value={f.protocole} onChange={(e) => setF({ ...f, protocole: e.target.value })} />
             </Field>
             <Field label="Responsable">
-              <input className={inputCls} value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} />
+              <ActorSelect actors={actors} value={f.responsableActorId} onChange={(id) => setF({ ...f, responsableActorId: id })} />
             </Field>
             <Field label="Fournisseur">
               <input className={inputCls} value={f.fournisseur} onChange={(e) => setF({ ...f, fournisseur: e.target.value })} />
@@ -259,9 +262,10 @@ export function InterfaceForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function MeetingForm({ projectId }: { projectId: string }) {
+export function MeetingForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ title: "", type: "suivi", date: "", participants: "", agenda: "" });
+  const [f, setF] = useState({ title: "", type: "suivi", date: "", agenda: "" });
+  const [participantActorIds, setParticipantActorIds] = useState<string[]>([]);
   return (
     <Toggle label="+ Nouvelle réunion">
       {(close) => (
@@ -282,14 +286,12 @@ export function MeetingForm({ projectId }: { projectId: string }) {
               </select>
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Date">
-              <input type="datetime-local" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
-            </Field>
-            <Field label="Participants">
-              <input className={inputCls} value={f.participants} onChange={(e) => setF({ ...f, participants: e.target.value })} />
-            </Field>
-          </div>
+          <Field label="Date">
+            <input type="datetime-local" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+          </Field>
+          <Field label="Participants">
+            <ActorMultiSelect actors={actors} values={participantActorIds} onChange={setParticipantActorIds} />
+          </Field>
           <Field label="Ordre du jour">
             <textarea className={inputCls} rows={2} value={f.agenda} onChange={(e) => setF({ ...f, agenda: e.target.value })} />
           </Field>
@@ -298,7 +300,7 @@ export function MeetingForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.title || !f.date) return;
-                const res = await post("/api/meetings", { projectId, ...f });
+                const res = await post("/api/meetings", { projectId, participantActorIds, ...f });
                 const meeting = await res.json();
                 close();
                 router.push(`/projects/${projectId}/meetings/${meeting.id}`);
@@ -516,9 +518,9 @@ export function BacklogForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function DeliverableForm({ projectId }: { projectId: string }) {
+export function DeliverableForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ name: "", responsable: "", datePrevue: "", version: "" });
+  const [f, setF] = useState({ name: "", responsableActorId: "", datePrevue: "", version: "" });
   return (
     <Toggle label="+ Nouveau livrable">
       {(close) => (
@@ -528,7 +530,7 @@ export function DeliverableForm({ projectId }: { projectId: string }) {
           </Field>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Responsable">
-              <input className={inputCls} value={f.responsable} onChange={(e) => setF({ ...f, responsable: e.target.value })} />
+              <ActorSelect actors={actors} value={f.responsableActorId} onChange={(id) => setF({ ...f, responsableActorId: id })} />
             </Field>
             <Field label="Date prévue">
               <input type="date" className={inputCls} value={f.datePrevue} onChange={(e) => setF({ ...f, datePrevue: e.target.value })} />
@@ -852,13 +854,13 @@ export function GapForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function TrainingSessionForm({ projectId, populations }: { projectId: string; populations: { id: string; label: string }[] }) {
+export function TrainingSessionForm({ projectId, populations, actors }: { projectId: string; populations: { id: string; label: string }[]; actors: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({
     trainingRecordId: populations[0]?.id || "",
     date: "",
     dureeHeures: "",
-    formateur: "",
+    formateurActorId: "",
     format: "presentiel",
     nbInscrits: "",
     nbPresents: "",
@@ -886,7 +888,7 @@ export function TrainingSessionForm({ projectId, populations }: { projectId: str
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Formateur">
-              <input className={inputCls} value={f.formateur} onChange={(e) => setF({ ...f, formateur: e.target.value })} />
+              <ActorSelect actors={actors} value={f.formateurActorId} onChange={(id) => setF({ ...f, formateurActorId: id })} />
             </Field>
             <Field label="Format">
               <select className={inputCls} value={f.format} onChange={(e) => setF({ ...f, format: e.target.value })}>

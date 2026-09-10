@@ -20,8 +20,8 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
     where: { id: params.id },
     include: {
       establishments: { include: { establishment: true } },
-      actions: true,
-      risks: true,
+      actions: { include: { responsableActor: true } },
+      risks: { include: { proprietaireActor: true } },
       decisions: true,
       interfaces: true,
       deliverables: true,
@@ -135,7 +135,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
               .slice(0, 6)
               .map((r) => (
                 <li key={r.id}>
-                  {r.description} <span className="text-xs text-ink/40">({r.criticite}{r.proprietaire ? ` · ${r.proprietaire}` : ""})</span>
+                  {r.description} <span className="text-xs text-ink/40">({r.criticite}{(r.proprietaireActor?.name || r.proprietaire) ? ` · ${r.proprietaireActor?.name || r.proprietaire}` : ""})</span>
                 </li>
               ))}
           </ul>
@@ -149,7 +149,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
           <ul className="text-sm text-ink/70 space-y-1">
             {lateActions.map((a) => (
               <li key={a.id}>
-                {a.title} — {a.responsable || "sans responsable"} <span className="text-xs text-bad">échéance {new Date(a.echeance!).toLocaleDateString("fr-FR")}</span>
+                {a.title} — {a.responsableActor?.name || a.responsable || "sans responsable"} <span className="text-xs text-bad">échéance {new Date(a.echeance!).toLocaleDateString("fr-FR")}</span>
               </li>
             ))}
           </ul>
@@ -226,7 +226,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
           <ul className="text-sm text-ink/70 space-y-1">
             {upcomingActions.map((a) => (
               <li key={a.id}>
-                {a.title} — {a.responsable || "sans responsable"} <span className="text-xs text-ink/40">{new Date(a.echeance!).toLocaleDateString("fr-FR")}</span>
+                {a.title} — {a.responsableActor?.name || a.responsable || "sans responsable"} <span className="text-xs text-ink/40">{new Date(a.echeance!).toLocaleDateString("fr-FR")}</span>
               </li>
             ))}
           </ul>
