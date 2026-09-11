@@ -97,7 +97,7 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
         </div>
         <div className="space-y-3">
           <div className="font-medium text-sm">Saisie rapide pendant la réunion</div>
-          <ActionForm projectId={params.id} meetingId={meeting.id} actors={actors} label="+ Action" />
+          <ActionForm projectId={params.id} meetingId={meeting.id} actors={actors} establishments={establishments} label="+ Action" />
           <RiskForm projectId={params.id} meetingId={meeting.id} actors={actors} establishments={establishments} label="+ Risque" />
           <DecisionForm projectId={params.id} meetingId={meeting.id} actors={actors} label="+ Décision" />
         </div>

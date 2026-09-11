@@ -21,9 +21,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function RealisationPage({ params }: { params: { id: string } }) {
-  const project = await prisma.project.findUnique({ where: { id: params.id } });
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: { establishments: { include: { establishment: true } } },
+  });
   const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   if (!project) notFound();
+  const establishments = project.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
 
   const [actions, decisions, meetings] = await Promise.all([
     prisma.action.findMany({ where: { projectId: params.id }, orderBy: { echeance: "asc" } }),
@@ -68,7 +72,7 @@ export default async function RealisationPage({ params }: { params: { id: string
             </Link>
           </div>
         </div>
-        <ActionForm projectId={params.id} actors={actors} />
+        <ActionForm projectId={params.id} actors={actors} establishments={establishments} />
         {actions.length > 0 ? (
           <ActionsKanban
             actions={actions.map((a) => ({
@@ -78,6 +82,7 @@ export default async function RealisationPage({ params }: { params: { id: string
               echeance: a.echeance ? a.echeance.toISOString() : null,
               priority: a.priority,
               status: a.status,
+              establishmentName: establishments.find((e) => e.id === a.establishmentId)?.name || null,
             }))}
           />
         ) : (

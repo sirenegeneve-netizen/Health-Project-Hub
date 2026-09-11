@@ -32,6 +32,7 @@ model Establishment {
   projects     ProjectEstablishment[]
   trainings    TrainingRecord[]
   risks        Risk[]
+  actions      Action[]
   createdAt    DateTime               @default(now())
 }
 
@@ -238,6 +239,8 @@ model Action {
   risk           Risk?     @relation(fields: [riskId], references: [id])
   decisionId     String?
   decision       Decision? @relation(fields: [decisionId], references: [id])
+  establishmentId String?
+  establishment   Establishment? @relation(fields: [establishmentId], references: [id])
   responsableActorId String?
   responsableActor   Actor? @relation("ActionResponsable", fields: [responsableActorId], references: [id])
   title          String

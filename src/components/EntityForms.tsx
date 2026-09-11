@@ -36,6 +36,7 @@ export function ActionForm({
   riskId,
   decisionId,
   actors,
+  establishments,
   label,
 }: {
   projectId: string;
@@ -43,10 +44,11 @@ export function ActionForm({
   riskId?: string;
   decisionId?: string;
   actors: { id: string; name: string }[];
+  establishments?: { id: string; name: string }[];
   label?: string;
 }) {
   const router = useRouter();
-  const [f, setF] = useState({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
+  const [f, setF] = useState({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
   const origine = meetingId ? "reunion" : riskId ? "risque" : decisionId ? "decision" : "manuel";
   return (
     <Toggle label={label || "+ Nouvelle action"}>
@@ -74,13 +76,25 @@ export function ActionForm({
               </select>
             </Field>
           </div>
+          {establishments && establishments.length > 1 && (
+            <Field label="Établissement (optionnel)">
+              <select className={inputCls} value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
+                <option value="">Tous établissements</option>
+                {establishments.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
           <div className="flex gap-2">
             <button
               className="btn"
               onClick={async () => {
                 if (!f.title) return;
-                await post("/api/actions", { projectId, meetingId, riskId, decisionId, origine, ...f });
-                setF({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "" });
+                await post("/api/actions", { projectId, meetingId, riskId, decisionId, origine, ...f, establishmentId: f.establishmentId || null });
+                setF({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
                 close();
                 router.refresh();
               }}

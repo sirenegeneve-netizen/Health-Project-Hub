@@ -19,15 +19,19 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function ActionsPage({ params, searchParams }: { params: { id: string }; searchParams: { vue?: string } }) {
-  const project = await prisma.project.findUnique({ where: { id: params.id } });
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: { establishments: { include: { establishment: true } } },
+  });
   if (!project) notFound();
   const actions = await prisma.action.findMany({
     where: { projectId: params.id },
-    include: { meeting: true, risk: true, decision: true, responsableActor: true },
+    include: { meeting: true, risk: true, decision: true, responsableActor: true, establishment: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
   const actors = await prisma.actor.findMany({ where: { projectId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const establishments = project.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
   const vue = searchParams.vue === "kanban" ? "kanban" : "liste";
 
   return (
@@ -44,7 +48,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
           </a>
         </div>
       </div>
-      <ActionForm projectId={params.id} actors={actors} />
+      <ActionForm projectId={params.id} actors={actors} establishments={establishments} />
 
       {actions.length === 0 ? (
         <div className="card text-center text-ink/50 py-10">Aucune action pour ce projet.</div>
@@ -57,6 +61,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
+            establishmentName: a.establishment?.name || null,
           }))}
         />
       ) : (
@@ -69,6 +74,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
                 <th>Échéance</th>
                 <th>Priorité</th>
                 <th>Origine</th>
+                {establishments.length > 1 && <th>Établissement</th>}
                 <th>Statut</th>
               </tr>
             </thead>
@@ -101,6 +107,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
                     );
                   })()}
                 </td>
+                    {establishments.length > 1 && <td className="text-ink/60 text-sm">{a.establishment?.name || "—"}</td>}
                     <td>
                       <InlineSelect endpoint={`/api/actions/${a.id}`} field="status" value={a.status} options={STATUS_OPTIONS} />
                     </td>

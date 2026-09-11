@@ -11,10 +11,10 @@ const PHASE_OPTIONS = [{ value: "", label: "— (aligné sur le projet)" }, ...S
 
 // Vue comparative multi-établissements (§27 du prompt de refonte) : une ligne
 // par site, pour répondre à « où en est-on établissement par établissement ? ».
-// Seuls les risques et la formation sont déjà rattachables à un établissement
-// dans le modèle de données actuel — l'avancement des actions ne l'est pas
-// encore, donc cette colonne n'est volontairement pas affichée plutôt que
-// d'inventer un chiffre.
+// L'avancement, les risques et la formation sont calculés uniquement à partir
+// des actions/risques/populations explicitement rattachées à ce site — celles
+// non affectées à un établissement précis sont signalées sous le tableau
+// plutôt qu'agrégées dans une moyenne trompeuse.
 export default async function EstablishmentsComparisonPage({ params }: { params: { id: string } }) {
   const project = await prisma.project.findUnique({
     where: { id: params.id },
@@ -22,15 +22,19 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
   });
   if (!project) notFound();
 
-  const [risks, trainings] = await Promise.all([
+  const [risks, trainings, actions] = await Promise.all([
     prisma.risk.findMany({ where: { projectId: params.id } }),
     prisma.trainingRecord.findMany({ where: { projectId: params.id } }),
+    prisma.action.findMany({ where: { projectId: params.id } }),
   ]);
 
   const rows = project.establishments.map((pe) => {
     const siteRisks = risks.filter((r) => r.establishmentId === pe.establishmentId);
     const openRisks = siteRisks.filter((r) => !["maitrise", "cloture"].includes(r.status));
     const criticalRisks = openRisks.filter((r) => ["forte", "critique"].includes(r.criticite));
+
+    const siteActions = actions.filter((a) => a.establishmentId === pe.establishmentId);
+    const progress = siteActions.length > 0 ? Math.round((siteActions.filter((a) => a.status === "termine").length / siteActions.length) * 100) : null;
 
     const siteTrainings = trainings.filter((t) => t.establishmentId === pe.establishmentId);
     const totalUsers = siteTrainings.reduce((s, t) => s + t.nbUsers, 0);
@@ -44,6 +48,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
       name: pe.establishment.name,
       phase: pe.phase || "",
       phaseInherited: !pe.phase,
+      progress,
       openRisks: openRisks.length,
       criticalRisks: criticalRisks.length,
       formationRate,
@@ -53,6 +58,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
 
   const unassignedRisks = risks.filter((r) => !r.establishmentId && !["maitrise", "cloture"].includes(r.status)).length;
   const unassignedTrainings = trainings.filter((t) => !t.establishmentId).length;
+  const unassignedActions = actions.filter((a) => !a.establishmentId).length;
 
   return (
     <div>
@@ -69,6 +75,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
               <tr className="bg-teal-50/50">
                 <th className="pl-4">Établissement</th>
                 <th>Phase</th>
+                <th>Avancement</th>
                 <th>Risques ouverts</th>
                 <th>Formation</th>
                 <th>Autonomie</th>
@@ -84,6 +91,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
                       {r.phaseInherited && <span className="text-xs text-ink/40">(projet)</span>}
                     </div>
                   </td>
+                  <td>{r.progress === null ? <span className="text-ink/40">—</span> : `${r.progress}%`}</td>
                   <td>
                     {r.openRisks > 0 ? (
                       <Pill text={`${r.openRisks}${r.criticalRisks > 0 ? ` dont ${r.criticalRisks} critique(s)` : ""}`} tone={r.criticalRisks > 0 ? "bad" : "warn"} />
@@ -100,15 +108,18 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
         </div>
       )}
 
-      {(unassignedRisks > 0 || unassignedTrainings > 0) && (
+      {(unassignedRisks > 0 || unassignedTrainings > 0 || unassignedActions > 0) && (
         <p className="text-xs text-ink/45 mt-4">
-          {[unassignedRisks > 0 && `${unassignedRisks} risque(s) ouvert(s)`, unassignedTrainings > 0 && `${unassignedTrainings} population(s) de formation`]
+          {[
+            unassignedActions > 0 && `${unassignedActions} action(s)`,
+            unassignedRisks > 0 && `${unassignedRisks} risque(s) ouvert(s)`,
+            unassignedTrainings > 0 && `${unassignedTrainings} population(s) de formation`,
+          ]
             .filter(Boolean)
             .join(" et ")}{" "}
-          ne sont rattachés à aucun établissement précis.
+          ne sont rattachés à aucun établissement précis (avancement/formation/risques de la vue globale du projet).
         </p>
       )}
-      <p className="text-xs text-ink/45 mt-2">L'avancement des actions n'est pas encore réparti par établissement, cette colonne n'est donc pas affichée.</p>
     </div>
   );
 }
