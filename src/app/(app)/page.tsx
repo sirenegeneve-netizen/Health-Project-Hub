@@ -9,7 +9,7 @@ import { getLifecycleStages } from "@/lib/lifecycle";
 import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { IconBadge } from "@/components/IconBadge";
-import { getScope, projectScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const scope = await getScope();
 
-  const projects = await prisma.project.findMany({
-    where: projectScopeWhere(scope),
+  const initiatives = await prisma.initiative.findMany({
+    where: initiativeScopeWhere(scope),
     include: {
       establishments: { include: { establishment: true } },
       budgetLines: true,
@@ -32,29 +32,29 @@ export default async function HomePage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const scores = await Promise.all(projects.map((p) => computeHealthScore(p.id)));
+  const scores = await Promise.all(initiatives.map((p) => computeHealthScore(p.id)));
 
   const atRisk = scores.filter((s) => s.level === "rouge").length;
-  const enCours = projects.filter((p) => p.status === "actif").length;
+  const enCours = initiatives.filter((p) => p.status === "actif").length;
   const lateActionsTotal = scores.reduce((s, sc) => s + sc.metrics.lateActions, 0);
   const blockedCount = scores.filter((s) => s.metrics.blockingInterfaces > 0).length;
 
-  const budgetSummaries = projects.map((p) => computeBudgetSummary(p.budgetInitialEur, p.budgetReviseEur, p.budgetLines));
+  const budgetSummaries = initiatives.map((p) => computeBudgetSummary(p.budgetInitialEur, p.budgetReviseEur, p.budgetLines));
   const totalBudget = budgetSummaries.reduce((s, b) => s + (b?.budget ?? 0), 0);
   const totalReel = budgetSummaries.reduce((s, b) => s + (b?.reel ?? 0), 0);
 
   // Dépendances critiques : activités RACI portées par un seul acteur ("R"),
   // agrégées sur tout le périmètre — cf. §11/§F du diagnostic.
-  const criticalDependencies = projects.reduce((sum, p) => {
+  const criticalDependencies = initiatives.reduce((sum, p) => {
     const actorsById = new Map(p.actors.map((a) => [a.id, a.name]));
     return sum + findSinglePointsOfFailure(p.raciEntries, actorsById).length;
   }, 0);
 
-  const scopedProject = scope.establishmentId ? { establishments: { some: { establishmentId: scope.establishmentId } } } : undefined;
+  const scopedInitiative = scope.establishmentId ? { establishments: { some: { establishmentId: scope.establishmentId } } } : undefined;
 
   const recentEvents = await prisma.timelineEvent.findMany({
-    where: scopedProject ? { project: scopedProject } : undefined,
-    include: { project: true },
+    where: scopedInitiative ? { initiative: scopedInitiative } : undefined,
+    include: { initiative: true },
     orderBy: { date: "desc" },
     take: 6,
   });
@@ -65,50 +65,50 @@ export default async function HomePage() {
 
   const [pendingDecisions, dueSoonActions, imminentDeliverables] = await Promise.all([
     prisma.decision.findMany({
-      where: { status: { not: "decision_prise" }, ...(scopedProject ? { project: scopedProject } : {}) },
-      include: { project: true },
+      where: { status: { not: "decision_prise" }, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) },
+      include: { initiative: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.action.findMany({
       where: {
         echeance: { gte: now, lte: in7Days },
         status: { notIn: ["termine", "abandonne"] },
-        ...(scopedProject ? { project: scopedProject } : {}),
+        ...(scopedInitiative ? { initiative: scopedInitiative } : {}),
       },
-      include: { project: true },
+      include: { initiative: true },
       orderBy: { echeance: "asc" },
     }),
     prisma.deliverable.findMany({
       where: {
         datePrevue: { gte: now, lte: in14Days },
         status: { not: "valide" },
-        ...(scopedProject ? { project: scopedProject } : {}),
+        ...(scopedInitiative ? { initiative: scopedInitiative } : {}),
       },
-      include: { project: true },
+      include: { initiative: true },
       orderBy: { datePrevue: "asc" },
     }),
   ]);
 
   const priorities = [
-    ...pendingDecisions.map((d) => ({ label: d.subject, projectName: d.project.name, projectId: d.projectId, kind: "Décision à trancher", date: null as string | null, href: `/projects/${d.projectId}/decisions` })),
-    ...dueSoonActions.map((a) => ({ label: a.title, projectName: a.project.name, projectId: a.projectId, kind: "Action due", date: a.echeance!.toISOString(), href: `/projects/${a.projectId}/actions` })),
-    ...imminentDeliverables.map((d) => ({ label: d.name, projectName: d.project.name, projectId: d.projectId, kind: "Livrable attendu", date: d.datePrevue!.toISOString(), href: `/projects/${d.projectId}/conception` })),
+    ...pendingDecisions.map((d) => ({ label: d.subject, initiativeName: d.initiative.name, initiativeId: d.initiativeId, kind: "Décision à trancher", date: null as string | null, href: `/initiatives/${d.initiativeId}/decisions` })),
+    ...dueSoonActions.map((a) => ({ label: a.title, initiativeName: a.initiative.name, initiativeId: a.initiativeId, kind: "Action due", date: a.echeance!.toISOString(), href: `/initiatives/${a.initiativeId}/actions` })),
+    ...imminentDeliverables.map((d) => ({ label: d.name, initiativeName: d.initiative.name, initiativeId: d.initiativeId, kind: "Livrable attendu", date: d.datePrevue!.toISOString(), href: `/initiatives/${d.initiativeId}/conception` })),
   ]
     .sort((a, b) => (a.date ? new Date(a.date).getTime() : 0) - (b.date ? new Date(b.date).getTime() : 0))
     .slice(0, 8);
 
   // Alertes portefeuille : agrégées à partir des vraies raisons calculées par projet.
-  const alerts = projects
-    .map((p, i) => ({ project: p, score: scores[i] }))
+  const alerts = initiatives
+    .map((p, i) => ({ initiative: p, score: scores[i] }))
     .filter(({ score }) => score.level !== "vert")
-    .flatMap(({ project, score }) =>
+    .flatMap(({ initiative, score }) =>
       score.reasons
         .filter((r) => !r.toLowerCase().startsWith("autonomie") && !r.toLowerCase().startsWith("aucun"))
-        .map((reason) => ({ project, reason, level: score.level }))
+        .map((reason) => ({ initiative, reason, level: score.level }))
     )
     .slice(0, 6);
 
-  const portfolioProjects = projects.map((p, i) => {
+  const portfolioInitiatives = initiatives.map((p, i) => {
     const stages = getLifecycleStages(p.phase);
     const currentStage = stages.find((s) => s.status === "current") || stages[0];
     return {
@@ -128,7 +128,7 @@ export default async function HomePage() {
     };
   });
 
-  const healthRows: HealthRow[] = projects.map((p, i) => {
+  const healthRows: HealthRow[] = initiatives.map((p, i) => {
     const dims = computeDimensionColors(
       scores[i],
       budgetSummaries[i],
@@ -139,7 +139,7 @@ export default async function HomePage() {
     return {
       id: p.id,
       name: p.name,
-      progress: portfolioProjects[i].progress,
+      progress: portfolioInitiatives[i].progress,
       ...dims,
       sante: scores[i].level,
       santeLabel: scores[i].label,
@@ -147,7 +147,7 @@ export default async function HomePage() {
   });
 
   const resourceConflicts = detectResourceConflicts(
-    projects.map((p) => ({
+    initiatives.map((p) => ({
       id: p.id,
       name: p.name,
       status: p.status,
@@ -157,7 +157,7 @@ export default async function HomePage() {
     }))
   );
   const scheduleConflicts = detectScheduleConflicts(
-    projects.map((p) => ({
+    initiatives.map((p) => ({
       id: p.id,
       name: p.name,
       status: p.status,
@@ -176,17 +176,17 @@ export default async function HomePage() {
             <p className="text-sm text-muted mt-1">Filtré sur {scope.establishmentName}</p>
           )}
         </div>
-        <Link href="/projects/new" className="btn">
+        <Link href="/initiatives/new" className="btn">
           + Nouveau projet
         </Link>
       </div>
 
-      {projects.length > 0 && (
+      {initiatives.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Projets" value={String(projects.length)} icon={Briefcase} color="primary" href="/projects" />
-          <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" href="/projects?vue=actifs" />
-          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" href="/projects?vue=a_risque" />}
-          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" href="/projects?vue=bloques" />}
+          <StatCard label="Projets" value={String(initiatives.length)} icon={Briefcase} color="primary" href="/initiatives" />
+          <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" href="/initiatives?vue=actifs" />
+          {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" href="/initiatives?vue=a_risque" />}
+          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" href="/initiatives?vue=bloques" />}
           {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" href="/actions?filtre=retard" />}
           {criticalDependencies > 0 && (
             <StatCard label="Dépendances critiques" value={String(criticalDependencies)} icon={GitFork} color="purple" href="/resources?vue=dependances" />
@@ -210,11 +210,11 @@ export default async function HomePage() {
                   return (
                     <li key={i} className="flex items-start justify-between gap-3 text-sm">
                       <div>
-                        <Link href={`/projects/${a.project.id}`} className="text-blue hover:underline">
-                          {a.project.name}
+                        <Link href={`/initiatives/${a.initiative.id}`} className="text-blue hover:underline">
+                          {a.initiative.name}
                         </Link>
                         <div className="text-ink/60">
-                          <Link href={reasonHref(a.project.id, a.reason)} className="hover:underline hover:text-ink">
+                          <Link href={reasonHref(a.initiative.id, a.reason)} className="hover:underline hover:text-ink">
                             {a.reason}
                           </Link>
                         </div>
@@ -237,8 +237,8 @@ export default async function HomePage() {
               <ul className="space-y-3">
                 {priorities.map((p, i) => (
                   <li key={i} className="text-sm">
-                    <Link href={`/projects/${p.projectId}`} className="text-blue hover:underline">
-                      {p.projectName}
+                    <Link href={`/initiatives/${p.initiativeId}`} className="text-blue hover:underline">
+                      {p.initiativeName}
                     </Link>
                     <div className="text-ink/60 flex items-center justify-between gap-2">
                       <Link href={p.href} className="hover:underline hover:text-ink">
@@ -289,8 +289,8 @@ export default async function HomePage() {
                         <span className="text-ink/40 text-xs">{c.combinedWorkload} objets ouverts cumulés</span>
                       </div>
                       <div className="text-ink/60 text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1 pl-4">
-                        {c.projects.map((p) => (
-                          <Link key={p.id} href={`/projects/${p.id}`} className="hover:underline hover:text-primary">
+                        {c.initiatives.map((p) => (
+                          <Link key={p.id} href={`/initiatives/${p.id}`} className="hover:underline hover:text-primary">
                             {p.name} ({p.workload})
                           </Link>
                         ))}
@@ -308,8 +308,8 @@ export default async function HomePage() {
                     <li key={i} className="text-sm">
                       <div className="font-medium text-ink">{c.establishmentName}</div>
                       <div className="text-ink/60 text-xs mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                        {c.projects.map((p) => (
-                          <Link key={p.id} href={`/projects/${p.id}`} className="hover:underline hover:text-primary">
+                        {c.initiatives.map((p) => (
+                          <Link key={p.id} href={`/initiatives/${p.id}`} className="hover:underline hover:text-primary">
                             {p.name} — {new Date(p.targetDate).toLocaleDateString("fr-FR")}
                           </Link>
                         ))}
@@ -323,12 +323,12 @@ export default async function HomePage() {
         </div>
       )}
 
-      {projects.length > 0 ? (
-        <PortfolioList projects={portfolioProjects} />
+      {initiatives.length > 0 ? (
+        <PortfolioList initiatives={portfolioInitiatives} />
       ) : (
         <div className="card text-center py-16">
           <p className="text-ink/60 mb-4">Aucun projet pour le moment.</p>
-          <Link href="/projects/new" className="btn">
+          <Link href="/initiatives/new" className="btn">
             Créer le premier projet
           </Link>
         </div>
@@ -337,15 +337,15 @@ export default async function HomePage() {
   );
 }
 
-function reasonHref(projectId: string, reason: string): string {
+function reasonHref(initiativeId: string, reason: string): string {
   const r = reason.toLowerCase();
-  if (r.includes("retard")) return `/projects/${projectId}/actions`;
-  if (r.includes("risque")) return `/projects/${projectId}/risks`;
-  if (r.includes("décision")) return `/projects/${projectId}/decisions`;
-  if (r.includes("interface") || r.includes("bloquante")) return `/projects/${projectId}/interfaces`;
-  if (r.includes("budget")) return `/projects/${projectId}/budget`;
-  if (r.includes("planning")) return `/projects/${projectId}/planning`;
-  return `/projects/${projectId}`;
+  if (r.includes("retard")) return `/initiatives/${initiativeId}/actions`;
+  if (r.includes("risque")) return `/initiatives/${initiativeId}/risks`;
+  if (r.includes("décision")) return `/initiatives/${initiativeId}/decisions`;
+  if (r.includes("interface") || r.includes("bloquante")) return `/initiatives/${initiativeId}/interfaces`;
+  if (r.includes("budget")) return `/initiatives/${initiativeId}/budget`;
+  if (r.includes("planning")) return `/initiatives/${initiativeId}/planning`;
+  return `/initiatives/${initiativeId}`;
 }
 
 function severityFor(reason: string, level: "vert" | "orange" | "rouge") {

@@ -7,8 +7,8 @@ export interface CalEvent {
   date: string;
   title: string;
   type: string;
-  projectId: string;
-  projectName: string;
+  initiativeId: string;
+  initiativeName: string;
   href: string;
   late?: boolean;
 }
@@ -83,7 +83,7 @@ export function CalendarBoard({ events }: { events: CalEvent[] }) {
                     <div className={`card flex items-center justify-between gap-4 ${e.late ? "bg-bad/5" : ""}`}>
                       <div>
                         <div className="font-medium text-sm">{e.title}</div>
-                        <div className="text-xs text-muted">{e.projectName}</div>
+                        <div className="text-xs text-muted">{e.initiativeName}</div>
                       </div>
                       <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5 shrink-0">{TYPE_LABEL[e.type]}</span>
                     </div>

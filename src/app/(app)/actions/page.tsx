@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { InlineSelect } from "@/components/InlineSelect";
 import { ActionsKanban } from "@/components/ActionsKanban";
 import { resolveActionOrigin } from "@/lib/actionOrigin";
-import { getScope, projectScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,8 @@ const STATUS_OPTIONS = [
 export default async function GlobalActionsPage({ searchParams }: { searchParams: { vue?: string; filtre?: string } }) {
   const scope = await getScope();
   const actions = await prisma.action.findMany({
-    where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined,
-    include: { project: true, meeting: true, risk: true, decision: true, responsableActor: true },
+    where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined,
+    include: { initiative: true, meeting: true, risk: true, decision: true, responsableActor: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
@@ -78,7 +78,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
-            projectName: a.project.name,
+            initiativeName: a.initiative.name,
           }))}
         />
       ) : (
@@ -101,8 +101,8 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                   <tr key={a.id} className={isLate ? "bg-bad/5" : ""}>
                     <td className="pl-4">{a.title}</td>
                     <td>
-                      <Link href={`/projects/${a.projectId}`} className="text-blue hover:underline">
-                        {a.project.name}
+                      <Link href={`/initiatives/${a.initiativeId}`} className="text-blue hover:underline">
+                        {a.initiative.name}
                       </Link>
                     </td>
                     <td>{a.responsableActor?.name || a.responsable || "—"}</td>
@@ -111,7 +111,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                     </td>
                     <td className="text-ink/50 text-xs">
                       {(() => {
-                        const o = resolveActionOrigin(a, a.projectId);
+                        const o = resolveActionOrigin(a, a.initiativeId);
                         return o.href ? (
                           <Link href={o.href} className="hover:underline hover:text-primary">
                             {o.label}

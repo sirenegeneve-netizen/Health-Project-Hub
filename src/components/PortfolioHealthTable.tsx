@@ -41,22 +41,22 @@ export function PortfolioHealthTable({ rows }: { rows: HealthRow[] }) {
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-line last:border-0 hover:bg-sand/60">
               <td className="px-4 py-2.5">
-                <Link href={`/projects/${r.id}`} className="font-medium text-ink hover:text-primary">
+                <Link href={`/initiatives/${r.id}`} className="font-medium text-ink hover:text-primary">
                   {r.name}
                 </Link>
               </td>
               <td className="px-4 py-2.5 text-ink/60">{r.progress !== null ? `${r.progress} %` : "—"}</td>
               <td className="px-4 py-2.5">
-                <Link href={`/projects/${r.id}/planning`}><Dot level={r.planning} /></Link>
+                <Link href={`/initiatives/${r.id}/planning`}><Dot level={r.planning} /></Link>
               </td>
               <td className="px-4 py-2.5">
-                <Link href={`/projects/${r.id}/budget`}><Dot level={r.budget} /></Link>
+                <Link href={`/initiatives/${r.id}/budget`}><Dot level={r.budget} /></Link>
               </td>
               <td className="px-4 py-2.5">
-                <Link href={`/projects/${r.id}/risks`}><Dot level={r.risques} /></Link>
+                <Link href={`/initiatives/${r.id}/risks`}><Dot level={r.risques} /></Link>
               </td>
               <td className="px-4 py-2.5">
-                <Link href={`/projects/${r.id}/actors`}><Dot level={r.ressources} /></Link>
+                <Link href={`/initiatives/${r.id}/actors`}><Dot level={r.ressources} /></Link>
               </td>
               <td className="px-4 py-2.5"><Dot level={r.sante} /></td>
             </tr>

@@ -31,7 +31,7 @@ async function post(url: string, body: unknown) {
 }
 
 export function ActionForm({
-  projectId,
+  initiativeId,
   meetingId,
   riskId,
   decisionId,
@@ -39,7 +39,7 @@ export function ActionForm({
   establishments,
   label,
 }: {
-  projectId: string;
+  initiativeId: string;
   meetingId?: string;
   riskId?: string;
   decisionId?: string;
@@ -93,7 +93,7 @@ export function ActionForm({
               className="btn"
               onClick={async () => {
                 if (!f.title) return;
-                await post("/api/actions", { projectId, meetingId, riskId, decisionId, origine, ...f, establishmentId: f.establishmentId || null });
+                await post("/api/actions", { initiativeId, meetingId, riskId, decisionId, origine, ...f, establishmentId: f.establishmentId || null });
                 setF({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
                 close();
                 router.refresh();
@@ -112,13 +112,13 @@ export function ActionForm({
 }
 
 export function RiskForm({
-  projectId,
+  initiativeId,
   meetingId,
   actors,
   establishments,
   label,
 }: {
-  projectId: string;
+  initiativeId: string;
   meetingId?: string;
   actors: { id: string; name: string }[];
   establishments?: { id: string; name: string }[];
@@ -192,7 +192,7 @@ export function RiskForm({
               className="btn"
               onClick={async () => {
                 if (!f.description) return;
-                await post("/api/risks", { projectId, meetingId, ...f, establishmentId: f.establishmentId || null });
+                await post("/api/risks", { initiativeId, meetingId, ...f, establishmentId: f.establishmentId || null });
                 close();
                 router.refresh();
               }}
@@ -209,7 +209,7 @@ export function RiskForm({
   );
 }
 
-export function DecisionForm({ projectId, meetingId, actors, label }: { projectId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
+export function DecisionForm({ initiativeId, meetingId, actors, label }: { initiativeId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
   const router = useRouter();
   const [f, setF] = useState({ subject: "", context: "", options: "", recommendation: "", decideurActorId: "" });
   return (
@@ -238,7 +238,7 @@ export function DecisionForm({ projectId, meetingId, actors, label }: { projectI
               className="btn"
               onClick={async () => {
                 if (!f.subject) return;
-                await post("/api/decisions", { projectId, meetingId, ...f });
+                await post("/api/decisions", { initiativeId, meetingId, ...f });
                 close();
                 router.refresh();
               }}
@@ -255,7 +255,7 @@ export function DecisionForm({ projectId, meetingId, actors, label }: { projectI
   );
 }
 
-export function InterfaceForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
+export function InterfaceForm({ initiativeId, actors }: { initiativeId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({ name: "", systemeSource: "", systemeCible: "", flux: "", protocole: "", responsableActorId: "", fournisseur: "", datePrevue: "" });
   return (
@@ -292,7 +292,7 @@ export function InterfaceForm({ projectId, actors }: { projectId: string; actors
               className="btn"
               onClick={async () => {
                 if (!f.name) return;
-                await post("/api/interfaces", { projectId, ...f });
+                await post("/api/interfaces", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -309,7 +309,7 @@ export function InterfaceForm({ projectId, actors }: { projectId: string; actors
   );
 }
 
-export function MeetingForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
+export function MeetingForm({ initiativeId, actors }: { initiativeId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({ title: "", type: "suivi", date: "", agenda: "" });
   const [participantActorIds, setParticipantActorIds] = useState<string[]>([]);
@@ -347,10 +347,10 @@ export function MeetingForm({ projectId, actors }: { projectId: string; actors: 
               className="btn"
               onClick={async () => {
                 if (!f.title || !f.date) return;
-                const res = await post("/api/meetings", { projectId, participantActorIds, ...f });
+                const res = await post("/api/meetings", { initiativeId, participantActorIds, ...f });
                 const meeting = await res.json();
                 close();
-                router.push(`/projects/${projectId}/meetings/${meeting.id}`);
+                router.push(`/initiatives/${initiativeId}/meetings/${meeting.id}`);
               }}
             >
               Créer
@@ -365,7 +365,7 @@ export function MeetingForm({ projectId, actors }: { projectId: string; actors: 
   );
 }
 
-export function TrainingForm({ projectId, establishments }: { projectId: string; establishments: { id: string; name: string }[] }) {
+export function TrainingForm({ initiativeId, establishments }: { initiativeId: string; establishments: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({
     establishmentId: "",
@@ -432,7 +432,7 @@ export function TrainingForm({ projectId, establishments }: { projectId: string;
               className="btn"
               onClick={async () => {
                 if (!f.profil) return;
-                await post("/api/trainings", { projectId, ...f });
+                await post("/api/trainings", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -449,7 +449,7 @@ export function TrainingForm({ projectId, establishments }: { projectId: string;
   );
 }
 
-export function AnomalyForm({ projectId }: { projectId: string }) {
+export function AnomalyForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({ description: "", criticite: "moyenne", responsable: "", environnement: "" });
   return (
@@ -480,7 +480,7 @@ export function AnomalyForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.description) return;
-                await post("/api/anomalies", { projectId, ...f });
+                await post("/api/anomalies", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -497,7 +497,7 @@ export function AnomalyForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function VigilanceForm({ projectId }: { projectId: string }) {
+export function VigilanceForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [text, setText] = useState("");
   return (
@@ -507,7 +507,7 @@ export function VigilanceForm({ projectId }: { projectId: string }) {
         className="btn-secondary shrink-0"
         onClick={async () => {
           if (!text) return;
-          await post("/api/vigilance-points", { projectId, description: text });
+          await post("/api/vigilance-points", { initiativeId, description: text });
           setText("");
           router.refresh();
         }}
@@ -518,7 +518,7 @@ export function VigilanceForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function BacklogForm({ projectId }: { projectId: string }) {
+export function BacklogForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({ demande: "", description: "", impact: "", priorite: "normale", estimationJh: "" });
   return (
@@ -548,7 +548,7 @@ export function BacklogForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.demande) return;
-                await post("/api/backlog", { projectId, ...f });
+                await post("/api/backlog", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -565,7 +565,7 @@ export function BacklogForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function DeliverableForm({ projectId, actors }: { projectId: string; actors: { id: string; name: string }[] }) {
+export function DeliverableForm({ initiativeId, actors }: { initiativeId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({ name: "", responsableActorId: "", datePrevue: "", version: "" });
   return (
@@ -591,7 +591,7 @@ export function DeliverableForm({ projectId, actors }: { projectId: string; acto
               className="btn"
               onClick={async () => {
                 if (!f.name) return;
-                await post("/api/deliverables", { projectId, ...f });
+                await post("/api/deliverables", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -608,7 +608,7 @@ export function DeliverableForm({ projectId, actors }: { projectId: string; acto
   );
 }
 
-export function StakeholderForm({ projectId }: { projectId: string }) {
+export function StakeholderForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({ name: "", organisation: "", role: "", implication: "moyenne", influence: "moyenne", contact: "" });
   return (
@@ -650,7 +650,7 @@ export function StakeholderForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.name) return;
-                await post("/api/stakeholders", { projectId, ...f });
+                await post("/api/stakeholders", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -667,7 +667,7 @@ export function StakeholderForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function KpiForm({ projectId, defaultCategorie }: { projectId: string; defaultCategorie?: string }) {
+export function KpiForm({ initiativeId, defaultCategorie }: { initiativeId: string; defaultCategorie?: string }) {
   const router = useRouter();
   const [f, setF] = useState({ name: "", value: "", unit: "", target: "", period: "" });
   return (
@@ -696,7 +696,7 @@ export function KpiForm({ projectId, defaultCategorie }: { projectId: string; de
               className="btn"
               onClick={async () => {
                 if (!f.name || !f.value) return;
-                await post("/api/kpis", { projectId, categorie: defaultCategorie, ...f });
+                await post("/api/kpis", { initiativeId, categorie: defaultCategorie, ...f });
                 close();
                 router.refresh();
               }}
@@ -713,7 +713,7 @@ export function KpiForm({ projectId, defaultCategorie }: { projectId: string; de
   );
 }
 
-export function ChangeForm({ projectId }: { projectId: string }) {
+export function ChangeForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({
     titre: "",
@@ -788,7 +788,7 @@ export function ChangeForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.titre) return;
-                await post("/api/changes", { projectId, ...f });
+                await post("/api/changes", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -805,7 +805,7 @@ export function ChangeForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function RequirementForm({ projectId }: { projectId: string }) {
+export function RequirementForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({ titre: "", description: "", origine: "atelier_metier", priorite: "normale" });
   return (
@@ -841,7 +841,7 @@ export function RequirementForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.titre) return;
-                await post("/api/requirements", { projectId, ...f });
+                await post("/api/requirements", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -858,7 +858,7 @@ export function RequirementForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function GapForm({ projectId }: { projectId: string }) {
+export function GapForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [f, setF] = useState({ description: "", optionsEnvisagees: "", decisionRetenue: "", impact: "" });
   return (
@@ -884,7 +884,7 @@ export function GapForm({ projectId }: { projectId: string }) {
               className="btn"
               onClick={async () => {
                 if (!f.description) return;
-                await post("/api/gaps", { projectId, ...f });
+                await post("/api/gaps", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}
@@ -901,7 +901,7 @@ export function GapForm({ projectId }: { projectId: string }) {
   );
 }
 
-export function TrainingSessionForm({ projectId, populations, actors }: { projectId: string; populations: { id: string; label: string }[]; actors: { id: string; name: string }[] }) {
+export function TrainingSessionForm({ initiativeId, populations, actors }: { initiativeId: string; populations: { id: string; label: string }[]; actors: { id: string; name: string }[] }) {
   const router = useRouter();
   const [f, setF] = useState({
     trainingRecordId: populations[0]?.id || "",
@@ -961,7 +961,7 @@ export function TrainingSessionForm({ projectId, populations, actors }: { projec
               className="btn"
               onClick={async () => {
                 if (!f.date || !f.trainingRecordId) return;
-                await post("/api/training-sessions", { projectId, ...f });
+                await post("/api/training-sessions", { initiativeId, ...f });
                 close();
                 router.refresh();
               }}

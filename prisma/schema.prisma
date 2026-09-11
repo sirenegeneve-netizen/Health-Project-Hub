@@ -18,7 +18,7 @@ model Group {
   id             String          @id @default(cuid())
   name           String
   establishments Establishment[]
-  projects       Project[]
+  initiatives       Initiative[]
   createdAt      DateTime        @default(now())
 }
 
@@ -29,17 +29,66 @@ model Establishment {
   group        Group                  @relation(fields: [groupId], references: [id])
   type         String? // hopital | clinique | ehpad | cabinet | ght | autre
   localisation String?
-  projects     ProjectEstablishment[]
+
+  // Infos générales (architecture Groupe > Établissement > Initiative)
+  adresse             String?
+  ville               String?
+  pays                String?
+  siteWeb             String?
+  activite            String?
+  nombreLits          Int?
+  nombrePlaces        Int?
+  nombreUtilisateurs  Int?
+
+  // Contrat
+  dateSignature   DateTime?
+  dateDemarrage   DateTime?
+  dateFin         DateTime?
+  montantAnnuel   Float?
+  maintenance     String?
+  support         String?
+
+  installedProducts    InstalledProduct[]
+  ecosystemInterfaces  EstablishmentInterface[]
+
+  initiatives  InitiativeEstablishment[]
   trainings    TrainingRecord[]
   risks        Risk[]
   actions      Action[]
   createdAt    DateTime               @default(now())
 }
 
+// Produits installés chez un établissement (distinct du travail interop en
+// cours dans une Initiative — ceci est l'inventaire de l'existant).
+model InstalledProduct {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  name            String
+  version         String?
+  dateInstallation DateTime?
+  status          String        @default("actif") // actif | en_projet | desactive
+  createdAt       DateTime      @default(now())
+}
+
+// Écosystème d'interfaces existantes chez un établissement (inventaire), à ne
+// pas confondre avec le modèle Interface qui suit le travail interop en cours
+// à l'intérieur d'une Initiative.
+model EstablishmentInterface {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  type            String // laboratoire | ris | pacs | erp | sirh | pmsi | mssante | dmp | autre
+  editeurTiers    String?
+  status          String        @default("active") // active | en_projet | desactivee
+  notes           String?
+  createdAt       DateTime      @default(now())
+}
+
 model Actor {
   id              String      @id @default(cuid())
-  projectId       String
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId       String
+  initiative         Initiative     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name            String
   fonction        String?
   organisation    String?
@@ -76,8 +125,8 @@ model MeetingParticipant {
 
 model RaciEntry {
   id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId String
+  initiative   Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   actorId   String
   actor     Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
   activite  String
@@ -87,7 +136,7 @@ model RaciEntry {
   @@unique([actorId, activite])
 }
 
-model Project {
+model Initiative {
   id          String   @id @default(cuid())
   reference   String
   name        String
@@ -99,7 +148,13 @@ model Project {
   hypotheses      String?
   contraintes     String?
   criteresSucces  String?
-  type        String // deploiement | migration | evolution | interoperabilite | changement_version | remplacement | mise_en_conformite | optimisation | autre
+  // Liste cible réconciliée (architecture Groupe > Établissement > Initiative) :
+  // deploiement | evolution | interoperabilite | migration | mise_a_niveau |
+  // cybersecurite | reglementaire | formation | audit | autre.
+  // Anciennes valeurs migrées automatiquement (voir prisma/migrate-initiative-types.ts) :
+  // changement_version → mise_a_niveau, remplacement → migration,
+  // mise_en_conformite → reglementaire, optimisation → evolution.
+  type        String
   groupId     String
   group       Group    @relation(fields: [groupId], references: [id])
 
@@ -121,7 +176,7 @@ model Project {
   budgetInitialEur Float?
   budgetReviseEur  Float?
 
-  establishments   ProjectEstablishment[]
+  establishments   InitiativeEstablishment[]
   meetings         Meeting[]
   actions          Action[]
   risks            Risk[]
@@ -164,19 +219,19 @@ model Project {
 // type n'a pas (encore) sa propre liste — gérable depuis Paramètres > Critères.
 model StageCriterionTemplate {
   id          String   @id @default(cuid())
-  projectType String // deploiement | migration | evolution | ... | defaut
+  initiativeType String // deploiement | migration | evolution | ... | defaut
   stageKey    String // kickoff | preparation | cloture
   label       String
   order       Int      @default(0)
   createdAt   DateTime @default(now())
 
-  @@unique([projectType, stageKey, label])
+  @@unique([initiativeType, stageKey, label])
 }
 
 model StageCriterion {
   id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId String
+  initiative   Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   stageKey  String // kickoff | preparation | cloture
   label     String
   status    String   @default("non_commence") // non_commence | en_cours | bloque | pret
@@ -184,26 +239,26 @@ model StageCriterion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([projectId, stageKey, label])
+  @@unique([initiativeId, stageKey, label])
 }
 
-model ProjectEstablishment {
+model InitiativeEstablishment {
   id              String        @id @default(cuid())
-  projectId       String
+  initiativeId       String
   establishmentId String
-  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiative         Initiative       @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   establishment   Establishment @relation(fields: [establishmentId], references: [id])
   phase           String? // surcharge optionnelle de la phase du projet pour ce site précis
                            // (utilisée par la vue comparative multi-établissements) — hérite de
-                           // Project.phase tant qu'elle n'est pas renseignée.
+                           // Initiative.phase tant qu'elle n'est pas renseignée.
 
-  @@unique([projectId, establishmentId])
+  @@unique([initiativeId, establishmentId])
 }
 
 model PlanningBaseline {
   id        String   @id @default(cuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId String
+  initiative   Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   label     String // "Baseline initiale", "Révision 1 (arbitrage COPIL 06/09)"...
   targetDate DateTime
   reason    String? // justification de la révision (vide pour la baseline initiale)
@@ -212,8 +267,8 @@ model PlanningBaseline {
 
 model Meeting {
   id           String   @id @default(cuid())
-  projectId    String
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId    String
+  initiative      Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   type         String // kick-off | comite_projet | copil | atelier_metier | atelier_interop | atelier_parametrage | suivi | go_no_go | hypercare | retex
   title        String
   date         DateTime
@@ -231,8 +286,8 @@ model Meeting {
 
 model Action {
   id             String    @id @default(cuid())
-  projectId      String
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId      String
+  initiative        Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   meetingId      String?
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
   riskId         String?
@@ -258,8 +313,8 @@ model Action {
 
 model Risk {
   id           String    @id @default(cuid())
-  projectId    String
-  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId    String
+  initiative      Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   meetingId    String?
   meeting      Meeting?  @relation(fields: [meetingId], references: [id])
   interfaceId  String?
@@ -284,8 +339,8 @@ model Risk {
 
 model Decision {
   id             String    @id @default(cuid())
-  projectId      String
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId      String
+  initiative        Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   meetingId      String?
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
   subject        String
@@ -305,8 +360,8 @@ model Decision {
 
 model Interface {
   id            String   @id @default(cuid())
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId     String
+  initiative       Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name          String
   systemeSource String?
   systemeCible  String?
@@ -329,8 +384,8 @@ model Interface {
 
 model VigilancePoint {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   description String
   status      String   @default("a_surveiller") // a_surveiller | requalifie | clos
   convertedTo String? // action | risque | decision | evolution
@@ -339,8 +394,8 @@ model VigilancePoint {
 
 model Anomaly {
   id             String    @id @default(cuid())
-  projectId      String
-  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId      String
+  initiative        Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   description    String
   origine        String?
   environnement  String?
@@ -354,8 +409,8 @@ model Anomaly {
 
 model TrainingRecord {
   id              String         @id @default(cuid())
-  projectId       String
-  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId       String
+  initiative         Initiative        @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   establishmentId String?
   establishment   Establishment? @relation(fields: [establishmentId], references: [id])
   service         String?
@@ -375,8 +430,8 @@ model TrainingRecord {
 
 model TrainingSession {
   id               String         @id @default(cuid())
-  projectId        String
-  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId        String
+  initiative          Initiative        @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   trainingRecordId String
   trainingRecord   TrainingRecord @relation(fields: [trainingRecordId], references: [id], onDelete: Cascade)
   date             DateTime
@@ -393,8 +448,8 @@ model TrainingSession {
 
 model DocumentRef {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   title       String
   type        String? // compte_rendu | specification | recette | formation | interop | mail | autre
   note        String? // résumé ou contenu texte (mail collé, etc.)
@@ -405,8 +460,8 @@ model DocumentRef {
 
 model TimelineEvent {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   date        DateTime @default(now())
   type        String // reunion | action | risque | decision | interface | anomalie | planning | document
   description String
@@ -416,8 +471,8 @@ model TimelineEvent {
 
 model BacklogItem {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   demande     String
   origine     String?
   description String?
@@ -431,8 +486,8 @@ model BacklogItem {
 
 model BudgetLine {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   libelle     String
   categorie   String? // prestation | licence | ressource | deplacement | fournisseur | autre
   fournisseur String?
@@ -444,8 +499,8 @@ model BudgetLine {
 
 model Deliverable {
   id          String    @id @default(cuid())
-  projectId   String
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name        String
   description String?
   responsable String?
@@ -460,8 +515,8 @@ model Deliverable {
 
 model Stakeholder {
   id           String   @id @default(cuid())
-  projectId    String
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId    String
+  initiative      Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name         String
   organisation String?
   role         String?
@@ -474,8 +529,8 @@ model Stakeholder {
 
 model Kpi {
   id             String   @id @default(cuid())
-  projectId      String
-  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId      String
+  initiative        Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name           String
   value          Float
   unit           String?
@@ -488,8 +543,8 @@ model Kpi {
 
 model ChangeRequest {
   id                  String    @id @default(cuid())
-  projectId           String
-  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId           String
+  initiative             Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   titre               String
   origine             String? // reunion | mail | audit | reglementaire | autre
   demandeur           String?
@@ -510,8 +565,8 @@ model ChangeRequest {
 
 model Requirement {
   id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId   String
+  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   titre       String
   description String?
   origine     String? // atelier_metier | reglementaire | technique | utilisateur | autre
@@ -523,8 +578,8 @@ model Requirement {
 
 model Gap {
   id                  String       @id @default(cuid())
-  projectId           String
-  project             Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initiativeId           String
+  initiative             Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   requirementId       String?
   requirement         Requirement? @relation(fields: [requirementId], references: [id])
   description         String

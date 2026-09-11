@@ -6,7 +6,7 @@ import Link from "next/link";
 interface MyItem {
   kind: string;
   label: string;
-  projectName: string;
+  initiativeName: string;
   href: string;
   date: string | null;
 }
@@ -67,7 +67,7 @@ export function MyActivityBoard({ defaultName }: { defaultName: string }) {
                   <div className="card flex items-center justify-between gap-4">
                     <div>
                       <div className="font-medium text-sm">{it.label}</div>
-                      <div className="text-xs text-muted">{it.projectName}</div>
+                      <div className="text-xs text-muted">{it.initiativeName}</div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {it.date && <span className="text-xs text-muted">{new Date(it.date).toLocaleDateString("fr-FR")}</span>}

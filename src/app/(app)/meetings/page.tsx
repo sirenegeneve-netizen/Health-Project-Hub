@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function GlobalMeetingsPage() {
-  const meetings = await prisma.meeting.findMany({ include: { project: true }, orderBy: { date: "desc" } });
+  const meetings = await prisma.meeting.findMany({ include: { initiative: true }, orderBy: { date: "desc" } });
 
   if (meetings.length === 0) {
     return (
@@ -28,11 +28,11 @@ export default async function GlobalMeetingsPage() {
           <div className="font-medium text-sm mb-2">À venir</div>
           <div className="space-y-2">
             {upcoming.map((m) => (
-              <Link key={m.id} href={`/projects/${m.projectId}/meetings/${m.id}`} className="row-link">
+              <Link key={m.id} href={`/initiatives/${m.initiativeId}/meetings/${m.id}`} className="row-link">
                 <div className="card flex items-center justify-between">
                   <div>
                     <div className="font-medium">{m.title}</div>
-                    <div className="text-xs text-ink/50">{m.project.name}</div>
+                    <div className="text-xs text-ink/50">{m.initiative.name}</div>
                   </div>
                   <span className="text-sm text-ink/60">{new Date(m.date).toLocaleString("fr-FR")}</span>
                 </div>
@@ -47,11 +47,11 @@ export default async function GlobalMeetingsPage() {
           <div className="font-medium text-sm mb-2">Passées</div>
           <div className="space-y-2">
             {past.slice(0, 15).map((m) => (
-              <Link key={m.id} href={`/projects/${m.projectId}/meetings/${m.id}`} className="row-link">
+              <Link key={m.id} href={`/initiatives/${m.initiativeId}/meetings/${m.id}`} className="row-link">
                 <div className="card flex items-center justify-between opacity-80">
                   <div>
                     <div className="font-medium">{m.title}</div>
-                    <div className="text-xs text-ink/50">{m.project.name}</div>
+                    <div className="text-xs text-ink/50">{m.initiative.name}</div>
                   </div>
                   <span className="text-sm text-ink/50">{new Date(m.date).toLocaleDateString("fr-FR")}</span>
                 </div>

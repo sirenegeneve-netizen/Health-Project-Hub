@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const item = await prisma.deliverable.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       name: body.name,
       description: body.description || null,
       responsableActorId: body.responsableActorId || null,
@@ -16,6 +16,6 @@ export async function POST(req: NextRequest) {
       version: body.version || null,
     },
   });
-  await logTimelineEvent(body.projectId, "livrable", `Livrable ajouté : « ${item.name} »`);
+  await logTimelineEvent(body.initiativeId, "livrable", `Livrable ajouté : « ${item.name} »`);
   return NextResponse.json(item, { status: 201 });
 }

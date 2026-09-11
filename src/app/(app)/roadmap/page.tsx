@@ -7,13 +7,13 @@ export const dynamic = "force-dynamic";
 const HEALTH_COLOR: Record<string, string> = { vert: "bg-ok", orange: "bg-warn", rouge: "bg-bad" };
 
 export default async function RoadmapPage() {
-  const projects = await prisma.project.findMany({
+  const initiatives = await prisma.initiative.findMany({
     where: { status: { not: "cloture" } },
     include: { establishments: { include: { establishment: true } }, deliverables: true },
     orderBy: { startDate: "asc" },
   });
 
-  const dated = projects.filter((p) => p.startDate || p.targetDate);
+  const dated = initiatives.filter((p) => p.startDate || p.targetDate);
 
   if (dated.length === 0) {
     return (
@@ -78,7 +78,7 @@ export default async function RoadmapPage() {
               const width = Math.max(((end - start) / span) * 100, 0.6);
               return (
                 <div key={p.id} className="flex items-center">
-                  <Link href={`/projects/${p.id}`} className="w-56 shrink-0 pr-3 text-sm text-ink hover:text-blue truncate">
+                  <Link href={`/initiatives/${p.id}`} className="w-56 shrink-0 pr-3 text-sm text-ink hover:text-blue truncate">
                     {p.name}
                   </Link>
                   <div className="relative h-7 flex-1 bg-ink/[0.03] rounded">
@@ -119,9 +119,9 @@ export default async function RoadmapPage() {
         <span><span className="align-middle mr-1">◆</span>Jalon / livrable</span>
       </div>
 
-      {projects.length > dated.length && (
+      {initiatives.length > dated.length && (
         <p className="text-xs text-muted/70 mt-4">
-          {projects.length - dated.length} projet(s) actif(s) sans date de début ni date cible ne sont pas représentés.
+          {initiatives.length - dated.length} projet(s) actif(s) sans date de début ni date cible ne sont pas représentés.
         </p>
       )}
     </div>

@@ -10,25 +10,25 @@ export async function GET(req: NextRequest) {
   const now = new Date();
 
   const [actions, decisions, deliverables, meetings] = await Promise.all([
-    prisma.action.findMany({ include: { project: true } }),
-    prisma.decision.findMany({ include: { project: true } }),
-    prisma.deliverable.findMany({ include: { project: true } }),
-    prisma.meeting.findMany({ where: { date: { gte: now } }, include: { project: true } }),
+    prisma.action.findMany({ include: { initiative: true } }),
+    prisma.decision.findMany({ include: { initiative: true } }),
+    prisma.deliverable.findMany({ include: { initiative: true } }),
+    prisma.meeting.findMany({ where: { date: { gte: now } }, include: { initiative: true } }),
   ]);
 
   const items = [
     ...actions
       .filter((a) => norm(a.responsable) === n && !["termine", "abandonne"].includes(a.status))
-      .map((a) => ({ kind: "Action", label: a.title, projectName: a.project.name, href: `/projects/${a.projectId}/actions`, date: a.echeance ? a.echeance.toISOString() : null })),
+      .map((a) => ({ kind: "Action", label: a.title, initiativeName: a.initiative.name, href: `/initiatives/${a.initiativeId}/actions`, date: a.echeance ? a.echeance.toISOString() : null })),
     ...decisions
       .filter((d) => norm(d.decideur) === n && d.status !== "decision_prise")
-      .map((d) => ({ kind: "Décision", label: d.subject, projectName: d.project.name, href: `/projects/${d.projectId}/decisions`, date: null })),
+      .map((d) => ({ kind: "Décision", label: d.subject, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/decisions`, date: null })),
     ...deliverables
       .filter((d) => norm(d.responsable) === n && d.status !== "valide")
-      .map((d) => ({ kind: "Livrable", label: d.name, projectName: d.project.name, href: `/projects/${d.projectId}/conception`, date: d.datePrevue ? d.datePrevue.toISOString() : null })),
+      .map((d) => ({ kind: "Livrable", label: d.name, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/conception`, date: d.datePrevue ? d.datePrevue.toISOString() : null })),
     ...meetings
       .filter((m) => norm(m.participants).includes(n))
-      .map((m) => ({ kind: "Réunion", label: m.title, projectName: m.project.name, href: `/projects/${m.projectId}/meetings/${m.id}`, date: m.date.toISOString() })),
+      .map((m) => ({ kind: "Réunion", label: m.title, initiativeName: m.initiative.name, href: `/initiatives/${m.initiativeId}/meetings/${m.id}`, date: m.date.toISOString() })),
   ].sort((a, b) => {
     if (!a.date) return 1;
     if (!b.date) return -1;

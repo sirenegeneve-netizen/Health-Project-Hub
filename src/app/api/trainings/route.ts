@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const training = await prisma.trainingRecord.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       establishmentId: body.establishmentId || null,
       service: body.service || null,
       metier: body.metier || null,
@@ -19,6 +19,6 @@ export async function POST(req: NextRequest) {
       dateFormation: body.dateFormation ? new Date(body.dateFormation) : null,
     },
   });
-  await logTimelineEvent(body.projectId, "formation", `Suivi formation ajouté : ${body.profil || body.metier || "profil"}`);
+  await logTimelineEvent(body.initiativeId, "formation", `Suivi formation ajouté : ${body.profil || body.metier || "profil"}`);
   return NextResponse.json(training, { status: 201 });
 }

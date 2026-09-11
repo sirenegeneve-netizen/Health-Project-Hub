@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const meeting = await prisma.meeting.findUnique({
     where: { id: params.id },
-    include: { actions: true, risks: true, decisions: true, project: true },
+    include: { actions: true, risks: true, decisions: true, initiative: true },
   });
   if (!meeting) return NextResponse.json({ error: "not found" }, { status: 404 });
   return NextResponse.json(meeting);

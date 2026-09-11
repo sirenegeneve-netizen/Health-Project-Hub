@@ -16,17 +16,17 @@ const prisma = new PrismaClient();
 
 const norm = (s: string) => s.trim().toLowerCase();
 
-async function findOrCreateActor(cache: Map<string, Map<string, string>>, projectId: string, rawName: string): Promise<string> {
+async function findOrCreateActor(cache: Map<string, Map<string, string>>, initiativeId: string, rawName: string): Promise<string> {
   const name = rawName.trim();
-  if (!cache.has(projectId)) {
-    const existing = await prisma.actor.findMany({ where: { projectId }, select: { id: true, name: true } });
-    cache.set(projectId, new Map(existing.map((a) => [norm(a.name), a.id])));
+  if (!cache.has(initiativeId)) {
+    const existing = await prisma.actor.findMany({ where: { initiativeId }, select: { id: true, name: true } });
+    cache.set(initiativeId, new Map(existing.map((a) => [norm(a.name), a.id])));
   }
-  const projectCache = cache.get(projectId)!;
+  const projectCache = cache.get(initiativeId)!;
   const key = norm(name);
   if (projectCache.has(key)) return projectCache.get(key)!;
 
-  const created = await prisma.actor.create({ data: { projectId, name } });
+  const created = await prisma.actor.create({ data: { initiativeId, name } });
   projectCache.set(key, created.id);
   return created.id;
 }
@@ -36,77 +36,77 @@ async function main() {
   let linked = 0;
 
   async function migrateActions() {
-    const rows = await prisma.action.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, projectId: true, responsable: true } });
+    const rows = await prisma.action.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, initiativeId: true, responsable: true } });
     for (const r of rows) {
       if (!r.responsable || !r.responsable.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.responsable);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.responsable);
       await prisma.action.update({ where: { id: r.id }, data: { responsableActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateRisks() {
-    const rows = await prisma.risk.findMany({ where: { proprietaireActorId: null, proprietaire: { not: null } }, select: { id: true, projectId: true, proprietaire: true } });
+    const rows = await prisma.risk.findMany({ where: { proprietaireActorId: null, proprietaire: { not: null } }, select: { id: true, initiativeId: true, proprietaire: true } });
     for (const r of rows) {
       if (!r.proprietaire || !r.proprietaire.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.proprietaire);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.proprietaire);
       await prisma.risk.update({ where: { id: r.id }, data: { proprietaireActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateInterfaces() {
-    const rows = await prisma.interface.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, projectId: true, responsable: true } });
+    const rows = await prisma.interface.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, initiativeId: true, responsable: true } });
     for (const r of rows) {
       if (!r.responsable || !r.responsable.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.responsable);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.responsable);
       await prisma.interface.update({ where: { id: r.id }, data: { responsableActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateDeliverables() {
-    const rows = await prisma.deliverable.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, projectId: true, responsable: true } });
+    const rows = await prisma.deliverable.findMany({ where: { responsableActorId: null, responsable: { not: null } }, select: { id: true, initiativeId: true, responsable: true } });
     for (const r of rows) {
       if (!r.responsable || !r.responsable.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.responsable);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.responsable);
       await prisma.deliverable.update({ where: { id: r.id }, data: { responsableActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateDecisions() {
-    const rows = await prisma.decision.findMany({ where: { decideurActorId: null, decideur: { not: null } }, select: { id: true, projectId: true, decideur: true } });
+    const rows = await prisma.decision.findMany({ where: { decideurActorId: null, decideur: { not: null } }, select: { id: true, initiativeId: true, decideur: true } });
     for (const r of rows) {
       if (!r.decideur || !r.decideur.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.decideur);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.decideur);
       await prisma.decision.update({ where: { id: r.id }, data: { decideurActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateTrainingSessions() {
-    const rows = await prisma.trainingSession.findMany({ where: { formateurActorId: null, formateur: { not: null } }, select: { id: true, projectId: true, formateur: true } });
+    const rows = await prisma.trainingSession.findMany({ where: { formateurActorId: null, formateur: { not: null } }, select: { id: true, initiativeId: true, formateur: true } });
     for (const r of rows) {
       if (!r.formateur || !r.formateur.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.formateur);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.formateur);
       await prisma.trainingSession.update({ where: { id: r.id }, data: { formateurActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateTrainingRecords() {
-    const rows = await prisma.trainingRecord.findMany({ where: { referentActorId: null, referent: { not: null } }, select: { id: true, projectId: true, referent: true } });
+    const rows = await prisma.trainingRecord.findMany({ where: { referentActorId: null, referent: { not: null } }, select: { id: true, initiativeId: true, referent: true } });
     for (const r of rows) {
       if (!r.referent || !r.referent.trim()) continue;
-      const actorId = await findOrCreateActor(cache, r.projectId, r.referent);
+      const actorId = await findOrCreateActor(cache, r.initiativeId, r.referent);
       await prisma.trainingRecord.update({ where: { id: r.id }, data: { referentActorId: actorId } });
       linked++;
     }
   }
 
   async function migrateMeetingParticipants() {
-    const meetings = await prisma.meeting.findMany({ where: { participants: { not: null } }, select: { id: true, projectId: true, participants: true } });
+    const meetings = await prisma.meeting.findMany({ where: { participants: { not: null } }, select: { id: true, initiativeId: true, participants: true } });
     for (const m of meetings) {
       if (!m.participants || !m.participants.trim()) continue;
       const names = m.participants
@@ -114,7 +114,7 @@ async function main() {
         .map((n) => n.trim())
         .filter(Boolean);
       for (const name of names) {
-        const actorId = await findOrCreateActor(cache, m.projectId, name);
+        const actorId = await findOrCreateActor(cache, m.initiativeId, name);
         await prisma.meetingParticipant.upsert({
           where: { meetingId_actorId: { meetingId: m.id, actorId } },
           create: { meetingId: m.id, actorId },

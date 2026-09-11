@@ -15,7 +15,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default async function EstablishmentsPage() {
   const establishments = await prisma.establishment.findMany({
-    include: { projects: { include: { project: true } }, group: true },
+    include: { initiatives: { include: { initiative: true } }, group: true },
     orderBy: { name: "asc" },
   });
 
@@ -37,12 +37,12 @@ export default async function EstablishmentsPage() {
                 {e.type && <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5">{TYPE_LABELS[e.type] || e.type}</span>}
               </div>
               <div className="text-xs text-muted mb-2">{e.localisation || "Localisation non renseignée"} · {e.group.name}</div>
-              {e.projects.length > 0 ? (
+              {e.initiatives.length > 0 ? (
                 <ul className="text-sm space-y-1">
-                  {e.projects.map((pe) => (
+                  {e.initiatives.map((pe) => (
                     <li key={pe.id}>
-                      <Link href={`/projects/${pe.project.id}`} className="text-blue hover:underline">
-                        {pe.project.name}
+                      <Link href={`/initiatives/${pe.initiative.id}`} className="text-blue hover:underline">
+                        {pe.initiative.name}
                       </Link>
                     </li>
                   ))}

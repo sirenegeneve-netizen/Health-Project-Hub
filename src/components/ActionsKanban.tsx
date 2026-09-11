@@ -18,7 +18,7 @@ export interface KanbanAction {
   echeance: string | null;
   priority: string;
   status: string;
-  projectName?: string;
+  initiativeName?: string;
   establishmentName?: string | null;
 }
 
@@ -68,7 +68,7 @@ export function ActionsKanban({ actions }: { actions: KanbanAction[] }) {
                     className="card cursor-grab active:cursor-grabbing p-3"
                   >
                     <div className="text-sm font-medium text-ink">{a.title}</div>
-                    {a.projectName && <div className="text-xs text-muted mt-0.5">{a.projectName}</div>}
+                    {a.initiativeName && <div className="text-xs text-muted mt-0.5">{a.initiativeName}</div>}
                     {a.establishmentName && <div className="text-xs text-teal-700 mt-0.5">{a.establishmentName}</div>}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-muted">{a.responsable || "—"}</span>

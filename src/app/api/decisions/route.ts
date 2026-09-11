@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const decision = await prisma.decision.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       meetingId: body.meetingId || null,
       subject: body.subject,
       context: body.context || null,
@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
       status: body.status || "en_attente",
     },
   });
-  await logTimelineEvent(body.projectId, "decision", `Décision ouverte : « ${decision.subject} »`);
+  await logTimelineEvent(body.initiativeId, "decision", `Décision ouverte : « ${decision.subject} »`);
   return NextResponse.json(decision, { status: 201 });
 }

@@ -26,9 +26,9 @@ const LABELS: Record<HealthLevel, string> = {
 // Le calcul est volontairement explicable (pas de boîte noire) : chaque signal
 // qui contribue au score produit une phrase, affichée à l'utilisateur — cf. §40
 // du cahier des charges ("le système doit surtout expliquer pourquoi").
-export async function computeHealthScore(projectId: string): Promise<HealthScoreResult> {
-  const project = await prisma.project.findUniqueOrThrow({
-    where: { id: projectId },
+export async function computeHealthScore(initiativeId: string): Promise<HealthScoreResult> {
+  const initiative = await prisma.initiative.findUniqueOrThrow({
+    where: { id: initiativeId },
     include: {
       actions: true,
       risks: { include: { interfaceRef: false } },
@@ -42,36 +42,36 @@ export async function computeHealthScore(projectId: string): Promise<HealthScore
 
   const now = new Date();
 
-  const lateActions = project.actions.filter(
+  const lateActions = initiative.actions.filter(
     (a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status)
   );
 
-  const criticalOpenRisks = project.risks.filter(
+  const criticalOpenRisks = initiative.risks.filter(
     (r) => ["forte", "critique"].includes(r.criticite) && !["maitrise", "cloture"].includes(r.status)
   );
 
-  const blockingInterfaces = project.interfaces.filter(
+  const blockingInterfaces = initiative.interfaces.filter(
     (i) => i.isBlocking || i.status === "bloquant"
   );
 
-  const pendingDecisions = project.decisions.filter((d) => d.status !== "decision_prise");
+  const pendingDecisions = initiative.decisions.filter((d) => d.status !== "decision_prise");
 
-  const openCriticalAnomalies = project.anomalies.filter(
+  const openCriticalAnomalies = initiative.anomalies.filter(
     (a) => a.criticite === "critique" && !["corrigee", "validee"].includes(a.status)
   );
 
-  const totalUsers = project.trainings.reduce((sum, t) => sum + t.nbUsers, 0);
-  const autonomousUsers = project.trainings.reduce(
+  const totalUsers = initiative.trainings.reduce((sum, t) => sum + t.nbUsers, 0);
+  const autonomousUsers = initiative.trainings.reduce(
     (sum, t) => sum + (t.autonomyLevel >= 2 ? t.nbFormes : 0),
     0
   );
   const autonomyRate = totalUsers > 0 ? autonomousUsers / totalUsers : null;
 
   let planningDeltaDays: number | null = null;
-  if (project.baselines.length > 0 && project.targetDate) {
-    const initial = project.baselines[0].targetDate;
+  if (initiative.baselines.length > 0 && initiative.targetDate) {
+    const initial = initiative.baselines[0].targetDate;
     planningDeltaDays = Math.round(
-      (project.targetDate.getTime() - initial.getTime()) / (1000 * 60 * 60 * 24)
+      (initiative.targetDate.getTime() - initial.getTime()) / (1000 * 60 * 60 * 24)
     );
   }
 
@@ -105,8 +105,8 @@ export async function computeHealthScore(projectId: string): Promise<HealthScore
     level = "orange";
   }
 
-  if (project.healthOverride && ["vert", "orange", "rouge"].includes(project.healthOverride)) {
-    level = project.healthOverride as HealthLevel;
+  if (initiative.healthOverride && ["vert", "orange", "rouge"].includes(initiative.healthOverride)) {
+    level = initiative.healthOverride as HealthLevel;
     reasons.unshift("niveau forcé manuellement par le chef de projet");
   }
 

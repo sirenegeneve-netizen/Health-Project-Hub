@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:migrate-actors": "tsx prisma/migrate-actors.ts",
+    "db:migrate-initiative-types": "tsx prisma/migrate-initiative-types.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

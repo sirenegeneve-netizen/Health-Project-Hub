@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const change = await prisma.changeRequest.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       titre: body.titre,
       origine: body.origine || null,
       demandeur: body.demandeur || null,
@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
       nouvelleDateCible: body.nouvelleDateCible ? new Date(body.nouvelleDateCible) : null,
     },
   });
-  await logTimelineEvent(body.projectId, "changement", `Demande de changement enregistrée : « ${change.titre} »`);
+  await logTimelineEvent(body.initiativeId, "changement", `Demande de changement enregistrée : « ${change.titre} »`);
   return NextResponse.json(change, { status: 201 });
 }

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const anomaly = await prisma.anomaly.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       description: body.description,
       origine: body.origine || null,
       environnement: body.environnement || null,
@@ -14,6 +14,6 @@ export async function POST(req: NextRequest) {
       responsable: body.responsable || null,
     },
   });
-  await logTimelineEvent(body.projectId, "anomalie", `Anomalie signalée : « ${anomaly.description} »`);
+  await logTimelineEvent(body.initiativeId, "anomalie", `Anomalie signalée : « ${anomaly.description} »`);
   return NextResponse.json(anomaly, { status: 201 });
 }

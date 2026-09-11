@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const meeting = await prisma.meeting.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       type: body.type || "suivi",
       title: body.title,
       date: new Date(body.date),
@@ -23,6 +23,6 @@ export async function POST(req: NextRequest) {
       meetingParticipants: { create: participantActorIds.map((actorId) => ({ actorId })) },
     },
   });
-  await logTimelineEvent(body.projectId, "reunion", `Réunion planifiée : « ${meeting.title} »`);
+  await logTimelineEvent(body.initiativeId, "reunion", `Réunion planifiée : « ${meeting.title} »`);
   return NextResponse.json(meeting, { status: 201 });
 }

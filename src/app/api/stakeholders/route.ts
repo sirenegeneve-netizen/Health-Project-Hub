@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const stakeholder = await prisma.stakeholder.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       name: body.name,
       organisation: body.organisation || null,
       role: body.role || null,
@@ -15,6 +15,6 @@ export async function POST(req: NextRequest) {
       contact: body.contact || null,
     },
   });
-  await logTimelineEvent(body.projectId, "partie_prenante", `Partie prenante ajoutée : « ${stakeholder.name} »`);
+  await logTimelineEvent(body.initiativeId, "partie_prenante", `Partie prenante ajoutée : « ${stakeholder.name} »`);
   return NextResponse.json(stakeholder, { status: 201 });
 }

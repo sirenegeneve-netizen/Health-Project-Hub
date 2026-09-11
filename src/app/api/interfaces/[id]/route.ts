@@ -30,9 +30,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // (ici : timeline + le calcul du health score la détecte à la volée).
   const becameBlocking = iface.isBlocking && !before.isBlocking;
   if (becameBlocking) {
-    await logTimelineEvent(iface.projectId, "interface", `⚠ Interface « ${iface.name} » devenue bloquante`);
+    await logTimelineEvent(iface.initiativeId, "interface", `⚠ Interface « ${iface.name} » devenue bloquante`);
   } else if (body.status && body.status !== before.status) {
-    await logTimelineEvent(iface.projectId, "interface", `Interface « ${iface.name} » → ${body.status}`);
+    await logTimelineEvent(iface.initiativeId, "interface", `Interface « ${iface.name} » → ${body.status}`);
   }
 
   return NextResponse.json(iface);

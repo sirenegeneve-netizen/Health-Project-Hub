@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeActorWorkload, findSinglePointsOfFailure } from "@/lib/resourceGovernance";
-import { getScope, projectScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -36,12 +36,12 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
   const scope = await getScope();
 
   const [actors, raciEntries, actions, risks, interfaces, deliverables] = await Promise.all([
-    prisma.actor.findMany({ where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined, include: { project: true }, orderBy: { name: "asc" } }),
+    prisma.actor.findMany({ where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined, include: { initiative: true }, orderBy: { name: "asc" } }),
     prisma.raciEntry.findMany(),
-    prisma.action.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
-    prisma.risk.findMany({ select: { projectId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
-    prisma.interface.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
-    prisma.deliverable.findMany({ select: { projectId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.action.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.risk.findMany({ select: { initiativeId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
+    prisma.interface.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.deliverable.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
   ]);
 
   if (actors.length === 0) {
@@ -55,18 +55,18 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
     );
   }
 
-  function byProject<T extends { projectId: string }>(list: T[]): Map<string, T[]> {
+  function byInitiative<T extends { initiativeId: string }>(list: T[]): Map<string, T[]> {
     const map = new Map<string, T[]>();
     for (const item of list) {
-      if (!map.has(item.projectId)) map.set(item.projectId, []);
-      map.get(item.projectId)!.push(item);
+      if (!map.has(item.initiativeId)) map.set(item.initiativeId, []);
+      map.get(item.initiativeId)!.push(item);
     }
     return map;
   }
-  const actionsByProject = byProject(actions);
-  const risksByProject = byProject(risks);
-  const interfacesByProject = byProject(interfaces);
-  const deliverablesByProject = byProject(deliverables);
+  const actionsByInitiative = byInitiative(actions);
+  const risksByInitiative = byInitiative(risks);
+  const interfacesByInitiative = byInitiative(interfaces);
+  const deliverablesByInitiative = byInitiative(deliverables);
 
   // Regroupement par personne (nom normalisé) à travers tous les projets où elle apparaît.
   // Limite connue : rapprochement par nom, pas par identité — cf. diagnostic Phase 1 (§F.1).
@@ -81,23 +81,23 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
     let totalOwned = 0;
     let totalDispo: number | null = null;
     const roles = new Set<string>();
-    const perProject = records.map((rec) => {
+    const perInitiative = records.map((rec) => {
       const w = computeActorWorkload(
         rec,
         {
-          actions: actionsByProject.get(rec.projectId) || [],
-          risks: risksByProject.get(rec.projectId) || [],
-          interfaces: interfacesByProject.get(rec.projectId) || [],
-          deliverables: deliverablesByProject.get(rec.projectId) || [],
+          actions: actionsByInitiative.get(rec.initiativeId) || [],
+          risks: risksByInitiative.get(rec.initiativeId) || [],
+          interfaces: interfacesByInitiative.get(rec.initiativeId) || [],
+          deliverables: deliverablesByInitiative.get(rec.initiativeId) || [],
         },
         raciEntries
       );
       totalOwned += w.totalOwned;
       if (rec.disponibiliteJh !== null) totalDispo = (totalDispo || 0) + rec.disponibiliteJh;
       if (rec.roleProjet) roles.add(rec.roleProjet);
-      return { projectId: rec.projectId, projectName: rec.project.name, owned: w.totalOwned };
+      return { initiativeId: rec.initiativeId, initiativeName: rec.initiative.name, owned: w.totalOwned };
     });
-    return { name: records[0].name, records, perProject, totalOwned, totalDispo, roles: Array.from(roles) };
+    return { name: records[0].name, records, perInitiative, totalOwned, totalDispo, roles: Array.from(roles) };
   });
 
   people.sort((a, b) => b.totalOwned - a.totalOwned || b.records.length - a.records.length);
@@ -105,17 +105,17 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
   const inTension = people.filter((p) => levelFor(p.totalOwned) !== "vert");
 
   // Dépendances critiques agrégées par projet.
-  const dependenciesByProject = new Map<string, { activite: string; actorName: string }[]>();
-  const projectIds = Array.from(new Set(actors.map((a) => a.projectId)));
-  for (const pid of projectIds) {
-    const projectActors = actors.filter((a) => a.projectId === pid);
-    const projectRaci = raciEntries.filter((r) => r.projectId === pid);
-    const actorsById = new Map(projectActors.map((a) => [a.id, a.name]));
-    const deps = findSinglePointsOfFailure(projectRaci, actorsById);
-    if (deps.length > 0) dependenciesByProject.set(pid, deps);
+  const dependenciesByInitiative = new Map<string, { activite: string; actorName: string }[]>();
+  const initiativeIds = Array.from(new Set(actors.map((a) => a.initiativeId)));
+  for (const pid of initiativeIds) {
+    const initiativeActors = actors.filter((a) => a.initiativeId === pid);
+    const initiativeRaci = raciEntries.filter((r) => r.initiativeId === pid);
+    const actorsById = new Map(initiativeActors.map((a) => [a.id, a.name]));
+    const deps = findSinglePointsOfFailure(initiativeRaci, actorsById);
+    if (deps.length > 0) dependenciesByInitiative.set(pid, deps);
   }
-  const projectNameById = new Map(actors.map((a) => [a.projectId, a.project.name]));
-  const totalDependencies = Array.from(dependenciesByProject.values()).reduce((s, d) => s + d.length, 0);
+  const initiativeNameById = new Map(actors.map((a) => [a.initiativeId, a.initiative.name]));
+  const totalDependencies = Array.from(dependenciesByInitiative.values()).reduce((s, d) => s + d.length, 0);
 
   const TABS = [
     { key: "capacite", label: "Capacité" },
@@ -182,9 +182,9 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
                   <td className="text-sm text-ink/70">{p.roles.map((r) => ROLE_LABELS[r] || r).join(", ") || "—"}</td>
                   <td className="text-xs">
                     <div className="flex flex-wrap gap-x-3 gap-y-1">
-                      {p.perProject.map((pp) => (
-                        <Link key={pp.projectId} href={`/projects/${pp.projectId}`} className="hover:underline hover:text-blue">
-                          {pp.projectName}
+                      {p.perInitiative.map((pp) => (
+                        <Link key={pp.initiativeId} href={`/initiatives/${pp.initiativeId}`} className="hover:underline hover:text-blue">
+                          {pp.initiativeName}
                         </Link>
                       ))}
                     </div>
@@ -219,9 +219,9 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
                       )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 text-xs text-muted mt-1">
-                      {p.perProject.map((pp) => (
-                        <Link key={pp.projectId} href={`/projects/${pp.projectId}`} className="hover:underline hover:text-blue">
-                          {pp.projectName} ({pp.owned})
+                      {p.perInitiative.map((pp) => (
+                        <Link key={pp.initiativeId} href={`/initiatives/${pp.initiativeId}`} className="hover:underline hover:text-blue">
+                          {pp.initiativeName} ({pp.owned})
                         </Link>
                       ))}
                     </div>
@@ -239,7 +239,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
 
       {vue === "dependances" && (
         <div>
-          {dependenciesByProject.size === 0 ? (
+          {dependenciesByInitiative.size === 0 ? (
             <div className="card text-center text-ink/50 py-14">
               Aucune activité RACI reposant sur une seule personne détectée pour l'instant.
             </div>
@@ -250,11 +250,11 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
                 Points de dépendance uniques
               </div>
               <ul className="text-sm space-y-1">
-                {Array.from(dependenciesByProject.entries()).flatMap(([pid, deps]) =>
+                {Array.from(dependenciesByInitiative.entries()).flatMap(([pid, deps]) =>
                   deps.map((d, i) => (
                     <li key={`${pid}-${i}`}>
-                      <Link href={`/projects/${pid}`} className="text-blue hover:underline">
-                        {projectNameById.get(pid)}
+                      <Link href={`/initiatives/${pid}`} className="text-blue hover:underline">
+                        {initiativeNameById.get(pid)}
                       </Link>
                       {" — "}
                       <span className="font-medium">{d.activite}</span> repose entièrement sur <span className="font-medium">{d.actorName}</span>

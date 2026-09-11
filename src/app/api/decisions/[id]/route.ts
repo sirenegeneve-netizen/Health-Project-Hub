@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   });
   if (body.status && body.status !== before.status) {
-    await logTimelineEvent(decision.projectId, "decision", `Décision « ${decision.subject} » → ${body.status}`);
+    await logTimelineEvent(decision.initiativeId, "decision", `Décision « ${decision.subject} » → ${body.status}`);
   }
   return NextResponse.json(decision);
 }

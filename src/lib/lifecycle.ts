@@ -9,7 +9,7 @@ export interface Stage {
 // Parcours du projet en 9 étapes de pilotage de déploiement (et non plus des
 // phases de conception logicielle — le logiciel est déjà existant, cf. prompt
 // de refonte §5). Chaque phase détaillée historiquement saisie sur un projet
-// (Project.phase) est rattachée à l'étape la plus représentative pour garder
+// (Initiative.phase) est rattachée à l'étape la plus représentative pour garder
 // un repère visuel simple ; ce n'est pas une vérité absolue.
 export const STAGES: { key: string; label: string; legacyPhases: string[] }[] = [
   { key: "cadrage", label: "Cadrage", legacyPhases: ["opportunite", "qualification", "cadrage"] },

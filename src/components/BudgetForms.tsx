@@ -14,11 +14,11 @@ const CATEGORIES = [
 ];
 
 export function BudgetTargetsForm({
-  projectId,
+  initiativeId,
   budgetInitialEur,
   budgetReviseEur,
 }: {
-  projectId: string;
+  initiativeId: string;
   budgetInitialEur: number | null;
   budgetReviseEur: number | null;
 }) {
@@ -30,7 +30,7 @@ export function BudgetTargetsForm({
 
   async function save() {
     setSaving(true);
-    await fetch(`/api/projects/${projectId}`, {
+    await fetch(`/api/initiatives/${initiativeId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ budgetInitialEur: initial || null, budgetReviseEur: revise || null }),
@@ -75,7 +75,7 @@ export function BudgetTargetsForm({
   );
 }
 
-export function BudgetLineForm({ projectId }: { projectId: string }) {
+export function BudgetLineForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ libelle: "", categorie: "prestation", fournisseur: "", prevision: "", engage: "", reel: "" });
@@ -132,7 +132,7 @@ export function BudgetLineForm({ projectId }: { projectId: string }) {
             await fetch("/api/budget-lines", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ projectId, ...f }),
+              body: JSON.stringify({ initiativeId, ...f }),
             });
             setOpen(false);
             router.refresh();

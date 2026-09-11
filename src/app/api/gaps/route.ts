@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const gap = await prisma.gap.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       requirementId: body.requirementId || null,
       description: body.description,
       optionsEnvisagees: body.optionsEnvisagees || null,
@@ -14,6 +14,6 @@ export async function POST(req: NextRequest) {
       impact: body.impact || null,
     },
   });
-  await logTimelineEvent(body.projectId, "ecart", `Écart identifié : « ${gap.description} »`);
+  await logTimelineEvent(body.initiativeId, "ecart", `Écart identifié : « ${gap.description} »`);
   return NextResponse.json(gap, { status: 201 });
 }

@@ -34,7 +34,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     title: "Pilotage",
     items: [
       { href: "/", label: "Portefeuille", Icon: LayoutGrid },
-      { href: "/projects", label: "Projets", Icon: FolderKanban },
+      { href: "/initiatives", label: "Projets", Icon: FolderKanban },
     ],
   },
   {
@@ -162,7 +162,7 @@ export function Sidebar() {
 
       <div className="px-4 py-4 relative z-10">
         <Link
-          href="/projects/new"
+          href="/initiatives/new"
           className="flex items-center gap-2 justify-center rounded-lg px-4 py-2.5 text-sm font-medium bg-primary hover:bg-primary-600 transition-colors"
         >
           <Plus size={16} />

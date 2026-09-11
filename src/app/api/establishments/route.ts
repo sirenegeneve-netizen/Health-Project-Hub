@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const establishments = await prisma.establishment.findMany({
-    include: { projects: { include: { project: true } } },
+    include: { initiatives: { include: { initiative: true } } },
     orderBy: { name: "asc" },
   });
   return NextResponse.json(establishments);

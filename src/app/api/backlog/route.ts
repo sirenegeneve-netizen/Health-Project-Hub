@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const item = await prisma.backlogItem.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       demande: body.demande,
       origine: body.origine || null,
       description: body.description || null,
@@ -15,6 +15,6 @@ export async function POST(req: NextRequest) {
       estimationJh: body.estimationJh ? Number(body.estimationJh) : null,
     },
   });
-  await logTimelineEvent(body.projectId, "evolution", `Demande d'évolution : « ${item.demande} »`);
+  await logTimelineEvent(body.initiativeId, "evolution", `Demande d'évolution : « ${item.demande} »`);
   return NextResponse.json(item, { status: 201 });
 }

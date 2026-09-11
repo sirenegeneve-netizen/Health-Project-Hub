@@ -31,7 +31,7 @@ interface Entry {
   role: string;
 }
 
-export function RaciBoard({ projectId, actors, entries }: { projectId: string; actors: Actor[]; entries: Entry[] }) {
+export function RaciBoard({ initiativeId, actors, entries }: { initiativeId: string; actors: Actor[]; entries: Entry[] }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [showIssues, setShowIssues] = useState(true);
@@ -50,7 +50,7 @@ export function RaciBoard({ projectId, actors, entries }: { projectId: string; a
     await fetch("/api/raci", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, actorId, activite, role: next }),
+      body: JSON.stringify({ initiativeId, actorId, activite, role: next }),
     });
     setPending(null);
     router.refresh();
@@ -162,7 +162,7 @@ export function RaciBoard({ projectId, actors, entries }: { projectId: string; a
         </table>
       </div>
 
-      <NewActivityRow projectId={projectId} actors={actors} />
+      <NewActivityRow initiativeId={initiativeId} actors={actors} />
 
       <div className="flex gap-4 mt-3 text-xs text-muted">
         <span><span className="inline-block w-3 h-3 rounded bg-ok/15 align-middle mr-1" />R — Responsable</span>
@@ -174,7 +174,7 @@ export function RaciBoard({ projectId, actors, entries }: { projectId: string; a
   );
 }
 
-function NewActivityRow({ projectId, actors }: { projectId: string; actors: Actor[] }) {
+function NewActivityRow({ initiativeId, actors }: { initiativeId: string; actors: Actor[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -200,7 +200,7 @@ function NewActivityRow({ projectId, actors }: { projectId: string; actors: Acto
           await fetch("/api/raci", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ projectId, actorId: actors[0].id, activite: name.trim(), role: "I" }),
+            body: JSON.stringify({ initiativeId, actorId: actors[0].id, activite: name.trim(), role: "I" }),
           });
           setName("");
           setOpen(false);

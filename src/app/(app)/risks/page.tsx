@@ -13,7 +13,7 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function GlobalRisksPage() {
-  const risks = await prisma.risk.findMany({ include: { project: true }, orderBy: { createdAt: "desc" } });
+  const risks = await prisma.risk.findMany({ include: { initiative: true }, orderBy: { createdAt: "desc" } });
 
   if (risks.length === 0) {
     return (
@@ -51,8 +51,8 @@ export default async function GlobalRisksPage() {
               <tr key={r.id}>
                 <td className="pl-4">{r.description}</td>
                 <td>
-                  <Link href={`/projects/${r.projectId}`} className="text-blue hover:underline">
-                    {r.project.name}
+                  <Link href={`/initiatives/${r.initiativeId}`} className="text-blue hover:underline">
+                    {r.initiative.name}
                   </Link>
                 </td>
                 <td className="capitalize">{r.criticite}</td>

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const actor = await prisma.actor.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       name: body.name,
       fonction: body.fonction || null,
       organisation: body.organisation || null,
@@ -17,6 +17,6 @@ export async function POST(req: NextRequest) {
       competences: body.competences || null,
     },
   });
-  await logTimelineEvent(body.projectId, "acteur", `Acteur ajouté à l'équipe projet : « ${actor.name} »`);
+  await logTimelineEvent(body.initiativeId, "acteur", `Acteur ajouté à l'équipe projet : « ${actor.name} »`);
   return NextResponse.json(actor, { status: 201 });
 }

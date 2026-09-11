@@ -16,7 +16,7 @@ const ROLES_PROJET = [
   ["referent_etablissement", "Référent établissement"],
 ];
 
-export function ActorForm({ projectId }: { projectId: string }) {
+export function ActorForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", fonction: "", organisation: "", roleProjet: "consultant", email: "", disponibiliteJh: "" });
@@ -75,7 +75,7 @@ export function ActorForm({ projectId }: { projectId: string }) {
             await fetch("/api/actors", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ projectId, ...f }),
+              body: JSON.stringify({ initiativeId, ...f }),
             });
             setOpen(false);
             router.refresh();

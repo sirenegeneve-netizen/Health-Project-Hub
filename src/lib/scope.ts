@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 // un composant serveur sans avoir à le propager manuellement dans chaque lien.
 //
 // Volontairement simple pour la Phase 1 : un seul niveau de filtre (établissement).
-// La "Vue Projet" existe déjà nativement via /projects/[id] ; la "Vue personnelle"
+// La "Vue Projet" existe déjà nativement via /initiatives/[id] ; la "Vue personnelle"
 // existe déjà via /me. On ne les modélise pas ici pour ne pas dupliquer une logique
 // de filtrage qui vit déjà ailleurs.
 
@@ -31,7 +31,7 @@ export async function getScope(): Promise<Scope> {
 
 // Fragment Prisma réutilisable : filtre les projets sur l'établissement du scope
 // courant quand il est défini, sinon ne filtre rien (vue Groupe).
-export function projectScopeWhere(scope: Scope) {
+export function initiativeScopeWhere(scope: Scope) {
   if (!scope.establishmentId) return {};
   return { establishments: { some: { establishmentId: scope.establishmentId } } };
 }

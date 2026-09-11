@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const risk = await prisma.risk.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       meetingId: body.meetingId || null,
       interfaceId: body.interfaceId || null,
       establishmentId: body.establishmentId || null,
@@ -29,6 +29,6 @@ export async function POST(req: NextRequest) {
       echeance: body.echeance ? new Date(body.echeance) : null,
     },
   });
-  await logTimelineEvent(body.projectId, "risque", `Risque identifié : « ${risk.description} »`);
+  await logTimelineEvent(body.initiativeId, "risque", `Risque identifié : « ${risk.description} »`);
   return NextResponse.json(risk, { status: 201 });
 }

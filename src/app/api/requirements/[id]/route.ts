@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   });
   if (body.statut && body.statut !== before.statut) {
-    await logTimelineEvent(requirement.projectId, "besoin", `Besoin « ${requirement.titre} » → ${requirement.statut}`);
+    await logTimelineEvent(requirement.initiativeId, "besoin", `Besoin « ${requirement.titre} » → ${requirement.statut}`);
   }
   return NextResponse.json(requirement);
 }

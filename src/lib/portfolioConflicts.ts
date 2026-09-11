@@ -10,13 +10,13 @@ export interface ResourceConflict {
   name: string;
   combinedWorkload: number;
   level: "orange" | "rouge";
-  projects: { id: string; name: string; workload: number }[];
+  initiatives: { id: string; name: string; workload: number }[];
 }
 
 const norm = (s: string) => s.trim().toLowerCase();
 
 export function detectResourceConflicts(
-  projects: {
+  initiatives: {
     id: string;
     name: string;
     status: string;
@@ -25,30 +25,30 @@ export function detectResourceConflicts(
     raciEntries: RaciLike[];
   }[]
 ): ResourceConflict[] {
-  const byName = new Map<string, { name: string; projects: { id: string; name: string; workload: number }[] }>();
+  const byName = new Map<string, { name: string; initiatives: { id: string; name: string; workload: number }[] }>();
 
-  for (const project of projects) {
-    if (project.status !== "actif") continue;
-    for (const actor of project.actors) {
+  for (const initiative of initiatives) {
+    if (initiative.status !== "actif") continue;
+    for (const actor of initiative.actors) {
       const key = norm(actor.name);
       if (!key) continue;
-      const workload = computeActorWorkload(actor, project.workloadInputs, project.raciEntries).totalOwned;
+      const workload = computeActorWorkload(actor, initiative.workloadInputs, initiative.raciEntries).totalOwned;
       if (workload === 0) continue;
-      if (!byName.has(key)) byName.set(key, { name: actor.name, projects: [] });
-      byName.get(key)!.projects.push({ id: project.id, name: project.name, workload });
+      if (!byName.has(key)) byName.set(key, { name: actor.name, initiatives: [] });
+      byName.get(key)!.initiatives.push({ id: initiative.id, name: initiative.name, workload });
     }
   }
 
   const conflicts: ResourceConflict[] = [];
   for (const entry of byName.values()) {
-    if (entry.projects.length < 2) continue;
-    const combinedWorkload = entry.projects.reduce((s, p) => s + p.workload, 0);
+    if (entry.initiatives.length < 2) continue;
+    const combinedWorkload = entry.initiatives.reduce((s, p) => s + p.workload, 0);
     if (combinedWorkload < 4) continue;
     conflicts.push({
       name: entry.name,
       combinedWorkload,
       level: combinedWorkload >= 8 ? "rouge" : "orange",
-      projects: entry.projects.sort((a, b) => b.workload - a.workload),
+      initiatives: entry.initiatives.sort((a, b) => b.workload - a.workload),
     });
   }
 
@@ -57,18 +57,18 @@ export function detectResourceConflicts(
 
 export interface ScheduleConflict {
   establishmentName: string;
-  projects: { id: string; name: string; targetDate: string }[];
+  initiatives: { id: string; name: string; targetDate: string }[];
 }
 
 // Deux projets actifs du même établissement avec une échéance à moins de 21 jours
 // d'écart : bascules qui risquent de se percuter (formation, hypercare, disponibilité
 // des équipes métier de l'établissement).
 export function detectScheduleConflicts(
-  projects: { id: string; name: string; status: string; targetDate: Date | null; establishments: { id: string; name: string }[] }[]
+  initiatives: { id: string; name: string; status: string; targetDate: Date | null; establishments: { id: string; name: string }[] }[]
 ): ScheduleConflict[] {
   const byEstablishment = new Map<string, { name: string; entries: { id: string; name: string; targetDate: Date }[] }>();
 
-  for (const p of projects) {
+  for (const p of initiatives) {
     if (p.status !== "actif" || !p.targetDate) continue;
     for (const est of p.establishments) {
       if (!byEstablishment.has(est.id)) byEstablishment.set(est.id, { name: est.name, entries: [] });
@@ -85,7 +85,7 @@ export function detectScheduleConflicts(
       if (gapDays <= 21) {
         conflicts.push({
           establishmentName,
-          projects: [sorted[i], sorted[i + 1]].map((p) => ({ id: p.id, name: p.name, targetDate: p.targetDate.toISOString() })),
+          initiatives: [sorted[i], sorted[i + 1]].map((p) => ({ id: p.id, name: p.name, targetDate: p.targetDate.toISOString() })),
         });
       }
     }

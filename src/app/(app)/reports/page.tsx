@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { BarList } from "@/components/BarList";
 import { computeHealthScore } from "@/lib/healthScore";
-import { getScope, projectScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -24,15 +24,15 @@ function countBy<T>(items: T[], key: (t: T) => string | null): { label: string; 
 
 export default async function ReportsPage() {
   const scope = await getScope();
-  const [projects, risksAll] = await Promise.all([
-    prisma.project.findMany({ where: projectScopeWhere(scope), include: { establishments: { include: { establishment: true } } } }),
+  const [initiatives, risksAll] = await Promise.all([
+    prisma.initiative.findMany({ where: initiativeScopeWhere(scope), include: { establishments: { include: { establishment: true } } } }),
     prisma.risk.findMany({
-      where: scope.establishmentId ? { project: projectScopeWhere(scope) } : undefined,
+      where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined,
       select: { createdAt: true, criticite: true, status: true },
     }),
   ]);
 
-  if (projects.length === 0) {
+  if (initiatives.length === 0) {
     return (
       <div>
         <h1 className="font-display text-2xl text-ink mb-4">Rapports</h1>
@@ -41,13 +41,13 @@ export default async function ReportsPage() {
     );
   }
 
-  const scores = await Promise.all(projects.map((p) => computeHealthScore(p.id)));
+  const scores = await Promise.all(initiatives.map((p) => computeHealthScore(p.id)));
 
-  const byStatus = countBy(projects, (p) => STATUS_LABELS[p.status] || p.status);
-  const byPriority = countBy(projects, (p) => PRIORITY_LABELS[p.priority] || p.priority);
+  const byStatus = countBy(initiatives, (p) => STATUS_LABELS[p.status] || p.status);
+  const byPriority = countBy(initiatives, (p) => PRIORITY_LABELS[p.priority] || p.priority);
   const byHealth = countBy(scores, (s) => HEALTH_LABELS[s.level] || s.level);
   const byEstablishment = countBy(
-    projects.flatMap((p) => (p.establishments.length > 0 ? p.establishments.map((e) => e.establishment.name) : [null])),
+    initiatives.flatMap((p) => (p.establishments.length > 0 ? p.establishments.map((e) => e.establishment.name) : [null])),
     (name) => name
   );
   const openRisks = risksAll.filter((r) => !["maitrise", "cloture"].includes(r.status));
@@ -59,7 +59,7 @@ export default async function ReportsPage() {
   for (let i = 8; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const label = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
-    const count = projects.filter((p) => p.createdAt.getFullYear() === d.getFullYear() && p.createdAt.getMonth() === d.getMonth()).length;
+    const count = initiatives.filter((p) => p.createdAt.getFullYear() === d.getFullYear() && p.createdAt.getMonth() === d.getMonth()).length;
     months.push({ label, value: count });
   }
   const riskMonths = months.map((m, i) => {
@@ -123,8 +123,8 @@ export default async function ReportsPage() {
         <div className="font-medium text-sm mb-1">Synthèse COPIL</div>
         <p className="text-xs text-muted mb-3">Générez en un clic la synthèse d'un projet pour préparer un comité de pilotage.</p>
         <div className="flex flex-wrap gap-2">
-          {projects.map((p) => (
-            <Link key={p.id} href={`/projects/${p.id}/copil`} className="text-sm px-3 py-1.5 rounded-lg bg-ink/5 text-ink/70 hover:bg-teal-50 hover:text-primary transition-colors">
+          {initiatives.map((p) => (
+            <Link key={p.id} href={`/initiatives/${p.id}/copil`} className="text-sm px-3 py-1.5 rounded-lg bg-ink/5 text-ink/70 hover:bg-teal-50 hover:text-primary transition-colors">
               {p.name}
             </Link>
           ))}

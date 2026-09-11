@@ -7,7 +7,7 @@ import { Pill } from "@/components/Pill";
 import { formatDaysRemaining } from "@/lib/metrics";
 import type { HealthLevel } from "@/lib/healthScore";
 
-export interface PortfolioProject {
+export interface PortfolioInitiative {
   id: string;
   name: string;
   reference: string;
@@ -23,15 +23,15 @@ export interface PortfolioProject {
   stageLabel: string;
 }
 
-export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
+export function PortfolioList({ initiatives }: { initiatives: PortfolioInitiative[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("tous");
   const [health, setHealth] = useState("tous");
   const [sort, setSort] = useState("recent");
 
-  const statuses = useMemo(() => Array.from(new Set(projects.map((p) => p.status))), [projects]);
+  const statuses = useMemo(() => Array.from(new Set(initiatives.map((p) => p.status))), [initiatives]);
 
-  const filtered = projects
+  const filtered = initiatives
     .filter((p) => {
       if (query && !`${p.name} ${p.reference} ${p.chefDeProjet || ""}`.toLowerCase().includes(query.toLowerCase())) return false;
       if (status !== "tous" && p.status !== status) return false;
@@ -81,7 +81,7 @@ export function PortfolioList({ projects }: { projects: PortfolioProject[] }) {
 
       <div className="space-y-2.5">
         {filtered.map((p) => (
-          <Link key={p.id} href={`/projects/${p.id}`} className="row-link">
+          <Link key={p.id} href={`/initiatives/${p.id}`} className="row-link">
             <div className="relative overflow-hidden card flex items-center justify-between gap-6 pl-6">
               <HealthBar level={p.healthLevel} />
               <div className="min-w-0 flex-1">

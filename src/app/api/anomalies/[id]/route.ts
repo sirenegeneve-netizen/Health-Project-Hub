@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   });
   if (body.status && body.status !== before.status) {
-    await logTimelineEvent(anomaly.projectId, "anomalie", `Anomalie « ${anomaly.description} » → ${anomaly.status}`);
+    await logTimelineEvent(anomaly.initiativeId, "anomalie", `Anomalie « ${anomaly.description} » → ${anomaly.status}`);
   }
   return NextResponse.json(anomaly);
 }

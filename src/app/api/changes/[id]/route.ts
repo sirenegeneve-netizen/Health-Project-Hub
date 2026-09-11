@@ -16,29 +16,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
 
   if (body.decision === "accepte" && before.decision !== "accepte") {
-    await logTimelineEvent(change.projectId, "changement", `Changement accepté : « ${change.titre} »`);
+    await logTimelineEvent(change.initiativeId, "changement", `Changement accepté : « ${change.titre} »`);
 
     // §15 : un changement accepté peut entraîner une nouvelle baseline planning,
     // sans jamais écraser l'historique initial.
     if (change.nouvelleDateCible) {
-      const project = await prisma.project.findUniqueOrThrow({ where: { id: change.projectId } });
+      const initiative = await prisma.initiative.findUniqueOrThrow({ where: { id: change.initiativeId } });
       await prisma.planningBaseline.create({
         data: {
-          projectId: change.projectId,
+          initiativeId: change.initiativeId,
           label: `Changement accepté — ${change.titre}`,
           targetDate: change.nouvelleDateCible,
           reason: change.justification || undefined,
         },
       });
-      await prisma.project.update({ where: { id: change.projectId }, data: { targetDate: change.nouvelleDateCible } });
+      await prisma.initiative.update({ where: { id: change.initiativeId }, data: { targetDate: change.nouvelleDateCible } });
       await logTimelineEvent(
-        change.projectId,
+        change.initiativeId,
         "planning",
-        `Date cible révisée suite au changement « ${change.titre} » : ${project.targetDate ? project.targetDate.toLocaleDateString("fr-FR") : "—"} → ${change.nouvelleDateCible.toLocaleDateString("fr-FR")}`
+        `Date cible révisée suite au changement « ${change.titre} » : ${initiative.targetDate ? initiative.targetDate.toLocaleDateString("fr-FR") : "—"} → ${change.nouvelleDateCible.toLocaleDateString("fr-FR")}`
       );
     }
   } else if (body.decision === "rejete" && before.decision !== "rejete") {
-    await logTimelineEvent(change.projectId, "changement", `Changement rejeté : « ${change.titre} »`);
+    await logTimelineEvent(change.initiativeId, "changement", `Changement rejeté : « ${change.titre} »`);
   }
 
   return NextResponse.json(change);

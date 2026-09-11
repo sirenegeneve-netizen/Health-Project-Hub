@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const action = await prisma.action.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       meetingId: body.meetingId || null,
       riskId: body.riskId || null,
       decisionId: body.decisionId || null,
@@ -28,6 +28,6 @@ export async function POST(req: NextRequest) {
       comments: body.comments || null,
     },
   });
-  await logTimelineEvent(body.projectId, "action", `Action créée : « ${action.title} »`);
+  await logTimelineEvent(body.initiativeId, "action", `Action créée : « ${action.title} »`);
   return NextResponse.json(action, { status: 201 });
 }

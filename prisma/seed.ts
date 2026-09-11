@@ -8,7 +8,7 @@ async function main() {
   const etab1 = await prisma.establishment.create({ data: { name: "CH Nord", groupId: group.id, type: "hopital", localisation: "Lille" } });
   const etab2 = await prisma.establishment.create({ data: { name: "CH Sud", groupId: group.id, type: "hopital", localisation: "Marseille" } });
 
-  const project = await prisma.project.create({
+  const initiative = await prisma.initiative.create({
     data: {
       reference: "PRJ-2026-001",
       name: "Déploiement DPI — CH Nord / CH Sud",
@@ -28,11 +28,11 @@ async function main() {
   });
 
   await prisma.planningBaseline.create({
-    data: { projectId: project.id, label: "Baseline initiale", targetDate: new Date("2026-10-01") },
+    data: { initiativeId: initiative.id, label: "Baseline initiale", targetDate: new Date("2026-10-01") },
   });
   await prisma.planningBaseline.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       label: "Révision COPIL",
       targetDate: new Date("2026-10-15"),
       reason: "Retard interface laboratoire",
@@ -41,7 +41,7 @@ async function main() {
 
   const interfaceLabo = await prisma.interface.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       name: "Interface laboratoire",
       systemeSource: "SIL",
       systemeCible: "DPI",
@@ -56,7 +56,7 @@ async function main() {
 
   await prisma.interface.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       name: "Interface pharmacie",
       systemeSource: "DPI",
       systemeCible: "Logipharm",
@@ -69,7 +69,7 @@ async function main() {
 
   const risk = await prisma.risk.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       description: "Recette incomplète suite au retard de l'interface laboratoire",
       cause: "Retard de livraison de l'interface laboratoire (+2 semaines)",
       consequence: "Décalage de la campagne de tests utilisateurs",
@@ -84,7 +84,7 @@ async function main() {
 
   await prisma.decision.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       subject: "Arbitrage sur la date de mise en production",
       context: "Le retard de l'interface laboratoire impacte la recette et donc la date de Go-Live envisagée.",
       options: "Maintenir la date / Décaler de 2 semaines / Go-Live partiel sans le laboratoire",
@@ -95,7 +95,7 @@ async function main() {
 
   const meeting1 = await prisma.meeting.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       type: "copil",
       title: "COPIL de suivi — Août 2026",
       date: new Date("2026-08-06T14:00:00"),
@@ -107,7 +107,7 @@ async function main() {
 
   await prisma.action.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       meetingId: meeting1.id,
       title: "Valider le mapping laboratoire avec l'éditeur",
       responsable: "Équipe interop",
@@ -121,7 +121,7 @@ async function main() {
 
   await prisma.action.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       title: "Préparer le plan de communication Go-Live",
       responsable: "Chef de projet",
       dateDebut: new Date("2026-06-15"),
@@ -134,7 +134,7 @@ async function main() {
 
   await prisma.action.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       title: "Recette fonctionnelle module urgences",
       responsable: "Équipe métier",
       dateDebut: new Date("2026-08-10"),
@@ -146,12 +146,12 @@ async function main() {
   });
 
   await prisma.vigilancePoint.create({
-    data: { projectId: project.id, description: "Disponibilité du consultant interop en septembre à confirmer" },
+    data: { initiativeId: initiative.id, description: "Disponibilité du consultant interop en septembre à confirmer" },
   });
 
   const pop1 = await prisma.trainingRecord.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       establishmentId: etab1.id,
       service: "Urgences",
       metier: "IDE",
@@ -166,7 +166,7 @@ async function main() {
   });
   const pop2 = await prisma.trainingRecord.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       establishmentId: etab2.id,
       service: "Urgences",
       metier: "IDE",
@@ -180,19 +180,19 @@ async function main() {
 
   await prisma.trainingSession.createMany({
     data: [
-      { projectId: project.id, trainingRecordId: pop1.id, date: new Date("2026-07-08"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 62, nbPresents: 58 },
-      { projectId: project.id, trainingRecordId: pop1.id, date: new Date("2026-07-10"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 20, nbPresents: 18 },
-      { projectId: project.id, trainingRecordId: pop2.id, date: new Date("2026-07-12"), formateur: "Équipe interne", format: "distanciel", dureeHeures: 2, nbInscrits: 45, nbPresents: 32 },
+      { initiativeId: initiative.id, trainingRecordId: pop1.id, date: new Date("2026-07-08"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 62, nbPresents: 58 },
+      { initiativeId: initiative.id, trainingRecordId: pop1.id, date: new Date("2026-07-10"), formateur: "Organisme XYZ", format: "presentiel", dureeHeures: 3, nbInscrits: 20, nbPresents: 18 },
+      { initiativeId: initiative.id, trainingRecordId: pop2.id, date: new Date("2026-07-12"), formateur: "Équipe interne", format: "distanciel", dureeHeures: 2, nbInscrits: 45, nbPresents: 32 },
     ],
   });
 
   await prisma.kpi.create({
-    data: { projectId: project.id, name: "Tickets support / semaine", value: 14, unit: "tickets", target: 5, period: "Semaine post Go-Live", categorie: "adoption" },
+    data: { initiativeId: initiative.id, name: "Tickets support / semaine", value: 14, unit: "tickets", target: 5, period: "Semaine post Go-Live", categorie: "adoption" },
   });
 
   await prisma.documentRef.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       title: "Mail éditeur SIL — retard interface laboratoire",
       type: "mail",
       note: "La livraison de l'interface laboratoire est repoussée de deux semaines suite à un incident chez l'éditeur.",
@@ -201,7 +201,7 @@ async function main() {
 
   await prisma.backlogItem.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       demande: "Ajout d'un tableau de bord infirmier personnalisable",
       origine: "atelier métier",
       priorite: "normale",
@@ -210,37 +210,37 @@ async function main() {
     },
   });
 
-  await prisma.project.update({ where: { id: project.id }, data: { budgetInitialEur: 250000, budgetReviseEur: 260000 } });
+  await prisma.initiative.update({ where: { id: initiative.id }, data: { budgetInitialEur: 250000, budgetReviseEur: 260000 } });
 
   await prisma.budgetLine.createMany({
     data: [
-      { projectId: project.id, libelle: "Prestation intégrateur DPI", categorie: "prestation", fournisseur: "Éditeur DPI", prevision: 150000, engage: 150000, reel: 96000 },
-      { projectId: project.id, libelle: "Licences additionnelles", categorie: "licence", prevision: 40000, engage: 40000, reel: 40000 },
-      { projectId: project.id, libelle: "Déplacements équipe projet", categorie: "deplacement", prevision: 8000, engage: 5200, reel: 4100 },
+      { initiativeId: initiative.id, libelle: "Prestation intégrateur DPI", categorie: "prestation", fournisseur: "Éditeur DPI", prevision: 150000, engage: 150000, reel: 96000 },
+      { initiativeId: initiative.id, libelle: "Licences additionnelles", categorie: "licence", prevision: 40000, engage: 40000, reel: 40000 },
+      { initiativeId: initiative.id, libelle: "Déplacements équipe projet", categorie: "deplacement", prevision: 8000, engage: 5200, reel: 4100 },
     ],
   });
 
   await prisma.deliverable.create({
-    data: { projectId: project.id, name: "Cahier des charges interopérabilité", responsable: "Équipe interop", version: "v1.2", status: "valide" },
+    data: { initiativeId: initiative.id, name: "Cahier des charges interopérabilité", responsable: "Équipe interop", version: "v1.2", status: "valide" },
   });
   await prisma.deliverable.create({
-    data: { projectId: project.id, name: "Plan de déploiement", responsable: "Chef de projet", datePrevue: new Date("2026-09-15"), status: "en_cours" },
+    data: { initiativeId: initiative.id, name: "Plan de déploiement", responsable: "Chef de projet", datePrevue: new Date("2026-09-15"), status: "en_cours" },
   });
 
   await prisma.stakeholder.create({
-    data: { projectId: project.id, name: "Direction des soins", organisation: "CH Nord", role: "Sponsor métier", implication: "forte", influence: "forte" },
+    data: { initiativeId: initiative.id, name: "Direction des soins", organisation: "CH Nord", role: "Sponsor métier", implication: "forte", influence: "forte" },
   });
   await prisma.stakeholder.create({
-    data: { projectId: project.id, name: "Éditeur SIL", organisation: "Fournisseur", role: "Fournisseur interface", implication: "moyenne", influence: "forte" },
+    data: { initiativeId: initiative.id, name: "Éditeur SIL", organisation: "Fournisseur", role: "Fournisseur interface", implication: "moyenne", influence: "forte" },
   });
 
   await prisma.kpi.create({
-    data: { projectId: project.id, name: "Taux de satisfaction formation", value: 82, unit: "%", target: 90, period: "Juillet 2026" },
+    data: { initiativeId: initiative.id, name: "Taux de satisfaction formation", value: 82, unit: "%", target: 90, period: "Juillet 2026" },
   });
 
   await prisma.changeRequest.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       titre: "Ajout d'un connecteur bidirectionnel avec le logiciel de biologie délocalisée",
       origine: "audit",
       demandeur: "Direction des soins",
@@ -255,31 +255,31 @@ async function main() {
   });
 
   const actorCdp = await prisma.actor.create({
-    data: { projectId: project.id, name: "M. Lefèvre", roleProjet: "chef_de_projet", fonction: "Chef de projet SI", disponibiliteJh: 40 },
+    data: { initiativeId: initiative.id, name: "M. Lefèvre", roleProjet: "chef_de_projet", fonction: "Chef de projet SI", disponibiliteJh: 40 },
   });
   const actorInterop = await prisma.actor.create({
-    data: { projectId: project.id, name: "S. Nguyen", roleProjet: "consultant_interop", organisation: "Prestataire externe", disponibiliteJh: 15 },
+    data: { initiativeId: initiative.id, name: "S. Nguyen", roleProjet: "consultant_interop", organisation: "Prestataire externe", disponibiliteJh: 15 },
   });
   const actorMetier = await prisma.actor.create({
-    data: { projectId: project.id, name: "Dr. Aris", roleProjet: "expert_metier", fonction: "Médecin référent DPI", disponibiliteJh: 5 },
+    data: { initiativeId: initiative.id, name: "Dr. Aris", roleProjet: "expert_metier", fonction: "Médecin référent DPI", disponibiliteJh: 5 },
   });
 
   await prisma.raciEntry.createMany({
     data: [
-      { projectId: project.id, actorId: actorCdp.id, activite: "Recette fonctionnelle", role: "A" },
-      { projectId: project.id, actorId: actorInterop.id, activite: "Recette fonctionnelle", role: "R" },
-      { projectId: project.id, actorId: actorMetier.id, activite: "Recette fonctionnelle", role: "C" },
-      { projectId: project.id, actorId: actorCdp.id, activite: "Formation", role: "R" },
-      { projectId: project.id, actorId: actorMetier.id, activite: "Formation", role: "I" },
-      { projectId: project.id, actorId: actorCdp.id, activite: "Kick-off", role: "A" },
-      { projectId: project.id, actorId: actorInterop.id, activite: "Interfaces", role: "R" },
-      { projectId: project.id, actorId: actorCdp.id, activite: "Interfaces", role: "A" },
+      { initiativeId: initiative.id, actorId: actorCdp.id, activite: "Recette fonctionnelle", role: "A" },
+      { initiativeId: initiative.id, actorId: actorInterop.id, activite: "Recette fonctionnelle", role: "R" },
+      { initiativeId: initiative.id, actorId: actorMetier.id, activite: "Recette fonctionnelle", role: "C" },
+      { initiativeId: initiative.id, actorId: actorCdp.id, activite: "Formation", role: "R" },
+      { initiativeId: initiative.id, actorId: actorMetier.id, activite: "Formation", role: "I" },
+      { initiativeId: initiative.id, actorId: actorCdp.id, activite: "Kick-off", role: "A" },
+      { initiativeId: initiative.id, actorId: actorInterop.id, activite: "Interfaces", role: "R" },
+      { initiativeId: initiative.id, actorId: actorCdp.id, activite: "Interfaces", role: "A" },
     ],
   });
 
   const reqLabo = await prisma.requirement.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       titre: "Envoi automatique des résultats critiques aux urgences",
       description: "Les résultats de biologie critiques doivent générer une alerte visible côté urgences.",
       origine: "atelier_metier",
@@ -289,7 +289,7 @@ async function main() {
   });
   await prisma.requirement.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       titre: "Archivage des comptes rendus au format PDF/A",
       origine: "reglementaire",
       priorite: "normale",
@@ -299,7 +299,7 @@ async function main() {
 
   await prisma.gap.create({
     data: {
-      projectId: project.id,
+      initiativeId: initiative.id,
       requirementId: reqLabo.id,
       description: "Le SIL ne supporte pas nativement les alertes temps réel demandées",
       optionsEnvisagees: "Développement spécifique éditeur / Contournement par polling toutes les 2 min / Report en V2",
@@ -309,7 +309,7 @@ async function main() {
     },
   });
 
-  console.log("Seed terminé. Projet créé :", project.id);
+  console.log("Seed terminé. Projet créé :", initiative.id);
   console.log("Risque lié à l'interface bloquante :", risk.id);
 }
 

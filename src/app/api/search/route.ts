@@ -6,29 +6,29 @@ export async function GET(req: NextRequest) {
   if (!q) return NextResponse.json({ results: [] });
   const contains = { contains: q };
 
-  const [projects, actions, risks, decisions, interfaces, anomalies, meetings, documents, vigilancePoints] =
+  const [initiatives, actions, risks, decisions, interfaces, anomalies, meetings, documents, vigilancePoints] =
     await Promise.all([
-      prisma.project.findMany({ where: { OR: [{ name: contains }, { reference: contains }, { description: contains }] } }),
-      prisma.action.findMany({ where: { OR: [{ title: contains }, { comments: contains }] }, include: { project: true } }),
-      prisma.risk.findMany({ where: { OR: [{ description: contains }, { cause: contains }] }, include: { project: true } }),
-      prisma.decision.findMany({ where: { OR: [{ subject: contains }, { context: contains }] }, include: { project: true } }),
-      prisma.interface.findMany({ where: { OR: [{ name: contains }, { systemeSource: contains }, { systemeCible: contains }] }, include: { project: true } }),
-      prisma.anomaly.findMany({ where: { description: contains }, include: { project: true } }),
-      prisma.meeting.findMany({ where: { OR: [{ title: contains }, { notes: contains }] }, include: { project: true } }),
-      prisma.documentRef.findMany({ where: { OR: [{ title: contains }, { note: contains }] }, include: { project: true } }),
-      prisma.vigilancePoint.findMany({ where: { description: contains }, include: { project: true } }),
+      prisma.initiative.findMany({ where: { OR: [{ name: contains }, { reference: contains }, { description: contains }] } }),
+      prisma.action.findMany({ where: { OR: [{ title: contains }, { comments: contains }] }, include: { initiative: true } }),
+      prisma.risk.findMany({ where: { OR: [{ description: contains }, { cause: contains }] }, include: { initiative: true } }),
+      prisma.decision.findMany({ where: { OR: [{ subject: contains }, { context: contains }] }, include: { initiative: true } }),
+      prisma.interface.findMany({ where: { OR: [{ name: contains }, { systemeSource: contains }, { systemeCible: contains }] }, include: { initiative: true } }),
+      prisma.anomaly.findMany({ where: { description: contains }, include: { initiative: true } }),
+      prisma.meeting.findMany({ where: { OR: [{ title: contains }, { notes: contains }] }, include: { initiative: true } }),
+      prisma.documentRef.findMany({ where: { OR: [{ title: contains }, { note: contains }] }, include: { initiative: true } }),
+      prisma.vigilancePoint.findMany({ where: { description: contains }, include: { initiative: true } }),
     ]);
 
   const results = [
-    ...projects.map((p) => ({ kind: "Projet", label: p.name, href: `/projects/${p.id}` })),
-    ...actions.map((a) => ({ kind: "Action", label: a.title, href: `/projects/${a.projectId}/actions` })),
-    ...risks.map((r) => ({ kind: "Risque", label: r.description, href: `/projects/${r.projectId}/risks` })),
-    ...decisions.map((d) => ({ kind: "Décision", label: d.subject, href: `/projects/${d.projectId}/decisions` })),
-    ...interfaces.map((i) => ({ kind: "Interface", label: i.name, href: `/projects/${i.projectId}/interfaces` })),
-    ...anomalies.map((a) => ({ kind: "Anomalie", label: a.description, href: `/projects/${a.projectId}` })),
-    ...meetings.map((m) => ({ kind: "Réunion", label: m.title, href: `/projects/${m.projectId}/meetings/${m.id}` })),
-    ...documents.map((d) => ({ kind: "Document", label: d.title, href: `/projects/${d.projectId}` })),
-    ...vigilancePoints.map((v) => ({ kind: "Point de vigilance", label: v.description, href: `/projects/${v.projectId}` })),
+    ...initiatives.map((p) => ({ kind: "Projet", label: p.name, href: `/initiatives/${p.id}` })),
+    ...actions.map((a) => ({ kind: "Action", label: a.title, href: `/initiatives/${a.initiativeId}/actions` })),
+    ...risks.map((r) => ({ kind: "Risque", label: r.description, href: `/initiatives/${r.initiativeId}/risks` })),
+    ...decisions.map((d) => ({ kind: "Décision", label: d.subject, href: `/initiatives/${d.initiativeId}/decisions` })),
+    ...interfaces.map((i) => ({ kind: "Interface", label: i.name, href: `/initiatives/${i.initiativeId}/interfaces` })),
+    ...anomalies.map((a) => ({ kind: "Anomalie", label: a.description, href: `/initiatives/${a.initiativeId}` })),
+    ...meetings.map((m) => ({ kind: "Réunion", label: m.title, href: `/initiatives/${m.initiativeId}/meetings/${m.id}` })),
+    ...documents.map((d) => ({ kind: "Document", label: d.title, href: `/initiatives/${d.initiativeId}` })),
+    ...vigilancePoints.map((v) => ({ kind: "Point de vigilance", label: v.description, href: `/initiatives/${v.initiativeId}` })),
   ];
 
   return NextResponse.json({ results });

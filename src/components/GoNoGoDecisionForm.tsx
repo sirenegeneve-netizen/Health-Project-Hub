@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function GoNoGoDecisionForm({ projectId }: { projectId: string }) {
+export function GoNoGoDecisionForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [decision, setDecision] = useState("GO");
   const [justification, setJustification] = useState("");
@@ -15,7 +15,7 @@ export function GoNoGoDecisionForm({ projectId }: { projectId: string }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        projectId,
+        initiativeId,
         subject: "Go/No Go déploiement",
         decision,
         context: justification,

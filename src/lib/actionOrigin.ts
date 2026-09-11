@@ -21,23 +21,23 @@ const FALLBACK_LABEL: Record<string, string> = {
   manuel: "Saisie manuelle",
 };
 
-export function resolveActionOrigin(action: ActionOriginInput, projectId: string): ActionOrigin {
+export function resolveActionOrigin(action: ActionOriginInput, initiativeId: string): ActionOrigin {
   if (action.meeting) {
     return {
       label: `Réunion du ${new Date(action.meeting.date).toLocaleDateString("fr-FR")}`,
-      href: `/projects/${projectId}/meetings/${action.meeting.id}`,
+      href: `/initiatives/${initiativeId}/meetings/${action.meeting.id}`,
     };
   }
   if (action.risk) {
     return {
       label: `Risque : ${truncate(action.risk.description, 40)}`,
-      href: `/projects/${projectId}/risks`,
+      href: `/initiatives/${initiativeId}/risks`,
     };
   }
   if (action.decision) {
     return {
       label: `Décision : ${truncate(action.decision.subject, 40)}`,
-      href: `/projects/${projectId}/decisions`,
+      href: `/initiatives/${initiativeId}/decisions`,
     };
   }
   return { label: (action.origine && FALLBACK_LABEL[action.origine]) || "Non renseignée", href: null };

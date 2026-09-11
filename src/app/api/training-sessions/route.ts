@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const session = await prisma.trainingSession.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       trainingRecordId: body.trainingRecordId,
       date: new Date(body.date),
       dureeHeures: body.dureeHeures ? Number(body.dureeHeures) : null,
@@ -19,6 +19,6 @@ export async function POST(req: NextRequest) {
       notes: body.notes || null,
     },
   });
-  await logTimelineEvent(body.projectId, "formation", `Session de formation réalisée (${session.nbPresents}/${session.nbInscrits} présents)`);
+  await logTimelineEvent(body.initiativeId, "formation", `Session de formation réalisée (${session.nbPresents}/${session.nbInscrits} présents)`);
   return NextResponse.json(session, { status: 201 });
 }

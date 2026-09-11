@@ -9,15 +9,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.requalifyAs) {
     const type = body.requalifyAs as "action" | "risque" | "decision" | "evolution";
     if (type === "action") {
-      await prisma.action.create({ data: { projectId: point.projectId, title: point.description, origine: "vigilance" } });
+      await prisma.action.create({ data: { initiativeId: point.initiativeId, title: point.description, origine: "vigilance" } });
     } else if (type === "risque") {
-      await prisma.risk.create({ data: { projectId: point.projectId, description: point.description } });
+      await prisma.risk.create({ data: { initiativeId: point.initiativeId, description: point.description } });
     } else if (type === "decision") {
-      await prisma.decision.create({ data: { projectId: point.projectId, subject: point.description } });
+      await prisma.decision.create({ data: { initiativeId: point.initiativeId, subject: point.description } });
     } else if (type === "evolution") {
-      await prisma.backlogItem.create({ data: { projectId: point.projectId, demande: point.description, origine: "vigilance" } });
+      await prisma.backlogItem.create({ data: { initiativeId: point.initiativeId, demande: point.description, origine: "vigilance" } });
     }
-    await logTimelineEvent(point.projectId, "vigilance", `Point de vigilance requalifié en ${type} : « ${point.description} »`);
+    await logTimelineEvent(point.initiativeId, "vigilance", `Point de vigilance requalifié en ${type} : « ${point.description} »`);
     const updated = await prisma.vigilancePoint.update({
       where: { id: params.id },
       data: { status: "requalifie", convertedTo: type },

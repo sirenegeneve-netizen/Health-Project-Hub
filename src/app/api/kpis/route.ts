@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const kpi = await prisma.kpi.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       name: body.name,
       value: Number(body.value),
       unit: body.unit || null,
@@ -16,6 +16,6 @@ export async function POST(req: NextRequest) {
       alertThreshold: body.alertThreshold ? Number(body.alertThreshold) : null,
     },
   });
-  await logTimelineEvent(body.projectId, "indicateur", `Indicateur ajouté : « ${kpi.name} »`);
+  await logTimelineEvent(body.initiativeId, "indicateur", `Indicateur ajouté : « ${kpi.name} »`);
   return NextResponse.json(kpi, { status: 201 });
 }

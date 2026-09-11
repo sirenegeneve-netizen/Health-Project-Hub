@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const iface = await prisma.interface.create({
     data: {
-      projectId: body.projectId,
+      initiativeId: body.initiativeId,
       name: body.name,
       systemeSource: body.systemeSource || null,
       systemeCible: body.systemeCible || null,
@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
       isBlocking: !!body.isBlocking,
     },
   });
-  await logTimelineEvent(body.projectId, "interface", `Interface ajoutée : « ${iface.name} »`);
+  await logTimelineEvent(body.initiativeId, "interface", `Interface ajoutée : « ${iface.name} »`);
   return NextResponse.json(iface, { status: 201 });
 }

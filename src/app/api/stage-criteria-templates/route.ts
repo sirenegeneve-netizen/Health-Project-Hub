@@ -3,10 +3,10 @@ import { prisma } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const projectType = searchParams.get("projectType");
+  const initiativeType = searchParams.get("initiativeType");
   const stageKey = searchParams.get("stageKey");
-  if (!projectType || !stageKey) return NextResponse.json({ error: "paramètres manquants" }, { status: 400 });
-  const templates = await prisma.stageCriterionTemplate.findMany({ where: { projectType, stageKey }, orderBy: { order: "asc" } });
+  if (!initiativeType || !stageKey) return NextResponse.json({ error: "paramètres manquants" }, { status: 400 });
+  const templates = await prisma.stageCriterionTemplate.findMany({ where: { initiativeType, stageKey }, orderBy: { order: "asc" } });
   return NextResponse.json(templates);
 }
 
@@ -14,13 +14,13 @@ export async function GET(req: NextRequest) {
 // modèle "defaut"). Le formulaire de Paramètres > Critères poste ici.
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { projectType, stageKey, label } = body;
-  if (!projectType || !stageKey || !label || !label.trim()) {
+  const { initiativeType, stageKey, label } = body;
+  if (!initiativeType || !stageKey || !label || !label.trim()) {
     return NextResponse.json({ error: "champs manquants" }, { status: 400 });
   }
-  const count = await prisma.stageCriterionTemplate.count({ where: { projectType, stageKey } });
+  const count = await prisma.stageCriterionTemplate.count({ where: { initiativeType, stageKey } });
   const created = await prisma.stageCriterionTemplate.create({
-    data: { projectType, stageKey, label: label.trim(), order: count },
+    data: { initiativeType, stageKey, label: label.trim(), order: count },
   });
   return NextResponse.json(created, { status: 201 });
 }

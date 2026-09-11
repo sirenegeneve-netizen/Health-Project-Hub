@@ -38,33 +38,33 @@ const SEED_DEFAULT_TEMPLATES: Record<CriteriaStageKey, string[]> = {
 // démarrage de l'app). Idempotent — ne touche jamais aux modèles déjà présents,
 // y compris ceux que l'utilisateur aurait vidés volontairement.
 export async function ensureDefaultTemplates() {
-  const existing = await prisma.stageCriterionTemplate.count({ where: { projectType: DEFAULT_PROJECT_TYPE } });
+  const existing = await prisma.stageCriterionTemplate.count({ where: { initiativeType: DEFAULT_PROJECT_TYPE } });
   if (existing > 0) return;
   const rows = CRITERIA_STAGES.flatMap((stageKey) =>
-    SEED_DEFAULT_TEMPLATES[stageKey].map((label, order) => ({ projectType: DEFAULT_PROJECT_TYPE, stageKey, label, order }))
+    SEED_DEFAULT_TEMPLATES[stageKey].map((label, order) => ({ initiativeType: DEFAULT_PROJECT_TYPE, stageKey, label, order }))
   );
   await prisma.stageCriterionTemplate.createMany({ data: rows, skipDuplicates: true });
 }
 
 // Amorce la checklist d'un projet pour une étape donnée, à partir du modèle de
 // son type — ou du modèle "defaut" si son type n'a pas de liste dédiée.
-// Idempotent grâce à la contrainte unique [projectId, stageKey, label] sur
+// Idempotent grâce à la contrainte unique [initiativeId, stageKey, label] sur
 // StageCriterion : un critère déjà coché n'est jamais recréé/réinitialisé.
-export async function ensureStageCriteria(projectId: string, stageKey: CriteriaStageKey, projectType: string) {
+export async function ensureStageCriteria(initiativeId: string, stageKey: CriteriaStageKey, initiativeType: string) {
   await ensureDefaultTemplates();
   let templates = await prisma.stageCriterionTemplate.findMany({
-    where: { projectType, stageKey },
+    where: { initiativeType, stageKey },
     orderBy: { order: "asc" },
   });
-  if (templates.length === 0 && projectType !== DEFAULT_PROJECT_TYPE) {
+  if (templates.length === 0 && initiativeType !== DEFAULT_PROJECT_TYPE) {
     templates = await prisma.stageCriterionTemplate.findMany({
-      where: { projectType: DEFAULT_PROJECT_TYPE, stageKey },
+      where: { initiativeType: DEFAULT_PROJECT_TYPE, stageKey },
       orderBy: { order: "asc" },
     });
   }
   if (templates.length === 0) return;
   await prisma.stageCriterion.createMany({
-    data: templates.map((t, order) => ({ projectId, stageKey, label: t.label, order })),
+    data: templates.map((t, order) => ({ initiativeId, stageKey, label: t.label, order })),
     skipDuplicates: true,
   });
 }

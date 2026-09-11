@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 // de cycler R → A → C → I → (vide) sans jamais créer de doublon.
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { projectId, actorId, activite, role } = body;
+  const { initiativeId, actorId, activite, role } = body;
 
   if (!role) {
     await prisma.raciEntry.deleteMany({ where: { actorId, activite } });
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const entry = await prisma.raciEntry.upsert({
     where: { actorId_activite: { actorId, activite } },
     update: { role },
-    create: { projectId, actorId, activite, role },
+    create: { initiativeId, actorId, activite, role },
   });
   return NextResponse.json(entry, { status: 201 });
 }
