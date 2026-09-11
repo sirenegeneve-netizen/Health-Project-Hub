@@ -5,7 +5,8 @@ import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 import { computeDimensionColors } from "@/lib/portfolioHealth";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
-import { getLifecycleStages } from "@/lib/lifecycle";
+import { computeStages } from "@/lib/lifecycle";
+import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
 import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { IconBadge } from "@/components/IconBadge";
@@ -108,8 +109,10 @@ export default async function HomePage() {
     )
     .slice(0, 6);
 
+  const stagesByType = await getAllWorkflowStagesGrouped();
+
   const portfolioInitiatives = initiatives.map((p, i) => {
-    const stages = getLifecycleStages(p.phase);
+    const stages = computeStages(p.phase, stagesForType(stagesByType, p.type));
     const currentStage = stages.find((s) => s.status === "current") || stages[0];
     return {
       id: p.id,

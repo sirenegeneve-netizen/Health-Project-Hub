@@ -1,5 +1,9 @@
-import { getLifecycleStages } from "@/lib/lifecycle";
+import { computeStages, DEFAULT_STAGES } from "@/lib/lifecycle";
 
+// NB : superseded par InitiativeJourney (voir ce composant). Conservé pour
+// compat mais utilise désormais le socle par défaut (Déploiement) faute de
+// connaître le type d'initiative — passer par InitiativeJourney pour un
+// rendu correctement propre au type.
 const DOT: Record<string, string> = {
   done: "bg-ok",
   current: "bg-warn",
@@ -7,7 +11,7 @@ const DOT: Record<string, string> = {
 };
 
 export function PhaseRail({ phase }: { phase: string }) {
-  const stages = getLifecycleStages(phase);
+  const stages = computeStages(phase, DEFAULT_STAGES);
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
       {stages.map((s, i) => (

@@ -245,6 +245,22 @@ model Initiative {
 // cahier des charges : « Prévoir des checklists configurables par type de
 // projet »). "defaut" est le modèle de repli utilisé par tout projet dont le
 // type n'a pas (encore) sa propre liste — gérable depuis Paramètres > Critères.
+// Séquence d'étapes du workflow, par type d'initiative (architecture Groupe >
+// Établissement > Initiative, §6). Remplace la constante STAGES qui était codée
+// en dur dans lib/lifecycle.ts — chaque type a son propre socle, éditable ici.
+model WorkflowStage {
+  id             String   @id @default(cuid())
+  initiativeType String
+  ordre          Int
+  key            String
+  label          String
+  legacyPhases   String[] @default([])
+  createdAt      DateTime @default(now())
+
+  @@unique([initiativeType, key])
+  @@unique([initiativeType, ordre])
+}
+
 model StageCriterionTemplate {
   id          String   @id @default(cuid())
   initiativeType String @map("projectType") // deploiement | migration | evolution | ... | defaut

@@ -7,7 +7,8 @@ import { HealthBadge } from "@/components/HealthBadge";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { InitiativeEditForm } from "@/components/InitiativeEditForm";
 import { InitiativeJourney } from "@/components/InitiativeJourney";
-import { getLifecycleStages } from "@/lib/lifecycle";
+import { computeStages } from "@/lib/lifecycle";
+import { getWorkflowStages } from "@/lib/workflowStages";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
     },
   });
   if (!initiative) notFound();
+
+  const workflowStages = await getWorkflowStages(initiative.type);
 
   const score = await computeHealthScore(initiative.id);
   const now = new Date();
@@ -69,7 +72,7 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
       </div>
 
       <div className="mb-6">
-        <InitiativeJourney initiativeId={initiative.id} stages={getLifecycleStages(initiative.phase)} alerts={alerts} />
+        <InitiativeJourney initiativeId={initiative.id} stages={computeStages(initiative.phase, workflowStages)} alerts={alerts} />
       </div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink/60 mb-8">

@@ -52,7 +52,25 @@ export default async function EstablishmentDetailPage({ params }: { params: { id
       <div className="text-sm text-muted mb-6">{establishment.group.name}</div>
 
       <div className="space-y-4">
-        <EstablishmentInfoForm establishment={establishment} />
+        <EstablishmentInfoForm
+          establishment={{
+            id: establishment.id,
+            adresse: establishment.adresse,
+            ville: establishment.ville,
+            pays: establishment.pays,
+            siteWeb: establishment.siteWeb,
+            activite: establishment.activite,
+            nombreLits: establishment.nombreLits,
+            nombrePlaces: establishment.nombrePlaces,
+            nombreUtilisateurs: establishment.nombreUtilisateurs,
+            dateSignature: establishment.dateSignature ? establishment.dateSignature.toISOString() : null,
+            dateDemarrage: establishment.dateDemarrage ? establishment.dateDemarrage.toISOString() : null,
+            dateFin: establishment.dateFin ? establishment.dateFin.toISOString() : null,
+            montantAnnuel: establishment.montantAnnuel,
+            maintenance: establishment.maintenance,
+            support: establishment.support,
+          }}
+        />
 
         <div className="grid md:grid-cols-2 gap-4">
           <EstablishmentContacts

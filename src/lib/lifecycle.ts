@@ -6,12 +6,17 @@ export interface Stage {
   status: StageStatus;
 }
 
-// Parcours du projet en 9 étapes de pilotage de déploiement (et non plus des
-// phases de conception logicielle — le logiciel est déjà existant, cf. prompt
-// de refonte §5). Chaque phase détaillée historiquement saisie sur un projet
-// (Initiative.phase) est rattachée à l'étape la plus représentative pour garder
-// un repère visuel simple ; ce n'est pas une vérité absolue.
-export const STAGES: { key: string; label: string; legacyPhases: string[] }[] = [
+export interface WorkflowStageDef {
+  key: string;
+  label: string;
+  legacyPhases: string[];
+}
+
+// Socle par défaut (Déploiement), utilisé en repli si aucune séquence n'est
+// encore chargée en base pour le type demandé (ex. avant l'exécution du seed
+// prisma/seed-workflow-stages.ts) — ne doit normalement plus être sollicité une
+// fois le seed passé, mais garde le comportement identique à l'ancien système.
+export const DEFAULT_STAGES: WorkflowStageDef[] = [
   { key: "cadrage", label: "Cadrage", legacyPhases: ["opportunite", "qualification", "cadrage"] },
   { key: "kickoff", label: "Kick-off", legacyPhases: ["kick_off"] },
   {
@@ -27,15 +32,17 @@ export const STAGES: { key: string; label: string; legacyPhases: string[] }[] = 
   { key: "cloture", label: "Clôture", legacyPhases: ["run", "amelioration_continue", "cloture", "retex"] },
 ];
 
-export function getLifecycleStages(phase: string): Stage[] {
-  const currentIndex = STAGES.findIndex((s) => s.key === phase || s.legacyPhases.includes(phase));
-  return STAGES.map((s, i) => ({
+export function computeStages(phase: string, stages: WorkflowStageDef[]): Stage[] {
+  const list = stages.length ? stages : DEFAULT_STAGES;
+  const currentIndex = list.findIndex((s) => s.key === phase || s.legacyPhases.includes(phase));
+  return list.map((s, i) => ({
     key: s.key,
     label: s.label,
     status: currentIndex === -1 ? "upcoming" : i < currentIndex ? "done" : i === currentIndex ? "current" : "upcoming",
   }));
 }
 
-export function stageLabel(key: string): string {
-  return STAGES.find((s) => s.key === key)?.label || key;
+export function stageLabelFromList(key: string, stages: WorkflowStageDef[]): string {
+  const list = stages.length ? stages : DEFAULT_STAGES;
+  return list.find((s) => s.key === key)?.label || key;
 }

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeProgress, computeBudgetSummary, formatEur } from "@/lib/metrics";
-import { getLifecycleStages } from "@/lib/lifecycle";
+import { computeStages } from "@/lib/lifecycle";
+import { getWorkflowStages } from "@/lib/workflowStages";
 import { findSinglePointsOfFailure, computeActorWorkload } from "@/lib/resourceGovernance";
 import { HealthBadge } from "@/components/HealthBadge";
 import { PrintButton } from "@/components/PrintButton";
@@ -39,7 +40,8 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
 
   const progress = computeProgress(initiative.actions);
   const budget = computeBudgetSummary(initiative.budgetInitialEur, initiative.budgetReviseEur, initiative.budgetLines);
-  const stages = getLifecycleStages(initiative.phase);
+  const workflowStages = await getWorkflowStages(initiative.type);
+  const stages = computeStages(initiative.phase, workflowStages);
   const currentStage = stages.find((s) => s.status === "current") || stages[0];
 
   const lateActions = initiative.actions.filter((a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status));

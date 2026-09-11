@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
-import { getLifecycleStages } from "@/lib/lifecycle";
+import { computeStages } from "@/lib/lifecycle";
+import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
 import { InitiativesExplorer, type ExplorerInitiative } from "@/components/InitiativesExplorer";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,10 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
   });
 
   const scores = await Promise.all(initiatives.map((p) => computeHealthScore(p.id)));
+  const stagesByType = await getAllWorkflowStagesGrouped();
 
   const items: ExplorerInitiative[] = initiatives.map((p, i) => {
-    const stages = getLifecycleStages(p.phase);
+    const stages = computeStages(p.phase, stagesForType(stagesByType, p.type));
     const currentIdx = stages.findIndex((s) => s.status === "current");
     return {
       id: p.id,

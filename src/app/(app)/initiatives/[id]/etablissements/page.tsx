@@ -3,11 +3,9 @@ import { prisma } from "@/lib/db";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
-import { STAGES } from "@/lib/lifecycle";
+import { getWorkflowStages } from "@/lib/workflowStages";
 
 export const dynamic = "force-dynamic";
-
-const PHASE_OPTIONS = [{ value: "", label: "— (aligné sur le projet)" }, ...STAGES.map((s) => ({ value: s.key, label: s.label }))];
 
 // Vue comparative multi-établissements (§27 du prompt de refonte) : une ligne
 // par site, pour répondre à « où en est-on établissement par établissement ? ».
@@ -21,6 +19,9 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
     include: { establishments: { include: { establishment: true } } },
   });
   if (!initiative) notFound();
+
+  const workflowStages = await getWorkflowStages(initiative.type);
+  const PHASE_OPTIONS = [{ value: "", label: "— (aligné sur l'initiative)" }, ...workflowStages.map((s) => ({ value: s.key, label: s.label }))];
 
   const [risks, trainings, actions] = await Promise.all([
     prisma.risk.findMany({ where: { initiativeId: params.id } }),
