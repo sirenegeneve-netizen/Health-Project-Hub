@@ -226,6 +226,8 @@ model Initiative {
   requirements     Requirement[]
   gaps             Gap[]
   stageCriteria    StageCriterion[]
+  relationsSource  InitiativeRelation[] @relation("RelationSource")
+  relationsCible   InitiativeRelation[] @relation("RelationCible")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -259,6 +261,26 @@ model WorkflowStage {
 
   @@unique([initiativeType, key])
   @@unique([initiativeType, ordre])
+}
+
+// Relation entre deux Initiatives (architecture Groupe > Établissement >
+// Initiative, §5). Orientée : source → cible. Pour les types symétriques
+// (lie_a, conflit_avec, ressource_partagee_avec), la relation ne porte de sens
+// que dans un sens de saisie, mais s'affiche dans les deux fiches concernées.
+// `auto=true` distingue les relations posées automatiquement par le système
+// (détection de conflit de planning, §9 point 4) de celles déclarées à la main.
+model InitiativeRelation {
+  id                 String     @id @default(cuid())
+  initiativeSourceId String
+  initiativeSource   Initiative @relation("RelationSource", fields: [initiativeSourceId], references: [id], onDelete: Cascade)
+  initiativeCibleId  String
+  initiativeCible    Initiative @relation("RelationCible", fields: [initiativeCibleId], references: [id], onDelete: Cascade)
+  type               String // depend_de | prerequis_pour | impacte | lie_a | conflit_avec | ressource_partagee_avec
+  note               String?
+  auto               Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+
+  @@unique([initiativeSourceId, initiativeCibleId, type])
 }
 
 model StageCriterionTemplate {

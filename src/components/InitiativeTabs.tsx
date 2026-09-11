@@ -21,6 +21,7 @@ const TABS: { href: string; label: string; match: string[] }[] = [
   { href: "/golive", label: "Mise en production", match: ["/golive"] },
   { href: "/run", label: "Stabilisation", match: ["/run", "/kpis"] },
   { href: "/cloture", label: "Clôture", match: ["/cloture"] },
+  { href: "/relations", label: "Relations", match: ["/relations"] },
   { href: "/timeline", label: "Mémoire", match: ["/timeline"] },
 ];
 
