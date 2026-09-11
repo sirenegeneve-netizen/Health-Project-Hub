@@ -13,6 +13,7 @@ import {
   Route,
   Calendar,
   Building2,
+  Network,
   BarChart3,
   UserCircle,
   Search,
@@ -55,7 +56,10 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "Périmètre",
-    items: [{ href: "/establishments", label: "Établissements", Icon: Building2 }],
+    items: [
+      { href: "/groups", label: "Groupes", Icon: Network },
+      { href: "/establishments", label: "Établissements", Icon: Building2 },
+    ],
   },
   {
     title: "Analyse",
