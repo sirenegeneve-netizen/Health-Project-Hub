@@ -19,6 +19,7 @@ model Group {
   name           String
   establishments Establishment[]
   initiatives       Initiative[]
+  actorAffiliations ActorAffiliation[]
   createdAt      DateTime        @default(now())
 }
 
@@ -50,6 +51,7 @@ model Establishment {
 
   installedProducts    InstalledProduct[]
   ecosystemInterfaces  EstablishmentInterface[]
+  actorAffiliations    ActorAffiliation[]
 
   initiatives  InitiativeEstablishment[]
   trainings    TrainingRecord[]
@@ -87,8 +89,8 @@ model EstablishmentInterface {
 
 model Actor {
   id              String      @id @default(cuid())
-  initiativeId       String @map("projectId")
-  initiative         Initiative     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  initiativeId       String? @map("projectId")
+  initiative         Initiative?     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name            String
   fonction        String?
   organisation    String?
@@ -97,6 +99,7 @@ model Actor {
   telephone       String?
   disponibiliteJh Float?
   competences     String?
+  affiliations    ActorAffiliation[]
   raciEntries     RaciEntry[]
   actionsResponsable      Action[]           @relation("ActionResponsable")
   risksProprietaire       Risk[]             @relation("RiskProprietaire")
@@ -107,6 +110,29 @@ model Actor {
   trainingSessionsAsFormateur TrainingSession[] @relation("TrainingFormateur")
   trainingRecordsAsReferent   TrainingRecord[]  @relation("TrainingReferent")
   createdAt       DateTime    @default(now())
+}
+
+// Référentiel Acteur transverse (architecture Groupe > Établissement > Initiative,
+// §5) : un acteur peut être contact d'un Groupe, contact d'un Établissement, et/ou
+// impliqué dans une ou plusieurs Initiatives. L'implication dans une Initiative
+// passe déjà par les relations existantes (RaciEntry, MeetingParticipant,
+// *Responsable, *Decideur...) — cette table couvre spécifiquement le rattachement
+// "contact officiel de" à un Groupe ou un Établissement, qui n'existait pas avant.
+// Une ligne = un rattachement à un seul niveau (groupId OU establishmentId rempli,
+// jamais les deux) ; un acteur peut avoir plusieurs rattachements (ex. contact de
+// deux établissements du même groupe).
+model ActorAffiliation {
+  id              String         @id @default(cuid())
+  actorId         String
+  actor           Actor          @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  groupId         String?
+  group           Group?         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  establishmentId String?
+  establishment   Establishment? @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  role            String? // direction | direction_medicale | referent_metier | referent_informatique | referent_qualite | chef_de_projet_client | autre
+  createdAt       DateTime       @default(now())
+
+  @@unique([actorId, groupId, establishmentId, role])
 }
 
 // Table de jointure Réunion ↔ Acteur (§3 des exigences complémentaires) — une

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { ensureStageCriteria } from "@/lib/stageCriteria";
@@ -29,7 +30,7 @@ export default async function KickoffPage({ params }: { params: { id: string } }
 
   const [stakeholders, actors, meetings, criteria] = await Promise.all([
     prisma.stakeholder.findMany({ where: { initiativeId: params.id } }),
-    prisma.actor.findMany({ where: { initiativeId: params.id } }),
+    findInitiativeActors(params.id),
     prisma.meeting.findMany({ where: { initiativeId: params.id }, include: { actions: true, decisions: true }, orderBy: { date: "desc" } }),
     prisma.stageCriterion.findMany({ where: { initiativeId: params.id, stageKey: "kickoff" }, orderBy: { order: "asc" } }),
   ]);

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { RequirementForm, GapForm, DeliverableForm, ChangeForm, DecisionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -50,7 +51,7 @@ export default async function ConceptionPage({ params }: { params: { id: string 
     prisma.decision.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } }),
     prisma.deliverable.findMany({ where: { initiativeId: params.id }, orderBy: { datePrevue: "asc" } }),
     prisma.changeRequest.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } }),
-    prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    findInitiativeActors(params.id, { id: true, name: true }),
   ]);
 
   const openRequirements = requirements.filter((r) => ["a_analyser", "en_attente_arbitrage"].includes(r.statut)).length;

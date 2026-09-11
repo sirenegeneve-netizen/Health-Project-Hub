@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -29,7 +30,7 @@ export default async function PlanningPage({ params, searchParams }: { params: {
   });
   if (!initiative) notFound();
   const actions = await prisma.action.findMany({ where: { initiativeId: params.id }, orderBy: { echeance: "asc" } });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
   const establishments = initiative.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
   const dated = actions.filter((a) => a.echeance);
   const vue = VIEWS.some(([v]) => v === searchParams.vue) ? searchParams.vue! : "liste";

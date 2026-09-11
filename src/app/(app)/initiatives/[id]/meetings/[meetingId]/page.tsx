@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { ActionForm, RiskForm, DecisionForm } from "@/components/EntityForms";
 import { MeetingNotes } from "@/components/MeetingNotes";
@@ -29,7 +30,7 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
     prisma.vigilancePoint.findMany({ where: { initiativeId: params.id, status: "a_surveiller" } }),
     prisma.timelineEvent.findMany({ where: { initiativeId: params.id, date: { gte: since, lt: meeting.date } }, orderBy: { date: "asc" } }),
     computeHealthScore(params.id),
-    prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    findInitiativeActors(params.id, { id: true, name: true }),
     prisma.initiativeEstablishment.findMany({ where: { initiativeId: params.id }, include: { establishment: true } }),
   ]);
   const establishments = establishmentLinks.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));

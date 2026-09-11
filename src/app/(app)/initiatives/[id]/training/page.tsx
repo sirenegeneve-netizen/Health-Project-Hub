@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { TrainingForm, TrainingSessionForm, KpiForm } from "@/components/EntityForms";
 import { computePopulationReadiness, computeAccompagnementReadiness } from "@/lib/readiness";
@@ -30,7 +31,7 @@ export default async function AccompagnementPage({ params }: { params: { id: str
     prisma.trainingRecord.findMany({ where: { initiativeId: params.id }, include: { establishment: true }, orderBy: { createdAt: "desc" } }),
     prisma.trainingSession.findMany({ where: { initiativeId: params.id }, include: { trainingRecord: true }, orderBy: { date: "desc" } }),
     prisma.kpi.findMany({ where: { initiativeId: params.id, categorie: "adoption" }, orderBy: { createdAt: "desc" } }),
-    prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    findInitiativeActors(params.id, { id: true, name: true }),
   ]);
 
   const sessionsByPopulation = new Map<string, typeof sessions>();

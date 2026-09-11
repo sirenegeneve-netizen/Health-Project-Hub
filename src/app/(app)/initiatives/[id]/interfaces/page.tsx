@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { InterfaceForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -19,7 +20,7 @@ export default async function InterfacesPage({ params }: { params: { id: string 
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const interfaces = await prisma.interface.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
 
   return (
     <div>

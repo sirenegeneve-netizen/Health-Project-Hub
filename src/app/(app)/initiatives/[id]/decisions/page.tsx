@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { DecisionForm, ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -20,7 +21,7 @@ export default async function DecisionsPage({ params }: { params: { id: string }
     include: { actions: { orderBy: { createdAt: "desc" } } },
     orderBy: { createdAt: "desc" },
   });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
 
   return (
     <div>

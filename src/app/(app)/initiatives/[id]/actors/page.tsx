@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { ActorForm } from "@/components/ActorForms";
 import { RaciBoard } from "@/components/RaciBoard";
@@ -24,7 +25,7 @@ export default async function GovernancePage({ params }: { params: { id: string 
   if (!initiative) notFound();
 
   const [actors, raciEntries] = await Promise.all([
-    prisma.actor.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
+    findInitiativeActors(params.id),
     prisma.raciEntry.findMany({ where: { initiativeId: params.id } }),
   ]);
 

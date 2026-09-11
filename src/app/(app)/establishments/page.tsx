@@ -33,7 +33,9 @@ export default async function EstablishmentsPage() {
           {establishments.map((e) => (
             <div key={e.id} className="card">
               <div className="flex items-start justify-between gap-3 mb-1">
-                <div className="font-medium text-ink">{e.name}</div>
+                <Link href={`/establishments/${e.id}`} className="font-medium text-ink hover:text-blue hover:underline">
+                  {e.name}
+                </Link>
                 {e.type && <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5">{TYPE_LABELS[e.type] || e.type}</span>}
               </div>
               <div className="text-xs text-muted mb-2">{e.localisation || "Localisation non renseignée"} · {e.group.name}</div>

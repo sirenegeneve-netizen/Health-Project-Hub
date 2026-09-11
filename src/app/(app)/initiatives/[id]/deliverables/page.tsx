@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { DeliverableForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -17,7 +18,7 @@ export default async function DeliverablesPage({ params }: { params: { id: strin
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const deliverables = await prisma.deliverable.findMany({ where: { initiativeId: params.id }, orderBy: { datePrevue: "asc" } });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
 
   return (
     <div>

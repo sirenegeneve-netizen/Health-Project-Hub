@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { EditableField } from "@/components/InitiativeDescriptionEditor";
 import { StakeholderForm, RiskForm } from "@/components/EntityForms";
@@ -40,7 +41,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
 
   const [stakeholders, actors, raciEntries, risks] = await Promise.all([
     prisma.stakeholder.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } }),
-    prisma.actor.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
+    findInitiativeActors(params.id),
     prisma.raciEntry.findMany({ where: { initiativeId: params.id } }),
     prisma.risk.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
   ]);

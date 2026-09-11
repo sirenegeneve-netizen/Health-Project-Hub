@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { RiskForm, ActionForm } from "@/components/EntityForms";
 import { RiskMatrix } from "@/components/RiskMatrix";
@@ -26,7 +27,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
     include: { actions: { orderBy: { createdAt: "desc" } }, proprietaireActor: true },
     orderBy: { createdAt: "desc" },
   });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
   const establishments = initiative.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
 
   return (

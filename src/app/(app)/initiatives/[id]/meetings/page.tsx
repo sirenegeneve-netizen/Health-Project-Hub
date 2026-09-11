@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { MeetingForm } from "@/components/EntityForms";
 
@@ -14,7 +15,7 @@ export default async function MeetingsPage({ params }: { params: { id: string } 
     orderBy: { date: "desc" },
     include: { _count: { select: { actions: true, risks: true, decisions: true } } },
   });
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
 
   return (
     <div>

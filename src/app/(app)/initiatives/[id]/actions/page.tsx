@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabs } from "@/components/InitiativeTabs";
 import { ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
@@ -30,7 +31,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });
   const now = new Date();
-  const actors = await prisma.actor.findMany({ where: { initiativeId: params.id }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const actors = await findInitiativeActors(params.id, { id: true, name: true });
   const establishments = initiative.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
   const vue = searchParams.vue === "kanban" ? "kanban" : "liste";
 
