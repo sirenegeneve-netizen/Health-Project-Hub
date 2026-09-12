@@ -1,0 +1,139 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Initiative = {
+  id: string;
+  status: string;
+  phase: string;
+  priority: string;
+  targetDate: string | null;
+  budgetJh: number;
+  jhPlanifies: number;
+  jhConsommes: number;
+  chefDeProjet: string | null;
+  sponsor: string | null;
+};
+
+// Le parcours affiché au chef de projet (9 étapes, cf. InitiativeJourney) reste
+// simple ; cette liste détaillée n'est qu'un raffinement optionnel du champ
+// "phase" — chaque valeur se rattache automatiquement à l'une des 9 étapes
+// (voir src/lib/lifecycle.ts). "preparation", "formation_accompagnement" et
+// "mise_en_production" permettent de sélectionner directement l'étape
+// canonique sans repasser par une sous-phase historique.
+const PHASES = [
+  "opportunite", "qualification", "cadrage", "kick_off", "analyse_ecosysteme", "recueil_besoins",
+  "analyse_ecarts", "conception", "parametrage", "preparation", "interoperabilite", "migration", "tests",
+  "formation", "formation_accompagnement", "preparation_go_no_go", "go_no_go", "mise_en_production",
+  "deploiement", "hypercare", "stabilisation", "run", "amelioration_continue", "cloture", "retex",
+];
+
+export function InitiativeEditForm({ initiative }: { initiative: Initiative }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    status: initiative.status,
+    phase: initiative.phase,
+    priority: initiative.priority,
+    targetDate: initiative.targetDate ? initiative.targetDate.slice(0, 10) : "",
+    planningChangeReason: "",
+    budgetJh: String(initiative.budgetJh),
+    jhPlanifies: String(initiative.jhPlanifies),
+    jhConsommes: String(initiative.jhConsommes),
+    chefDeProjet: initiative.chefDeProjet || "",
+    sponsor: initiative.sponsor || "",
+  });
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/initiatives/${initiative.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    setOpen(false);
+    router.refresh();
+  }
+
+  if (!open) {
+    return (
+      <button className="btn-secondary" onClick={() => setOpen(true)}>
+        Mettre à jour le projet
+      </button>
+    );
+  }
+
+  return (
+    <div className="card space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Field label="Statut">
+          <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+            <option value="actif">Actif</option>
+            <option value="en_pause">En pause</option>
+            <option value="cloture">Clôturé</option>
+          </select>
+        </Field>
+        <Field label="Phase">
+          <select className="input" value={form.phase} onChange={(e) => setForm({ ...form, phase: e.target.value })}>
+            {PHASES.map((p) => (
+              <option key={p} value={p}>
+                {p.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Priorité">
+          <select className="input" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+            <option value="basse">Basse</option>
+            <option value="normale">Normale</option>
+            <option value="haute">Haute</option>
+            <option value="critique">Critique</option>
+          </select>
+        </Field>
+        <Field label="Date cible">
+          <input type="date" className="input" value={form.targetDate} onChange={(e) => setForm({ ...form, targetDate: e.target.value })} />
+        </Field>
+      </div>
+
+      <Field label="Motif du changement de date (si applicable — crée une nouvelle baseline)">
+        <input className="input" value={form.planningChangeReason} onChange={(e) => setForm({ ...form, planningChangeReason: e.target.value })} />
+      </Field>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Field label="Chef de projet">
+          <input className="input" value={form.chefDeProjet} onChange={(e) => setForm({ ...form, chefDeProjet: e.target.value })} />
+        </Field>
+        <Field label="Sponsor">
+          <input className="input" value={form.sponsor} onChange={(e) => setForm({ ...form, sponsor: e.target.value })} />
+        </Field>
+        <Field label="JH budgétés">
+          <input type="number" className="input" value={form.budgetJh} onChange={(e) => setForm({ ...form, budgetJh: e.target.value })} />
+        </Field>
+        <Field label="JH consommés">
+          <input type="number" className="input" value={form.jhConsommes} onChange={(e) => setForm({ ...form, jhConsommes: e.target.value })} />
+        </Field>
+      </div>
+
+      <div className="flex gap-2">
+        <button className="btn" onClick={save} disabled={saving}>
+          {saving ? "Enregistrement…" : "Enregistrer"}
+        </button>
+        <button className="btn-secondary" onClick={() => setOpen(false)}>
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="label mb-1">{label}</div>
+      {children}
+    </label>
+  );
+}

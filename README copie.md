@@ -1,0 +1,135 @@
+# Health Project Hub
+
+Cockpit, outil de collaboration et mémoire vivante des projets numériques en santé.
+
+Cette première version est une **fondation fonctionnelle**, construite pour être étendue module par module — elle ne couvre pas encore les 41 sections du cahier des charges à l'identique. Voir la section [Roadmap](#roadmap--ce-qui-nest-pas-encore-fait) en bas de ce document pour un état honnête de ce qui est fait, esquissé, ou pas encore commencé.
+
+## Stack technique
+
+- **Next.js 14** (App Router) + **TypeScript** — un seul projet full-stack (pages + API routes)
+- **Prisma** + **SQLite** — base de données locale, zéro configuration. Facile à remplacer par PostgreSQL en production (changer `provider` et `DATABASE_URL` dans `prisma/schema.prisma`)
+- **Tailwind CSS** — styles utilitaires, thème dédié (voir `tailwind.config.ts`)
+
+Aucune dépendance externe payante, aucune clé d'API requise.
+
+## Démarrage
+
+```bash
+npm install
+cp .env.example .env
+npm run db:push      # crée la base SQLite à partir du schéma Prisma
+npm run db:seed       # (optionnel) injecte un projet d'exemple avec des données réalistes
+npm run dev
+```
+
+L'application est disponible sur http://localhost:3000.
+
+## Structure du projet
+
+```
+prisma/
+  schema.prisma       # modèle de données complet
+  seed.ts              # jeu de données d'exemple
+src/
+  app/
+    page.tsx           # dashboard portefeuille (groupe)
+    projects/[id]/      # cockpit projet + sous-modules (onglets)
+    search/             # recherche transversale
+    api/                # routes API (CRUD par entité)
+  components/           # formulaires et composants UI réutilisables
+  lib/
+    healthScore.ts       # calcul du niveau de santé projet (explicable)
+    timeline.ts           # journalisation automatique des événements
+    mailSuggest.ts         # heuristique de suggestion à l'import d'un mail/document
+```
+
+## Navigation par cycle de vie
+
+La navigation d'un projet suit désormais l'histoire du projet plutôt qu'une liste de modules techniques : Vue d'ensemble → Cadrage → Conception → Interopérabilité → Réalisation → Validation → Accompagnement → Déploiement → Run & Évolutions → Mémoire. Chaque onglet regroupe les écrans qui répondent à une même question métier (ex. "Cadrage" réunit parties prenantes, gouvernance/RACI, budget et planning initial sur un seul écran). Les routes détaillées historiques (`/actions`, `/budget`, `/planning`, etc.) restent accessibles en lien profond depuis ces pages de regroupement, sans être forcées dans la barre d'onglets principale.
+
+Un fil de progression (🟢 fait · 🟠 en cours · ⚪ à venir) s'affiche sous le titre du projet dans la Vue d'ensemble, calculé à partir de la phase réelle du projet.
+
+## Chaque écran répond à une question
+
+Les onglets de projet ne sont pas des formulaires de saisie : chacun répond à une question de pilotage, avec un indicateur 🟢/🟠/🔴 calculé à partir des vraies données (jamais un statut choisi à la main) et la liste des raisons qui l'expliquent.
+
+| Onglet | Question |
+|---|---|
+| Cadrage | Le projet est-il suffisamment cadré pour être lancé ? |
+| Conception | Le projet est-il prêt à passer en réalisation ? |
+| Interopérabilité | Les interfaces sont-elles prêtes ? |
+| Réalisation | Sommes-nous en train d'avancer ? |
+| Validation | Sommes-nous prêts à déployer ? |
+| Accompagnement | Les utilisateurs seront-ils prêts ? |
+| Déploiement | Peut-on passer en production ? |
+| Run & Évolutions | Le projet est-il stabilisé ? Que doit-on améliorer ? |
+| Mémoire | Que s'est-il passé, et pourquoi ? |
+
+## Accompagnement
+
+L'écran répond à « les utilisateurs sont-ils prêts à utiliser la solution en autonomie lors du Go-Live ? ». Chaque population (établissement × service × métier) porte son propre indicateur de préparation, calculé sur 4 critères réels : référent nommé, au moins une session réalisée, taux de présence ≥ 80 % (calculé à partir des sessions réelles, pas d'un chiffre déclaratif), et niveau d'autonomie constaté ≥ 2. Les sessions réalisées sont tracées individuellement (date, formateur, format, inscrits/présents) plutôt que résumées en un seul total. Les indicateurs d'adoption (tickets support, taux d'usage réel…) sont libres et suivis séparément des KPI génériques du module Run.
+
+## Pilotage de portefeuille
+
+Au-delà du suivi de projet unitaire, l'application propose désormais une couche portefeuille, accessible depuis la sidebar :
+
+- **Roadmap** — tous les projets actifs sur une même ligne temporelle (barres colorées par santé), pour repérer chevauchements et périodes critiques
+- **Calendrier** — réunions, livrables, sessions de formation et interfaces à venir, consolidés sur 90 jours, tous projets confondus
+- **Établissements** — gestion dédiée (nom, type, localisation), ce qui corrige les projets affichant "établissement non défini"
+- **Rapports** — répartitions réelles (statut, priorité, établissement) et tendance de création par mois, à partir des vraies dates d'enregistrement
+- **Mon activité** — sans système de comptes, une recherche par nom qui remonte les actions, décisions, livrables et réunions réellement assignés à cette personne, tous projets confondus
+- **Dashboard exécutif enrichi** — bloc "Santé du portefeuille" (alertes réelles) et bloc "Priorités du jour" (décisions en attente, actions dues sous 7 jours, livrables attendus sous 14 jours), sur la page d'accueil
+- **Alertes en langage métier** — "Retard de 12 jours" / "Avance de 84 jours" / "Décision bloquante en attente" plutôt que des deltas bruts
+
+**Ce qui n'a pas été fait, et pourquoi** : la gestion de charge par semaine/mois (heatmap de surcharge) demanderait des données d'allocation dans le temps (qui travaille combien d'heures, sur quelle période) que l'outil ne capture pas encore — seule une disponibilité globale par acteur existe. Plutôt que d'afficher des pourcentages de charge inventés, ce module reste à construire une fois l'allocation temporisée modélisée. De même, les graphiques d'évolution du budget consommé et des risques dans le temps demanderaient un historique de snapshots que l'outil ne conserve pas — seule la valeur courante est connue. Le déplacement des échéances par glisser-déposer sur la roadmap et les vues sauvegardées du portefeuille n'ont pas non plus été implémentés, par manque de temps plutôt que par choix.
+
+## Conception & Préparation
+
+L'écran répond à « la solution est-elle suffisamment conçue et validée pour entrer en réalisation ? ». Il commence par les besoins exprimés, les écarts identifiés (avec options envisagées et décision retenue), les arbitrages en attente et les changements dont l'impact n'a pas été évalué — les livrables apparaissent en fin de page, comme le résultat de ce travail plutôt que le point d'entrée.
+
+## Gouvernance & RACI
+
+La matrice RACI est l'écran principal du module — pas une conséquence d'une liste d'acteurs. Les lignes suivent une trame standard de gouvernance projet SI santé (Gouvernance, Analyse, Réalisation, Validation, Déploiement, Run), visibles dès l'ouverture même avant toute saisie, complétée par des activités personnalisées si besoin. Cliquer sur une cellule fait cycler le rôle R → A → C → I → vide, avec un code couleur immédiat. Le système signale automatiquement : activité sans responsable (R), sans décisionnaire (A), plusieurs décisionnaires, ou rôles en doublon pour un même acteur. La gestion des acteurs (fiche, disponibilité) reste accessible dans un panneau secondaire repliable, en dessous de la matrice.
+
+## Ce qui est implémenté
+
+- **Hiérarchie** Groupe → Établissement → Projet (§4)
+- **Portefeuille** épuré : recherche, filtres (statut, niveau de santé), consolidation budgétaire réelle (uniquement sur les projets budgétisés)
+- **Cockpit projet** contextuel : chaque bloc (avancement, budget, échéance, risques, alertes, prochaines échéances) n'apparaît que si la donnée existe — aucun indicateur fictif
+- **Fiche projet** complète : type, statut, phase, priorité, chef de projet, sponsor
+- **Planning** : tâches/jalons en vue Liste, Timeline ou **Gantt** (barres calculées à partir des vraies dates de début/échéance), historique des révisions de baseline
+- **Tâches en vue Kanban** (glisser-déposer natif, sans dépendance) en plus de la vue liste, au niveau projet et au niveau portefeuille
+- **Budget en euros** : budget initial/révisé, lignes budgétaires par catégorie et fournisseur, calcul automatique de l'engagé/réel/reste/taux de consommation
+- **Réunions** avec synthèse automatique de préparation et saisie rapide pendant la séance (§16-18)
+- **Registres** Actions, Risques (+ matrice probabilité × impact), Décisions, Interfaces, Anomalies
+- **Livrables** avec statut et version (§13)
+- **Parties prenantes** avec matrice influence × implication (§14)
+- **Indicateurs (KPI) génériques**, avec objectif et seuil d'alerte (§15)
+- **Formation & autonomie utilisateurs** (échelle 0-4, §26-27)
+- **Checklist Go/No Go** dérivée en direct des données du projet (§28)
+- **Health Score explicable** (vert/orange/rouge + les raisons) (§40)
+- **Timeline / mémoire du projet**, alimentée automatiquement (§35)
+- **Recherche globale** transversale (§36)
+- **Import de document/mail** avec suggestion heuristique, jamais automatique (§34)
+- **Backlog / amélioration continue** (§32)
+
+Principe transversal : un module ne s'affiche que s'il contient des données réelles. Un budget non renseigné n'affiche pas de graphique vide ; une section sans risque ne s'affiche pas du tout — remplacée par une invitation à en ajouter.
+
+## Roadmap — ce qui n'est pas encore fait
+
+Pour rester livrable, ces modules du cahier des charges sont **volontairement laissés de côté ou simplifiés** :
+
+- **Suggestions automatiques structurées** (§2-3) : l'analyse de texte est une heuristique par mots-clés, pas un moteur IA. Elle peut être remplacée par un appel à un LLM sans changer le contrat de l'API (`src/lib/mailSuggest.ts`).
+- **Registre des changements** dédié (§15) — actuellement, une révision de planning est tracée, mais pas encore la fiche de changement complète (impact fonctionnel/JH/interop/formation).
+- **Module Tests & recette** détaillé (§23) et **Migration/reprise de données** (§25) — non modélisés.
+- **Gestion RACI** par activité/livrable et **annuaire d'acteurs** structuré (§11) — les responsables sont aujourd'hui des champs texte libres plutôt que des fiches Acteur reliées.
+- **Génération automatique de documents** (compte rendu, synthèse projet, support COPIL) et **exports** Excel/PDF/Word (§37-38).
+- **Hypercare / passage en RUN** comme étapes outillées avec leurs propres indicateurs (§30-31) — la phase existe dans le cycle de vie du projet, mais sans tableau de bord dédié.
+- **Dashboard Établissement** distinct du dashboard Groupe (§39) — seule la vue Groupe et la vue Projet existent aujourd'hui.
+- **Authentification / gestion des droits** — l'application n'a pas de notion d'utilisateur connecté pour l'instant.
+
+Le schéma Prisma laisse la place pour brancher ces modules (`DocumentRef`, `TimelineEvent`, `BacklogItem` sont conçus comme des points d'extension génériques).
+
+## Principe directeur conservé
+
+Toute information saisie une fois (une réunion, un mail, une décision) se retrouve automatiquement dans la timeline du projet et alimente le health score — sans ressaisie. C'est le fil conducteur du cahier des charges, et c'est ce que ce socle applique déjà de bout en bout sur le périmètre implémenté.
