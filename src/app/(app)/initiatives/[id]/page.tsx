@@ -156,6 +156,7 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
             chefDeProjet: initiative.chefDeProjet,
             sponsor: initiative.sponsor,
           }}
+          phaseOptions={workflowStages.map((s) => ({ key: s.key, label: s.label }))}
         />
       </div>
     </div>

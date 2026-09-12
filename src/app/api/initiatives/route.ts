@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getWorkflowStages } from "@/lib/workflowStages";
 
 export async function GET() {
   const initiatives = await prisma.initiative.findMany({
@@ -19,19 +20,26 @@ export async function POST(req: NextRequest) {
     groupId = firstGroup ? firstGroup.id : (await prisma.group.create({ data: { name: "Groupe par défaut" } })).id;
   }
 
+  const initiativeType = data.type || "autre";
+  let initialPhase = data.phase;
+  if (!initialPhase) {
+    const stages = await getWorkflowStages(initiativeType);
+    initialPhase = stages[0]?.key || "cadrage";
+  }
+
   const initiative = await prisma.initiative.create({
     data: {
       reference: data.reference,
       name: data.name,
       description: data.description || null,
-      type: data.type || "autre",
+      type: initiativeType,
       groupId,
       chefDeProjet: data.chefDeProjet || null,
       sponsor: data.sponsor || null,
       startDate: data.startDate ? new Date(data.startDate) : null,
       targetDate: data.targetDate ? new Date(data.targetDate) : null,
       status: data.status || "actif",
-      phase: data.phase || "cadrage",
+      phase: initialPhase,
       priority: data.priority || "normale",
       budgetJh: data.budgetJh ? Number(data.budgetJh) : 0,
       budgetInitialEur: data.budgetInitialEur ? Number(data.budgetInitialEur) : null,
