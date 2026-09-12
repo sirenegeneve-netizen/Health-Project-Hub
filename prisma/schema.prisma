@@ -691,6 +691,7 @@ model MethodologyGuide {
   referentiels   String[]                   @default([])
   updatedAt      DateTime                   @updatedAt
   items          MethodologyTemplateItem[]
+  relatedTypes   MethodologyRelatedType[]
 }
 
 model MethodologyTemplateItem {
@@ -706,4 +707,18 @@ model MethodologyTemplateItem {
   categorie   String?           // pour kind=kpi, informatif
   ordre       Int               @default(0)
   createdAt   DateTime          @default(now())
+}
+
+// Suggestions automatiques d'initiatives compagnes selon le type (§28 du
+// document de conception, ex. "Ce projet semble nécessiter une initiative
+// Cybersécurité"). Simple et contrôlable : affiché sur l'onglet Relations,
+// l'utilisateur choisit de créer et lier, ou d'ignorer — jamais automatique.
+model MethodologyRelatedType {
+  id           String           @id @default(cuid())
+  guideId      String
+  guide        MethodologyGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  relatedType  String           // un des 10 types d'initiative
+  relationType String           @default("lie_a") // un des 6 types InitiativeRelation
+  reason       String?          @db.Text
+  ordre        Int              @default(0)
 }

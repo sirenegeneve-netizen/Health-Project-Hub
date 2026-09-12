@@ -41,6 +41,14 @@ export async function GET(req: NextRequest) {
       data: seed.items.map((item, i) => ({ guideId: guide.id, ordre: i, ...item })),
     });
     totalItems += seed.items.length;
+
+    await prisma.methodologyRelatedType.deleteMany({ where: { guideId: guide.id } });
+    if (seed.relatedTypes && seed.relatedTypes.length > 0) {
+      await prisma.methodologyRelatedType.createMany({
+        data: seed.relatedTypes.map((rt, i) => ({ guideId: guide.id, ordre: i, ...rt })),
+      });
+    }
+
     summary.push({ initiativeType, items: seed.items.length });
   }
 

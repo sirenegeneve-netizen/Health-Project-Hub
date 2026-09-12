@@ -18,12 +18,19 @@ export type TemplateItemSeed = {
   categorie?: string; // kpi
 };
 
+export type RelatedTypeSeed = {
+  relatedType: string;
+  relationType?: string; // depend_de | prerequis_pour | impacte | lie_a | conflit_avec | ressource_partagee_avec
+  reason: string;
+};
+
 export type MethodologyGuideSeed = {
   finalite: string;
   declencheurs: string;
   prerequis: string;
   referentiels: string[];
   items: TemplateItemSeed[];
+  relatedTypes?: RelatedTypeSeed[];
 };
 
 export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
@@ -48,6 +55,11 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "kpi", label: "Taux d'utilisateurs autonomes (≠ formés)", unit: "%", categorie: "adoption" },
       { kind: "kpi", label: "Anomalies bloquantes ouvertes à J+30", unit: "nb", categorie: "qualite" },
     ],
+    relatedTypes: [
+      { relatedType: "cybersecurite", reason: "Sécuriser le nouveau système avant sa mise en production." },
+      { relatedType: "formation", reason: "Préparer les utilisateurs à l'usage du nouveau système." },
+      { relatedType: "interoperabilite", reason: "Raccorder le système aux interfaces déjà en place dans l'établissement." },
+    ],
   },
   evolution: {
     finalite:
@@ -65,6 +77,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Cahier de recette" },
       { kind: "kpi", label: "Taux de réussite des tests de non-régression", unit: "%", categorie: "qualite" },
     ],
+    relatedTypes: [
+      { relatedType: "formation", reason: "Si l'évolution change significativement l'usage pour les utilisateurs." },
+    ],
   },
   interoperabilite: {
     finalite:
@@ -81,6 +96,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Rapport de tests d'intégration" },
       { kind: "kpi", label: "Taux de messages en erreur", unit: "%", categorie: "qualite" },
     ],
+    relatedTypes: [
+      { relatedType: "cybersecurite", reason: "Sécuriser le flux d'échange mis en place." },
+    ],
   },
   migration: {
     finalite: "Faire basculer des données ou un système d'un environnement source vers un environnement cible sans perte ni altération.",
@@ -94,6 +112,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Rapport de contrôle post-migration" },
       { kind: "kpi", label: "Taux de données contrôlées conformes", unit: "%", categorie: "qualite" },
     ],
+    relatedTypes: [
+      { relatedType: "cybersecurite", reason: "Contrôler la sécurité des données migrées." },
+    ],
   },
   mise_a_niveau: {
     finalite: "Faire monter de version ou mettre à niveau un système existant, pour rester compatible ou bénéficier de nouvelles fonctionnalités.",
@@ -106,6 +127,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Rapport d'analyse de compatibilité" },
       { kind: "livrable", label: "Rapport de tests de non-régression" },
       { kind: "kpi", label: "Taux de tests de non-régression passés", unit: "%", categorie: "qualite" },
+    ],
+    relatedTypes: [
+      { relatedType: "cybersecurite", reason: "Vérifier l'absence de nouvelle vulnérabilité après la montée de version." },
     ],
   },
   cybersecurite: {
@@ -121,6 +145,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Preuves de mise en œuvre des mesures" },
       { kind: "kpi", label: "Vulnérabilités critiques résiduelles", unit: "nb", categorie: "qualite" },
     ],
+    relatedTypes: [
+      { relatedType: "reglementaire", reason: "Si les mesures de sécurité découlent d'une obligation réglementaire." },
+    ],
   },
   reglementaire: {
     finalite: "Mettre un établissement ou un système en conformité avec un texte, une norme ou une exigence réglementaire applicable.",
@@ -134,6 +161,9 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Plan d'actions correctives" },
       { kind: "livrable", label: "Dossier de preuves" },
       { kind: "kpi", label: "Taux d'exigences couvertes", unit: "%", categorie: "qualite" },
+    ],
+    relatedTypes: [
+      { relatedType: "evolution", relationType: "prerequis_pour", reason: "Si la mise en conformité nécessite une évolution du système." },
     ],
   },
   formation: {
@@ -162,6 +192,10 @@ export const METHODOLOGY_GUIDES: Record<string, MethodologyGuideSeed> = {
       { kind: "livrable", label: "Rapport de constats et écarts" },
       { kind: "livrable", label: "Plan d'actions correctives" },
       { kind: "kpi", label: "Écarts clôturés avec preuve d'efficacité", unit: "%", categorie: "qualite" },
+    ],
+    relatedTypes: [
+      { relatedType: "evolution", relationType: "prerequis_pour", reason: "Si l'audit révèle un écart nécessitant une évolution du système." },
+      { relatedType: "mise_a_niveau", relationType: "prerequis_pour", reason: "Si l'écart est lié à une version obsolète." },
     ],
   },
   autre: {

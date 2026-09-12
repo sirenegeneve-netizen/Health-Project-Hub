@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InitiativeRelationsManager } from "@/components/InitiativeRelationsManager";
+import { SuggestedRelatedInitiatives } from "@/components/SuggestedRelatedInitiatives";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function InitiativeRelationsPage({ params }: { params: { id
       note: r.note,
       auto: r.auto,
       direction: "source" as const,
-      other: { id: r.initiativeCible.id, name: r.initiativeCible.name },
+      other: { id: r.initiativeCible.id, name: r.initiativeCible.name, type: r.initiativeCible.type },
     })),
     ...initiative.relationsCible.map((r) => ({
       id: r.id,
@@ -32,7 +33,7 @@ export default async function InitiativeRelationsPage({ params }: { params: { id
       note: r.note,
       auto: r.auto,
       direction: "cible" as const,
-      other: { id: r.initiativeSource.id, name: r.initiativeSource.name },
+      other: { id: r.initiativeSource.id, name: r.initiativeSource.name, type: r.initiativeSource.type },
     })),
   ];
 
@@ -41,6 +42,17 @@ export default async function InitiativeRelationsPage({ params }: { params: { id
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+
+  // Suggestions automatiques entre types (§28) : le socle méthodologique du
+  // type de l'initiative liste les types compagnons habituels. On masque ceux
+  // déjà couverts par une relation existante (peu importe le sens ou le type
+  // exact de relation) pour rester "simple et contrôlable" plutôt qu'insistant.
+  const linkedTypes = new Set(relations.map((r) => r.other.type));
+  const guide = await prisma.methodologyGuide.findUnique({
+    where: { initiativeType: initiative.type },
+    include: { relatedTypes: { orderBy: { ordre: "asc" } } },
+  });
+  const suggestions = (guide?.relatedTypes || []).filter((rt) => !linkedTypes.has(rt.relatedType));
 
   // Conflits détectés automatiquement (§9 point 4 de l'architecture) : recalculés
   // à la volée sur tout le portefeuille actif, puis filtrés sur ceux qui touchent
@@ -84,6 +96,7 @@ export default async function InitiativeRelationsPage({ params }: { params: { id
     <div>
       <InitiativeTabs initiativeId={initiative.id} />
       <div className="space-y-4">
+        <SuggestedRelatedInitiatives initiativeId={initiative.id} initiativeName={initiative.name} suggestions={suggestions} />
         <InitiativeRelationsManager initiativeId={initiative.id} relations={relations} otherInitiatives={otherInitiatives} />
 
         <div className="card">

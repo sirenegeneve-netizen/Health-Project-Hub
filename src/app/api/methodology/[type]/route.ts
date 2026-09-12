@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
 export async function GET(_req: Request, { params }: { params: { type: string } }) {
   const guide = await prisma.methodologyGuide.findUnique({
     where: { initiativeType: params.type },
-    include: { items: { orderBy: { ordre: "asc" } } },
+    include: { items: { orderBy: { ordre: "asc" } }, relatedTypes: { orderBy: { ordre: "asc" } } },
   });
   return NextResponse.json(guide);
 }
