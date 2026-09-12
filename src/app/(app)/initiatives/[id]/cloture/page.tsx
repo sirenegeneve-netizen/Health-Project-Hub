@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { ensureStageCriteria, computeStageCompletion } from "@/lib/stageCriteria";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";

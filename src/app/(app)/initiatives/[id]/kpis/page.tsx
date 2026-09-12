@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { KpiForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";

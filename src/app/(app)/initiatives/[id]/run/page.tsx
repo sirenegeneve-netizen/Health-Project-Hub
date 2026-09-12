@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { BacklogForm, KpiForm } from "@/components/EntityForms";
 import { computeStabilityReadiness, computeBacklogTriage } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";

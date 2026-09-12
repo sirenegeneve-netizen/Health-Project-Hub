@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { EditableField } from "@/components/InitiativeDescriptionEditor";
 import { StakeholderForm, RiskForm } from "@/components/EntityForms";
 import { ActorForm } from "@/components/ActorForms";

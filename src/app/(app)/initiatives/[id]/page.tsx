@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary, computeProgress, formatEur } from "@/lib/metrics";
 import { HealthBadge } from "@/components/HealthBadge";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InitiativeEditForm } from "@/components/InitiativeEditForm";
 import { InitiativeJourney } from "@/components/InitiativeJourney";
 import { computeStages } from "@/lib/lifecycle";

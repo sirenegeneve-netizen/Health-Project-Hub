@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { ActionForm, DecisionForm } from "@/components/EntityForms";
 import { ActionsKanban } from "@/components/ActionsKanban";
 import { InlineSelect } from "@/components/InlineSelect";

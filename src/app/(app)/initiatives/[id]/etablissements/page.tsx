@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { getWorkflowStages } from "@/lib/workflowStages";

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { MeetingForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";

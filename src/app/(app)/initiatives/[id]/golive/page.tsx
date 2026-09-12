@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { Pill } from "@/components/Pill";
 import { GoNoGoDecisionForm } from "@/components/GoNoGoDecisionForm";
 import { computeDeploymentReadiness } from "@/lib/readiness";

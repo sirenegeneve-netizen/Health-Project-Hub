@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 
 // Navigation à 2 niveaux : quelques boutons génériques (Vue d'ensemble, Cadrage,
 // Parcours, Suivi), chacun regroupant les écrans qui répondent à une même
-// question métier. Les routes historiques restent accessibles en lien profond ;
-// elles gardent leur groupe parent actif via `match`.
-interface SubTab {
+// question métier. Le groupe "Parcours" est le seul dont le contenu varie selon
+// le type d'initiative (voir InitiativeTabsServer) — Cadrage et Suivi sont
+// identiques pour tous les types.
+export interface SubTab {
   href: string;
   label: string;
   match: string[];
@@ -20,53 +21,36 @@ interface Group {
   children?: SubTab[];
 }
 
-const GROUPS: Group[] = [
-  { key: "overview", label: "Vue d'ensemble", href: "" },
-  {
-    key: "cadrage",
-    label: "Cadrage",
-    children: [
-      { href: "/cadrage", label: "Général", match: ["/cadrage", "/stakeholders", "/budget"] },
-      { href: "/etablissements", label: "Établissements", match: ["/etablissements"] },
-      { href: "/actors", label: "Gouvernance & RACI", match: ["/actors"] },
-    ],
-  },
-  {
-    key: "parcours",
-    label: "Parcours",
-    children: [
-      { href: "/kickoff", label: "Kick-off", match: ["/kickoff"] },
-      { href: "/preparation", label: "Préparation", match: ["/preparation", "/conception", "/deliverables", "/changes", "/interfaces"] },
-      { href: "/realisation", label: "Déploiement", match: ["/realisation", "/actions", "/planning", "/decisions", "/meetings"] },
-      { href: "/validation", label: "Validation", match: ["/validation"] },
-      { href: "/training", label: "Formation & Accomp.", match: ["/training"] },
-      { href: "/golive", label: "Mise en production", match: ["/golive"] },
-      { href: "/run", label: "Stabilisation", match: ["/run", "/kpis"] },
-      { href: "/cloture", label: "Clôture", match: ["/cloture"] },
-    ],
-  },
-  {
-    key: "suivi",
-    label: "Suivi",
-    children: [
-      { href: "/relations", label: "Relations", match: ["/relations"] },
-      { href: "/timeline", label: "Mémoire", match: ["/timeline"] },
-    ],
-  },
+const CADRAGE_CHILDREN: SubTab[] = [
+  { href: "/cadrage", label: "Général", match: ["/cadrage", "/stakeholders", "/budget"] },
+  { href: "/etablissements", label: "Établissements", match: ["/etablissements"] },
+  { href: "/actors", label: "Gouvernance & RACI", match: ["/actors"] },
 ];
 
-export function InitiativeTabs({ initiativeId }: { initiativeId: string }) {
+const SUIVI_CHILDREN: SubTab[] = [
+  { href: "/relations", label: "Relations", match: ["/relations"] },
+  { href: "/timeline", label: "Mémoire", match: ["/timeline"] },
+];
+
+export function InitiativeTabsClient({ initiativeId, parcoursChildren }: { initiativeId: string; parcoursChildren: SubTab[] }) {
   const pathname = usePathname();
   const base = `/initiatives/${initiativeId}`;
 
-  const activeGroup = GROUPS.find((g) =>
+  const groups: Group[] = [
+    { key: "overview", label: "Vue d'ensemble", href: "" },
+    { key: "cadrage", label: "Cadrage", children: CADRAGE_CHILDREN },
+    { key: "parcours", label: "Parcours", children: parcoursChildren },
+    { key: "suivi", label: "Suivi", children: SUIVI_CHILDREN },
+  ];
+
+  const activeGroup = groups.find((g) =>
     g.children ? g.children.some((c) => c.match.some((m) => pathname === `${base}${m}`)) : pathname === `${base}${g.href}`
   );
 
   return (
     <div className="mb-8">
       <div className="flex flex-wrap gap-1 -mx-1">
-        {GROUPS.map((g) => {
+        {groups.map((g) => {
           const isActive = activeGroup?.key === g.key;
           const href = g.children ? `${base}${g.children[0].href}` : `${base}${g.href}`;
           return (
@@ -85,11 +69,11 @@ export function InitiativeTabs({ initiativeId }: { initiativeId: string }) {
 
       {activeGroup?.children && (
         <div className="flex flex-wrap gap-1 -mx-1 mt-2 pl-1">
-          {activeGroup.children.map((c) => {
+          {activeGroup.children.map((c, i) => {
             const active = c.match.some((m) => pathname === `${base}${m}`);
             return (
               <Link
-                key={c.href}
+                key={`${c.href}-${i}`}
                 href={`${base}${c.href}`}
                 className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
                   active ? "bg-teal-100 text-primary font-medium" : "text-ink/45 hover:bg-teal-50 hover:text-blue"

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { InitiativeTabs } from "@/components/InitiativeTabs";
+import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InitiativeRelationsManager } from "@/components/InitiativeRelationsManager";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
 
