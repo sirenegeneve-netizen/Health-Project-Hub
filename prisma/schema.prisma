@@ -676,3 +676,34 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+// Couche méthodologique par type d'initiative (finalité/déclencheurs/prérequis/
+// référentiels + risques, livrables et indicateurs typiques). Éditable en base,
+// seedée comme WorkflowStage (src/lib/methodologySeedData.ts). Les indicateurs
+// typiques restent informatifs uniquement : Kpi.value est obligatoire et on ne
+// fabrique jamais une valeur, donc pas de création automatique de Kpi.
+model MethodologyGuide {
+  id             String                     @id @default(cuid())
+  initiativeType String                     @unique
+  finalite       String?                    @db.Text
+  declencheurs   String?                    @db.Text
+  prerequis      String?                    @db.Text
+  referentiels   String[]                   @default([])
+  updatedAt      DateTime                   @updatedAt
+  items          MethodologyTemplateItem[]
+}
+
+model MethodologyTemplateItem {
+  id          String            @id @default(cuid())
+  guideId     String
+  guide       MethodologyGuide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  kind        String            // risque | livrable | kpi
+  label       String
+  description String?           @db.Text
+  probabilite String?           // pour kind=risque, repris tel quel à l'acceptation
+  impact      String?           // pour kind=risque
+  unit        String?           // pour kind=kpi, informatif
+  categorie   String?           // pour kind=kpi, informatif
+  ordre       Int               @default(0)
+  createdAt   DateTime          @default(now())
+}

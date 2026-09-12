@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const TYPES = [
@@ -15,6 +15,23 @@ const TYPES = [
   ["audit", "Audit"],
   ["autre", "Autre"],
 ];
+
+type MethodologyItem = {
+  id: string;
+  kind: "risque" | "livrable" | "kpi";
+  label: string;
+  description: string | null;
+  probabilite: string | null;
+  impact: string | null;
+  unit: string | null;
+  categorie: string | null;
+};
+
+type MethodologyGuide = {
+  finalite: string | null;
+  referentiels: string[];
+  items: MethodologyItem[];
+};
 
 export function NewInitiativeForm({ establishments }: { establishments: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -34,6 +51,34 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
   });
   const [establishmentIds, setEstablishmentIds] = useState<string[]>([]);
 
+  const [guide, setGuide] = useState<MethodologyGuide | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setGuide(null);
+    setSelectedItemIds([]);
+    fetch(`/api/methodology/${form.type}`)
+      .then((r) => r.json())
+      .then((g) => {
+        if (!cancelled) setGuide(g);
+      })
+      .catch(() => {
+        if (!cancelled) setGuide(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.type]);
+
+  const riskItems = guide?.items.filter((i) => i.kind === "risque") || [];
+  const deliverableItems = guide?.items.filter((i) => i.kind === "livrable") || [];
+  const kpiItems = guide?.items.filter((i) => i.kind === "kpi") || [];
+
+  function toggleItem(id: string) {
+    setSelectedItemIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -43,6 +88,33 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
       body: JSON.stringify({ ...form, establishmentIds }),
     });
     const initiative = await res.json();
+
+    const selectedRisks = riskItems.filter((i) => selectedItemIds.includes(i.id));
+    const selectedDeliverables = deliverableItems.filter((i) => selectedItemIds.includes(i.id));
+
+    await Promise.all([
+      ...selectedRisks.map((i) =>
+        fetch("/api/risks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            initiativeId: initiative.id,
+            description: i.label,
+            cause: i.description || null,
+            probabilite: i.probabilite || "moyenne",
+            impact: i.impact || "moyen",
+          }),
+        })
+      ),
+      ...selectedDeliverables.map((i) =>
+        fetch("/api/deliverables", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initiativeId: initiative.id, name: i.label, description: i.description || null }),
+        })
+      ),
+    ]);
+
     setSaving(false);
     router.push(`/initiatives/${initiative.id}`);
   }
@@ -123,6 +195,52 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
           {establishments.length === 0 && <span className="text-sm text-ink/50">Aucun établissement enregistré pour l'instant.</span>}
         </div>
       </Field>
+
+      {guide && (riskItems.length > 0 || deliverableItems.length > 0 || kpiItems.length > 0) && (
+        <div className="border border-teal-100 rounded-xl p-4 bg-teal-50/30">
+          <div className="label mb-1">Suggestions pour ce type de projet</div>
+          {guide.finalite && <p className="text-xs text-ink/60 mb-3">{guide.finalite}</p>}
+
+          {riskItems.length > 0 && (
+            <div className="mb-3">
+              <div className="text-xs font-medium text-ink/70 mb-1">Risques typiques à ajouter au registre</div>
+              <div className="flex flex-col gap-1">
+                {riskItems.map((i) => (
+                  <label key={i.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={selectedItemIds.includes(i.id)} onChange={() => toggleItem(i.id)} />
+                    {i.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {deliverableItems.length > 0 && (
+            <div className="mb-3">
+              <div className="text-xs font-medium text-ink/70 mb-1">Livrables typiques à prévoir</div>
+              <div className="flex flex-col gap-1">
+                {deliverableItems.map((i) => (
+                  <label key={i.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={selectedItemIds.includes(i.id)} onChange={() => toggleItem(i.id)} />
+                    {i.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {kpiItems.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-ink/70 mb-1">Indicateurs à instrumenter (à créer une fois une valeur réelle disponible)</div>
+              <ul className="text-sm text-ink/60 list-disc list-inside">
+                {kpiItems.map((i) => (
+                  <li key={i.id}>{i.label}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       <button className="btn" disabled={saving} type="submit">
         {saving ? "Création…" : "Créer le projet"}

@@ -25,6 +25,7 @@ const CADRAGE_CHILDREN: SubTab[] = [
   { href: "/cadrage", label: "Général", match: ["/cadrage", "/stakeholders", "/budget"] },
   { href: "/etablissements", label: "Établissements", match: ["/etablissements"] },
   { href: "/actors", label: "Gouvernance & RACI", match: ["/actors"] },
+  { href: "/methode", label: "Méthode", match: ["/methode"] },
 ];
 
 const SUIVI_CHILDREN: SubTab[] = [
