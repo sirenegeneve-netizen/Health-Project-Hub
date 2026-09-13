@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
+import { checkMeetingConflicts } from "@/lib/meetingConflicts";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const participantActorIds: string[] = Array.isArray(body.participantActorIds) ? body.participantActorIds : [];
+  const date = new Date(body.date);
+
+  if (!body.force) {
+    const conflicts = await checkMeetingConflicts(participantActorIds, date);
+    if (conflicts.length > 0) {
+      return NextResponse.json({ conflicts }, { status: 409 });
+    }
+  }
 
   let participantsLegacy: string | null = null;
   if (participantActorIds.length > 0) {
@@ -17,7 +26,7 @@ export async function POST(req: NextRequest) {
       initiativeId: body.initiativeId,
       type: body.type || "suivi",
       title: body.title,
-      date: new Date(body.date),
+      date,
       participants: participantsLegacy,
       agenda: body.agenda || null,
       meetingParticipants: { create: participantActorIds.map((actorId) => ({ actorId })) },

@@ -313,6 +313,22 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
   const router = useRouter();
   const [f, setF] = useState({ title: "", type: "suivi", date: "", agenda: "" });
   const [participantActorIds, setParticipantActorIds] = useState<string[]>([]);
+  const [conflicts, setConflicts] = useState<
+    { meetingId: string; title: string; date: string; initiativeId: string; initiativeName: string; sharedActorNames: string[] }[] | null
+  >(null);
+
+  async function submit(force = false) {
+    if (!f.title || !f.date) return;
+    const res = await post("/api/meetings", { initiativeId, participantActorIds, force, ...f });
+    if (res.status === 409) {
+      const data = await res.json();
+      setConflicts(data.conflicts);
+      return;
+    }
+    const meeting = await res.json();
+    router.push(`/initiatives/${initiativeId}/meetings/${meeting.id}`);
+  }
+
   return (
     <Toggle label="+ Nouvelle réunion">
       {(close) => (
@@ -334,7 +350,15 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
             </Field>
           </div>
           <Field label="Date">
-            <input type="datetime-local" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+            <input
+              type="datetime-local"
+              className={inputCls}
+              value={f.date}
+              onChange={(e) => {
+                setF({ ...f, date: e.target.value });
+                setConflicts(null);
+              }}
+            />
           </Field>
           <Field label="Participants">
             <ActorMultiSelect actors={actors} values={participantActorIds} onChange={setParticipantActorIds} />
@@ -342,17 +366,27 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
           <Field label="Ordre du jour">
             <textarea className={inputCls} rows={2} value={f.agenda} onChange={(e) => setF({ ...f, agenda: e.target.value })} />
           </Field>
+
+          {conflicts && conflicts.length > 0 && (
+            <div className="bg-warn/10 border border-warn/30 rounded-lg p-3 text-sm mb-2">
+              <div className="font-medium text-warn mb-1">⚠️ Conflit de planning détecté</div>
+              <ul className="space-y-1 mb-2">
+                {conflicts.map((c) => (
+                  <li key={c.meetingId} className="text-ink/70">
+                    « {c.title} » — {new Date(c.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} ({c.initiativeName})
+                    <br />
+                    <span className="text-xs text-ink/50">Concerné : {c.sharedActorNames.join(", ")}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="text-xs text-blue hover:underline" onClick={() => submit(true)}>
+                Maintenir quand même →
+              </button>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <button
-              className="btn"
-              onClick={async () => {
-                if (!f.title || !f.date) return;
-                const res = await post("/api/meetings", { initiativeId, participantActorIds, ...f });
-                const meeting = await res.json();
-                close();
-                router.push(`/initiatives/${initiativeId}/meetings/${meeting.id}`);
-              }}
-            >
+            <button className="btn" onClick={() => submit(false)}>
               Créer
             </button>
             <button className="btn-secondary" onClick={close}>

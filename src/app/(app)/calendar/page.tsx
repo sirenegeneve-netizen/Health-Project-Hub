@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { CalendarBoard, type CalEvent } from "@/components/CalendarBoard";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
+import { PlanningLevelToggle } from "@/components/PlanningLevelToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +53,8 @@ export default async function CalendarPage() {
 
   return (
     <div>
+      <PortfolioTabs />
+      <PlanningLevelToggle level="detaille" />
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Calendrier</h1>
         <p className="text-sm text-muted">

@@ -32,16 +32,27 @@ const TABS: { key: string; label: string }[] = [
   { key: "decision", label: "Décisions" },
 ];
 
+const SCALE_OPTIONS: { key: string; label: string; days: number }[] = [
+  { key: "semaine", label: "Cette semaine", days: 7 },
+  { key: "mois", label: "Ce mois", days: 30 },
+  { key: "tout", label: "90 jours", days: 90 },
+];
+
 export function CalendarBoard({ events }: { events: CalEvent[] }) {
   const [tab, setTab] = useState("tous");
+  const [scale, setScale] = useState("tout");
+
+  const scaleDays = SCALE_OPTIONS.find((s) => s.key === scale)?.days ?? 90;
+  const horizon = useMemo(() => Date.now() + scaleDays * 24 * 60 * 60 * 1000, [scaleDays]);
+  const withinScale = useMemo(() => events.filter((e) => new Date(e.date).getTime() <= horizon), [events, horizon]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { tous: events.length };
-    for (const e of events) c[e.type] = (c[e.type] || 0) + 1;
+    const c: Record<string, number> = { tous: withinScale.length };
+    for (const e of withinScale) c[e.type] = (c[e.type] || 0) + 1;
     return c;
-  }, [events]);
+  }, [withinScale]);
 
-  const filtered = tab === "tous" ? events : events.filter((e) => e.type === tab);
+  const filtered = tab === "tous" ? withinScale : withinScale.filter((e) => e.type === tab);
 
   const grouped = useMemo(() => {
     const map = new Map<string, CalEvent[]>();
@@ -55,6 +66,19 @@ export function CalendarBoard({ events }: { events: CalEvent[] }) {
 
   return (
     <div>
+      <div className="flex flex-wrap gap-1 mb-3">
+        {SCALE_OPTIONS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setScale(s.key)}
+            className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              scale === s.key ? "bg-primary text-white" : "text-ink/60 hover:bg-teal-50 hover:text-blue"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-1 mb-5 border-b border-line">
         {TABS.map((t) => (
           <button
