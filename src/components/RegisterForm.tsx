@@ -9,6 +9,7 @@ export function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export function RegisterForm() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, inviteCode }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -33,6 +34,10 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={submit} className="card space-y-4">
+      <div>
+        <label className="label block mb-1">Code d'invitation</label>
+        <input className="input" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Fourni par votre administrateur" />
+      </div>
       <div>
         <label className="label block mb-1">Nom et prénom</label>
         <input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tel qu'il apparaît comme chef de projet ou responsable" />
