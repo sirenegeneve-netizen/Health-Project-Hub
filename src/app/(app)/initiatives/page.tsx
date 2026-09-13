@@ -26,13 +26,14 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
 
   const initiatives = await prisma.initiative.findMany({
     where: initiativeScopeWhere(scope),
-    include: { establishments: { include: { establishment: true } }, actions: true },
+    include: { establishments: { include: { establishment: true } }, actions: true, group: true },
     orderBy: { createdAt: "desc" },
   });
 
   const scores = await Promise.all(initiatives.map((p) => computeHealthScore(p.id)));
   const stagesByType = await getAllWorkflowStagesGrouped();
 
+  const now = new Date();
   const items: ExplorerInitiative[] = initiatives.map((p, i) => {
     const stages = computeStages(p.phase, stagesForType(stagesByType, p.type));
     const currentIdx = stages.findIndex((s) => s.status === "current");
@@ -45,7 +46,9 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
       status: p.status,
       priority: p.priority,
       chefDeProjet: p.chefDeProjet,
+      groupName: p.group.name,
       targetDate: p.targetDate ? p.targetDate.toISOString() : null,
+      late: !!(p.targetDate && p.targetDate < now && p.status !== "cloture"),
       establishments: p.establishments.map((e) => e.establishment.name),
       healthLevel: scores[i].level,
       healthLabel: scores[i].label,

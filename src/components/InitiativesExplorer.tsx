@@ -15,7 +15,9 @@ export interface ExplorerInitiative {
   status: string; // actif | en_pause | cloture
   priority: string;
   chefDeProjet: string | null;
+  groupName: string;
   targetDate: string | null;
+  late: boolean;
   establishments: string[];
   healthLevel: HealthLevel;
   healthLabel: string;
@@ -24,118 +26,169 @@ export interface ExplorerInitiative {
   stageLabel: string;
 }
 
-type TabKey = "tous" | "mes_projets" | "actifs" | "a_risque" | "bloques" | "termines";
-
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "tous", label: "Tous les projets" },
-  { key: "actifs", label: "Actifs" },
-  { key: "a_risque", label: "À risque" },
-  { key: "bloques", label: "Bloqués" },
-  { key: "termines", label: "Terminés" },
-  { key: "mes_projets", label: "Mes projets" },
+const PRIORITY_LABELS: Record<string, string> = { basse: "Basse", normale: "Normale", haute: "Haute", critique: "Critique" };
+const STATUS_LABELS: Record<string, string> = { actif: "Actif", en_pause: "En pause", cloture: "Clôturé" };
+const HEALTH_LABELS: Record<string, string> = { vert: "🟢 Sain", orange: "🟠 Attention", rouge: "🔴 À risque" };
+const PERIOD_OPTIONS = [
+  { key: "toutes", label: "Toutes échéances" },
+  { key: "30", label: "Dans les 30 jours" },
+  { key: "90", label: "Dans les 90 jours" },
+  { key: "depassees", label: "Échéances dépassées" },
 ];
 
-const PRIORITY_LABELS: Record<string, string> = {
-  basse: "Basse",
-  normale: "Normale",
-  haute: "Haute",
-  critique: "Critique",
-};
-
-const VALID_TABS: TabKey[] = ["tous", "actifs", "a_risque", "bloques", "termines", "mes_projets"];
+const ALL = "tous";
 
 export function InitiativesExplorer({ initiatives, initialTab }: { initiatives: ExplorerInitiative[]; initialTab?: string }) {
-  const [tab, setTab] = useState<TabKey>(VALID_TABS.includes(initialTab as TabKey) ? (initialTab as TabKey) : "tous");
   const [query, setQuery] = useState("");
-  const [establishment, setEstablishment] = useState("tous");
-  const [type, setType] = useState("tous");
-  const [nom, setNom] = useState("");
+  const [groupe, setGroupe] = useState(ALL);
+  const [etablissement, setEtablissement] = useState(ALL);
+  const [type, setType] = useState(ALL);
+  const [statut, setStatut] = useState(ALL);
+  const [phase, setPhase] = useState(ALL);
+  const [responsable, setResponsable] = useState(ALL);
+  const [risque, setRisque] = useState(ALL);
+  const [priorite, setPriorite] = useState(ALL);
+  const [periode, setPeriode] = useState("toutes");
+  const [retardSeul, setRetardSeul] = useState(false);
+  const [bloqueSeul, setBloqueSeul] = useState(false);
 
-  const establishments = useMemo(
-    () => Array.from(new Set(initiatives.flatMap((p) => p.establishments))).sort(),
-    [initiatives]
-  );
+  // Filtres pré-remplis pour reprendre la sémantique des anciens liens (ex.
+  // StatCards "?vue=a_risque") sans dupliquer un système de filtre séparé.
+  useMemo(() => {
+    if (initialTab === "a_risque") setRisque("rouge");
+    if (initialTab === "actifs") setStatut("actif");
+    if (initialTab === "termines") setStatut("cloture");
+    if (initialTab === "bloques") setBloqueSeul(true);
+  }, [initialTab]);
+
+  const groupes = useMemo(() => Array.from(new Set(initiatives.map((p) => p.groupName))).sort(), [initiatives]);
+  const etablissements = useMemo(() => Array.from(new Set(initiatives.flatMap((p) => p.establishments))).sort(), [initiatives]);
   const types = useMemo(() => Array.from(new Set(initiatives.map((p) => p.type))), [initiatives]);
-
-  const counts = useMemo(
-    () => ({
-      tous: initiatives.length,
-      actifs: initiatives.filter((p) => p.status === "actif").length,
-      a_risque: initiatives.filter((p) => p.healthLevel === "rouge").length,
-      bloques: initiatives.filter((p) => p.blocked).length,
-      termines: initiatives.filter((p) => p.status === "cloture").length,
-      mes_projets: nom.trim()
-        ? initiatives.filter((p) => (p.chefDeProjet || "").toLowerCase().includes(nom.trim().toLowerCase())).length
-        : null,
-    }),
-    [initiatives, nom]
+  const phases = useMemo(() => Array.from(new Set(initiatives.map((p) => p.stageLabel))).sort(), [initiatives]);
+  const responsables = useMemo(
+    () => Array.from(new Set(initiatives.map((p) => p.chefDeProjet).filter((x): x is string => !!x))).sort(),
+    [initiatives]
   );
 
   const filtered = initiatives
     .filter((p) => {
-      if (tab === "actifs" && p.status !== "actif") return false;
-      if (tab === "a_risque" && p.healthLevel !== "rouge") return false;
-      if (tab === "bloques" && !p.blocked) return false;
-      if (tab === "termines" && p.status !== "cloture") return false;
-      if (tab === "mes_projets" && !(nom.trim() && (p.chefDeProjet || "").toLowerCase().includes(nom.trim().toLowerCase()))) return false;
       if (query && !`${p.name} ${p.reference} ${p.chefDeProjet || ""}`.toLowerCase().includes(query.toLowerCase())) return false;
-      if (establishment !== "tous" && !p.establishments.includes(establishment)) return false;
-      if (type !== "tous" && p.type !== type) return false;
+      if (groupe !== ALL && p.groupName !== groupe) return false;
+      if (etablissement !== ALL && !p.establishments.includes(etablissement)) return false;
+      if (type !== ALL && p.type !== type) return false;
+      if (statut !== ALL && p.status !== statut) return false;
+      if (phase !== ALL && p.stageLabel !== phase) return false;
+      if (responsable !== ALL && p.chefDeProjet !== responsable) return false;
+      if (risque !== ALL && p.healthLevel !== risque) return false;
+      if (priorite !== ALL && p.priority !== priorite) return false;
+      if (retardSeul && !p.late) return false;
+      if (bloqueSeul && !p.blocked) return false;
+      if (periode !== "toutes") {
+        if (!p.targetDate) return false;
+        const days = (new Date(p.targetDate).getTime() - Date.now()) / 86400000;
+        if (periode === "30" && !(days >= 0 && days <= 30)) return false;
+        if (periode === "90" && !(days >= 0 && days <= 90)) return false;
+        if (periode === "depassees" && !(days < 0 && p.status !== "cloture")) return false;
+      }
       return true;
     })
     .sort((a, b) => (a.targetDate ? new Date(a.targetDate).getTime() : Infinity) - (b.targetDate ? new Date(b.targetDate).getTime() : Infinity));
 
+  const activeCount = [groupe, etablissement, type, statut, phase, responsable, risque, priorite].filter((v) => v !== ALL).length + (periode !== "toutes" ? 1 : 0) + (retardSeul ? 1 : 0) + (bloqueSeul ? 1 : 0);
+
+  function reset() {
+    setQuery("");
+    setGroupe(ALL);
+    setEtablissement(ALL);
+    setType(ALL);
+    setStatut(ALL);
+    setPhase(ALL);
+    setResponsable(ALL);
+    setRisque(ALL);
+    setPriorite(ALL);
+    setPeriode("toutes");
+    setRetardSeul(false);
+    setBloqueSeul(false);
+  }
+
   return (
     <div>
-      <div className="flex flex-wrap gap-1 mb-5 border-b border-line">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-              tab === t.key ? "border-primary text-primary font-medium" : "border-transparent text-ink/50 hover:text-ink"
-            }`}
-          >
-            {t.label}
-            {counts[t.key] !== null && <span className="ml-1.5 text-xs text-ink/35">{counts[t.key]}</span>}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <input className="input max-w-xs" placeholder="Rechercher un projet…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        {activeCount > 0 && (
+          <button className="text-xs text-blue hover:underline" onClick={reset}>
+            Réinitialiser les filtres ({activeCount})
           </button>
-        ))}
+        )}
+        <span className="text-xs text-ink/40 ml-auto">
+          {filtered.length} / {initiatives.length} projet{initiatives.length > 1 ? "s" : ""}
+        </span>
       </div>
 
-      {tab === "mes_projets" && (
-        <div className="mb-4">
-          <input
-            className="input max-w-xs"
-            placeholder="Votre nom tel qu'il apparaît comme chef de projet…"
-            value={nom}
-            onChange={(e) => setNom(e.target.value)}
-          />
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-3 mb-5">
-        <input
-          className="input max-w-xs"
-          placeholder="Rechercher un projet…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select className="input w-auto" value={establishment} onChange={(e) => setEstablishment(e.target.value)}>
-          <option value="tous">Tous les établissements</option>
-          {establishments.map((e) => (
-            <option key={e} value={e}>
-              {e}
-            </option>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {groupes.length > 1 && (
+          <select className="input w-auto text-sm" value={groupe} onChange={(e) => setGroupe(e.target.value)}>
+            <option value={ALL}>Tous les groupes</option>
+            {groupes.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+        )}
+        <select className="input w-auto text-sm" value={etablissement} onChange={(e) => setEtablissement(e.target.value)}>
+          <option value={ALL}>Tous les établissements</option>
+          {etablissements.map((e) => (
+            <option key={e} value={e}>{e}</option>
           ))}
         </select>
-        <select className="input w-auto" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="tous">Tous les types</option>
+        <select className="input w-auto text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+          <option value={ALL}>Tous les types</option>
           {types.map((t) => (
-            <option key={t} value={t}>
-              {initiatives.find((p) => p.type === t)?.typeLabel || t}
-            </option>
+            <option key={t} value={t}>{initiatives.find((p) => p.type === t)?.typeLabel || t}</option>
           ))}
         </select>
+        <select className="input w-auto text-sm" value={statut} onChange={(e) => setStatut(e.target.value)}>
+          <option value={ALL}>Tous les statuts</option>
+          {Object.entries(STATUS_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <select className="input w-auto text-sm" value={phase} onChange={(e) => setPhase(e.target.value)}>
+          <option value={ALL}>Toutes les étapes</option>
+          {phases.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        <select className="input w-auto text-sm" value={responsable} onChange={(e) => setResponsable(e.target.value)}>
+          <option value={ALL}>Tous les responsables</option>
+          {responsables.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+        <select className="input w-auto text-sm" value={risque} onChange={(e) => setRisque(e.target.value)}>
+          <option value={ALL}>Tous les niveaux de risque</option>
+          {Object.entries(HEALTH_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <select className="input w-auto text-sm" value={priorite} onChange={(e) => setPriorite(e.target.value)}>
+          <option value={ALL}>Toutes les priorités</option>
+          {Object.entries(PRIORITY_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <select className="input w-auto text-sm" value={periode} onChange={(e) => setPeriode(e.target.value)}>
+          {PERIOD_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>{o.label}</option>
+          ))}
+        </select>
+        <label className="flex items-center gap-1.5 text-sm text-ink/70 px-2">
+          <input type="checkbox" checked={retardSeul} onChange={(e) => setRetardSeul(e.target.checked)} />
+          En retard uniquement
+        </label>
+        <label className="flex items-center gap-1.5 text-sm text-ink/70 px-2">
+          <input type="checkbox" checked={bloqueSeul} onChange={(e) => setBloqueSeul(e.target.checked)} />
+          Bloqués uniquement
+        </label>
       </div>
 
       {filtered.length === 0 ? (
@@ -173,6 +226,7 @@ export function InitiativesExplorer({ initiatives, initialTab }: { initiatives: 
                   </td>
                   <td className="px-4 py-3 text-ink/70">
                     {p.targetDate ? new Date(p.targetDate).toLocaleDateString("fr-FR") : "—"}
+                    {p.late && <span className="ml-1.5 text-xs text-bad">retard</span>}
                   </td>
                   <td className="px-4 py-3">
                     <HealthBadge level={p.healthLevel} label={p.healthLabel} />
