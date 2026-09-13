@@ -50,6 +50,7 @@ model Establishment {
   support         String?
 
   installedProducts    InstalledProduct[]
+  incidents            Incident[]
   ecosystemInterfaces  EstablishmentInterface[]
   actorAffiliations    ActorAffiliation[]
 
@@ -109,6 +110,7 @@ model Actor {
   meetingParticipations   MeetingParticipant[]
   trainingSessionsAsFormateur TrainingSession[] @relation("TrainingFormateur")
   trainingRecordsAsReferent   TrainingRecord[]  @relation("TrainingReferent")
+  incidentsDeclares           Incident[]        @relation("IncidentDeclarant")
   createdAt       DateTime    @default(now())
 }
 
@@ -228,6 +230,9 @@ model Initiative {
   stageCriteria    StageCriterion[]
   relationsSource  InitiativeRelation[] @relation("RelationSource")
   relationsCible   InitiativeRelation[] @relation("RelationCible")
+  incidents        Incident[]
+  problems         Problem[]
+  releases         Release[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -281,6 +286,52 @@ model InitiativeRelation {
   createdAt          DateTime   @default(now())
 
   @@unique([initiativeSourceId, initiativeCibleId, type])
+}
+
+// Volet exploitation post-déploiement (inspiré ITIL) : Incident → peut être
+// rattaché à un Problème (cause racine commune à plusieurs incidents) ;
+// Release regroupe les changements déployés ensemble.
+model Incident {
+  id               String        @id @default(cuid())
+  initiativeId     String
+  initiative       Initiative    @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  establishmentId  String?
+  establishment    Establishment? @relation(fields: [establishmentId], references: [id])
+  titre            String
+  description      String?
+  gravite          String        @default("mineure") // mineure | majeure | critique
+  status           String        @default("ouvert") // ouvert | en_cours | resolu | cloture
+  dateDetection    DateTime      @default(now())
+  dateResolution   DateTime?
+  resolution       String?
+  problemId        String?
+  problem          Problem?      @relation(fields: [problemId], references: [id])
+  declarantActorId String?
+  declarantActor   Actor?        @relation("IncidentDeclarant", fields: [declarantActorId], references: [id])
+  createdAt        DateTime      @default(now())
+}
+
+model Problem {
+  id           String     @id @default(cuid())
+  initiativeId String
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  titre        String
+  causeRacine  String?
+  status       String     @default("investigation") // investigation | cause_identifiee | solution_en_cours | resolu
+  incidents    Incident[]
+  createdAt    DateTime   @default(now())
+}
+
+model Release {
+  id              String          @id @default(cuid())
+  initiativeId    String
+  initiative      Initiative      @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  version         String
+  dateDeploiement DateTime?
+  contenu         String?
+  status          String          @default("planifiee") // planifiee | deployee | annulee
+  changeRequests  ChangeRequest[]
+  createdAt       DateTime        @default(now())
 }
 
 model StageCriterionTemplate {
@@ -627,6 +678,8 @@ model ChangeRequest {
   decision            String    @default("en_etude") // en_etude | accepte | rejete
   decideur            String?
   dateDecision        DateTime?
+  releaseId           String?
+  release             Release?  @relation(fields: [releaseId], references: [id])
   createdAt           DateTime  @default(now())
 }
 
@@ -675,50 +728,4 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
-}
-
-// Couche méthodologique par type d'initiative (finalité/déclencheurs/prérequis/
-// référentiels + risques, livrables et indicateurs typiques). Éditable en base,
-// seedée comme WorkflowStage (src/lib/methodologySeedData.ts). Les indicateurs
-// typiques restent informatifs uniquement : Kpi.value est obligatoire et on ne
-// fabrique jamais une valeur, donc pas de création automatique de Kpi.
-model MethodologyGuide {
-  id             String                     @id @default(cuid())
-  initiativeType String                     @unique
-  finalite       String?                    @db.Text
-  declencheurs   String?                    @db.Text
-  prerequis      String?                    @db.Text
-  referentiels   String[]                   @default([])
-  updatedAt      DateTime                   @updatedAt
-  items          MethodologyTemplateItem[]
-  relatedTypes   MethodologyRelatedType[]
-}
-
-model MethodologyTemplateItem {
-  id          String            @id @default(cuid())
-  guideId     String
-  guide       MethodologyGuide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  kind        String            // risque | livrable | kpi
-  label       String
-  description String?           @db.Text
-  probabilite String?           // pour kind=risque, repris tel quel à l'acceptation
-  impact      String?           // pour kind=risque
-  unit        String?           // pour kind=kpi, informatif
-  categorie   String?           // pour kind=kpi, informatif
-  ordre       Int               @default(0)
-  createdAt   DateTime          @default(now())
-}
-
-// Suggestions automatiques d'initiatives compagnes selon le type (§28 du
-// document de conception, ex. "Ce projet semble nécessiter une initiative
-// Cybersécurité"). Simple et contrôlable : affiché sur l'onglet Relations,
-// l'utilisateur choisit de créer et lier, ou d'ignorer — jamais automatique.
-model MethodologyRelatedType {
-  id           String           @id @default(cuid())
-  guideId      String
-  guide        MethodologyGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  relatedType  String           // un des 10 types d'initiative
-  relationType String           @default("lie_a") // un des 6 types InitiativeRelation
-  reason       String?          @db.Text
-  ordre        Int              @default(0)
 }

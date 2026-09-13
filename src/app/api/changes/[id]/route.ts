@@ -12,6 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       decision: body.decision ?? undefined,
       decideur: body.decideur ?? undefined,
       dateDecision: body.decision && body.decision !== before.decision ? new Date() : undefined,
+      releaseId: body.releaseId !== undefined ? body.releaseId || null : undefined,
     },
   });
 
