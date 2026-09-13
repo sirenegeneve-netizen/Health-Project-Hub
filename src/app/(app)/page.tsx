@@ -11,6 +11,7 @@ import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { PortfolioCharts } from "@/components/PortfolioCharts";
+import { severityFor, reasonHref, ALERT_STYLES } from "@/lib/portfolioAlerts";
 import { IconBadge } from "@/components/IconBadge";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "lucide-react";
@@ -279,7 +280,8 @@ export default async function HomePage() {
               <div className="font-medium text-sm mb-3">Alertes</div>
               <ul className="space-y-3">
                 {alerts.map((a, i) => {
-                  const severity = severityFor(a.reason, a.level);
+                  const level = severityFor(a.reason, a.level);
+                  const severity = ALERT_STYLES[level];
                   return (
                     <li key={i} className="flex items-start justify-between gap-3 text-sm">
                       <div>
@@ -408,27 +410,6 @@ export default async function HomePage() {
       )}
     </div>
   );
-}
-
-function reasonHref(initiativeId: string, reason: string): string {
-  const r = reason.toLowerCase();
-  if (r.includes("retard")) return `/initiatives/${initiativeId}/actions`;
-  if (r.includes("risque")) return `/initiatives/${initiativeId}/risks`;
-  if (r.includes("décision")) return `/initiatives/${initiativeId}/decisions`;
-  if (r.includes("interface") || r.includes("bloquante")) return `/initiatives/${initiativeId}/interfaces`;
-  if (r.includes("budget")) return `/initiatives/${initiativeId}/budget`;
-  if (r.includes("planning")) return `/initiatives/${initiativeId}/planning`;
-  return `/initiatives/${initiativeId}`;
-}
-
-function severityFor(reason: string, level: "vert" | "orange" | "rouge") {
-  const r = reason.toLowerCase();
-  if (level === "rouge" && (r.includes("bloquante") || r.includes("critique"))) {
-    return { label: "Critique", cls: "bg-bad/10 text-bad" };
-  }
-  if (r.includes("retard")) return { label: "Haute", cls: "bg-warn/10 text-warn" };
-  if (r.includes("décision")) return { label: "Moyenne", cls: "bg-ink/5 text-ink/70" };
-  return { label: "Info", cls: "bg-info-50 text-info" };
 }
 
 function StatCard({
