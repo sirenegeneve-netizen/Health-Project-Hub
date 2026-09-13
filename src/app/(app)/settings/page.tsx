@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { LinkActorSelector } from "@/components/LinkActorSelector";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
+  const actors = await prisma.actor.findMany({
+    select: { id: true, name: true, fonction: true },
+    orderBy: { name: "asc" },
+    distinct: ["name"],
+  });
   return (
     <div>
       <h1 className="font-display text-2xl text-ink mb-4">Paramètres</h1>
@@ -13,9 +20,8 @@ export default async function SettingsPage() {
         <div className="text-sm text-ink">{user?.name}</div>
         <div className="text-sm text-ink/60">{user?.email}</div>
       </div>
-      <p className="text-xs text-muted mt-4">
-        Les préférences d'affichage et de notifications ne sont pas encore configurables — cet espace s'enrichira au fil des besoins.
-      </p>
+
+      <LinkActorSelector currentActorId={user?.actorId || null} actors={actors} />
 
       <div className="card max-w-md mt-6">
         <div className="font-medium text-sm mb-1">Critères de passage</div>

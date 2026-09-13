@@ -9,11 +9,39 @@ import { computeStages } from "@/lib/lifecycle";
 import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
 import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
+import { PortfolioCharts } from "@/components/PortfolioCharts";
 import { IconBadge } from "@/components/IconBadge";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_LABELS: Record<string, string> = { actif: "Actif", en_pause: "En pause", cloture: "Clôturé" };
+const TYPE_LABELS: Record<string, string> = {
+  deploiement: "Déploiement",
+  evolution: "Évolution",
+  interoperabilite: "Interopérabilité",
+  migration: "Migration",
+  mise_a_niveau: "Mise à niveau",
+  cybersecurite: "Cybersécurité",
+  reglementaire: "Réglementaire",
+  formation: "Formation",
+  audit: "Audit",
+  autre: "Autre",
+};
+
+function bucketBy<T>(items: T[], keyFn: (item: T) => string, itemFn: (item: T) => { id: string; name: string; sub?: string }) {
+  const map = new Map<string, { id: string; name: string; sub?: string }[]>();
+  for (const item of items) {
+    const key = keyFn(item);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(itemFn(item));
+  }
+  return Array.from(map.entries())
+    .map(([label, items]) => ({ label, value: items.length, items }))
+    .sort((a, b) => b.value - a.value);
+}
 
 export default async function HomePage() {
   const scope = await getScope();
@@ -169,8 +197,46 @@ export default async function HomePage() {
     }))
   );
 
+  // Données des graphiques Vue globale — dérivées des mêmes `initiatives` déjà
+  // chargées ci-dessus, aucune nouvelle source de données.
+  const byStatus = bucketBy(
+    initiatives,
+    (p) => STATUS_LABELS[p.status] || p.status,
+    (p) => ({ id: p.id, name: p.name })
+  );
+  const byType = bucketBy(
+    initiatives,
+    (p) => TYPE_LABELS[p.type] || p.type,
+    (p) => ({ id: p.id, name: p.name })
+  );
+  const byEstablishment = bucketBy(
+    initiatives.flatMap((p) => p.establishments.map((e) => ({ p, name: e.establishment.name }))),
+    (x) => x.name,
+    (x) => ({ id: x.p.id, name: x.p.name })
+  );
+  const now2 = new Date();
+  const weekBuckets: { label: string; value: number; items: { id: string; name: string; sub?: string }[] }[] = [];
+  for (let w = 0; w < 8; w++) {
+    const start = new Date(now2);
+    start.setDate(start.getDate() + w * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const label = `${start.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}`;
+    const items: { id: string; name: string; sub?: string }[] = [];
+    for (const p of initiatives) {
+      for (const a of p.actions) {
+        if (a.echeance && a.echeance >= start && a.echeance < end) items.push({ id: p.id, name: a.title, sub: p.name });
+      }
+      for (const d of p.deliverables) {
+        if (d.datePrevue && d.datePrevue >= start && d.datePrevue < end) items.push({ id: p.id, name: d.name, sub: p.name });
+      }
+    }
+    weekBuckets.push({ label, value: items.length, items });
+  }
+
   return (
     <div className="space-y-8">
+      <PortfolioTabs />
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
           <div className="label mb-2">Portefeuille</div>
@@ -198,6 +264,10 @@ export default async function HomePage() {
             <StatCard label="Budget consommé" value={formatEur(totalReel)} sub={`sur ${formatEur(totalBudget)}`} icon={Euro} color="neutral" />
           )}
         </div>
+      )}
+
+      {initiatives.length > 0 && (
+        <PortfolioCharts byStatus={byStatus} byType={byType} byEstablishment={byEstablishment} upcomingByWeek={weekBuckets} />
       )}
 
       {healthRows.length > 0 && <PortfolioHealthTable rows={healthRows} />}

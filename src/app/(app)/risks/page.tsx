@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { InlineSelect } from "@/components/InlineSelect";
 import { RiskMatrix } from "@/components/RiskMatrix";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function GlobalRisksPage() {
   if (risks.length === 0) {
     return (
       <div>
+        <PortfolioTabs />
         <h1 className="font-display text-2xl text-ink mb-4">Risques</h1>
         <div className="card text-center text-ink/50 py-14">Aucun risque identifié pour l'instant.</div>
       </div>
@@ -28,6 +30,7 @@ export default async function GlobalRisksPage() {
 
   return (
     <div>
+      <PortfolioTabs />
       <div className="flex items-end justify-between mb-6">
         <h1 className="font-display text-2xl text-ink">Risques</h1>
         {critical.length > 0 && <span className="text-sm text-bad">{critical.length} critique(s) ouvert(s)</span>}

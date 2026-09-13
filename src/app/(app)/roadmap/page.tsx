@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function RoadmapPage() {
   if (dated.length === 0) {
     return (
       <div>
+        <PortfolioTabs />
         <h1 className="font-display text-2xl text-ink mb-4">Roadmap portefeuille</h1>
         <div className="card text-center text-ink/50 py-14">
           Aucun projet avec une date de début ou une date cible pour construire la roadmap.
@@ -55,6 +57,7 @@ export default async function RoadmapPage() {
 
   return (
     <div>
+      <PortfolioTabs />
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Roadmap portefeuille</h1>
         <p className="text-sm text-muted">Tous les projets actifs sur une même ligne temporelle — chevauchements et périodes critiques en un coup d'œil.</p>

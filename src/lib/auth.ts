@@ -27,6 +27,7 @@ export interface CurrentUser {
   id: string;
   email: string;
   name: string;
+  actorId: string | null;
 }
 
 export async function createSession(userId: string): Promise<string> {
@@ -59,5 +60,5 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await prisma.session.findUnique({ where: { token }, include: { user: true } });
   if (!session || session.expiresAt < new Date()) return null;
 
-  return { id: session.user.id, email: session.user.email, name: session.user.name };
+  return { id: session.user.id, email: session.user.email, name: session.user.name, actorId: session.user.actorId };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { BarList } from "@/components/BarList";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { computeHealthScore } from "@/lib/healthScore";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 
@@ -35,6 +36,7 @@ export default async function ReportsPage() {
   if (initiatives.length === 0) {
     return (
       <div>
+        <PortfolioTabs />
         <h1 className="font-display text-2xl text-ink mb-4">Rapports</h1>
         <div className="card text-center text-ink/50 py-14">Aucun projet pour construire de statistiques.</div>
       </div>
@@ -70,6 +72,7 @@ export default async function ReportsPage() {
 
   return (
     <div>
+      <PortfolioTabs />
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Rapports</h1>
         <p className="text-sm text-muted">

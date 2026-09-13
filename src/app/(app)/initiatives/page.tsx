@@ -4,6 +4,7 @@ import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { computeStages } from "@/lib/lifecycle";
 import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
 import { InitiativesExplorer, type ExplorerInitiative } from "@/components/InitiativesExplorer";
+import { PortfolioTabs } from "@/components/PortfolioTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,7 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
 
   return (
     <div>
+      <PortfolioTabs />
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Projets</h1>
         <p className="text-sm text-muted">

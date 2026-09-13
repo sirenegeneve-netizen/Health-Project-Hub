@@ -101,6 +101,7 @@ model Actor {
   disponibiliteJh Float?
   competences     String?
   affiliations    ActorAffiliation[]
+  account         User?
   raciEntries     RaciEntry[]
   actionsResponsable      Action[]           @relation("ActionResponsable")
   risksProprietaire       Risk[]             @relation("RiskProprietaire")
@@ -721,6 +722,8 @@ model User {
   email        String    @unique
   passwordHash String
   name         String
+  actorId      String?   @unique
+  actor        Actor?    @relation(fields: [actorId], references: [id])
   createdAt    DateTime  @default(now())
   sessions     Session[]
 }
