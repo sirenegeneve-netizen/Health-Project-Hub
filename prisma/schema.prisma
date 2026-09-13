@@ -571,6 +571,10 @@ model DocumentRef {
   title       String
   type        String? // compte_rendu | specification | recette | formation | interop | mail | autre
   note        String? // résumé ou contenu texte (mail collé, etc.)
+  fileUrl     String? // URL Vercel Blob du fichier réel, si upload (distinct d'un texte collé dans `note`)
+  fileName    String?
+  fileSize    Int?
+  mimeType    String?
   linkedType  String? // action | risque | decision | interface | reunion | anomalie
   linkedId    String?
   createdAt   DateTime @default(now())

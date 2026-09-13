@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { VigilanceForm } from "@/components/EntityForms";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { DocumentTextImport } from "@/components/DocumentTextImport";
+import { DeleteDocumentButton } from "@/components/DeleteDocumentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -62,14 +65,35 @@ export default async function TimelinePage({ params }: { params: { id: string } 
         <div>
           <h2 className="font-display text-xl text-ink mb-3">Documents & échanges</h2>
           <p className="text-sm text-ink/60 mb-3">
-            Importez un compte rendu, une spécification ou le texte d'un mail : le système propose une action ou un
-            risque si un retard est détecté, mais ne crée jamais rien sans validation.
+            Déposez un vrai fichier (PDF, Word, image...) ou collez le texte d'un mail : le système propose une action
+            ou un risque si un retard est détecté, mais ne crée jamais rien sans validation.
           </p>
+          <div className="card space-y-4 mb-3">
+            <DocumentUpload initiativeId={params.id} />
+            <div className="border-t border-line pt-3">
+              <DocumentTextImport initiativeId={params.id} />
+            </div>
+          </div>
           <div className="card space-y-2">
             {documents.map((d) => (
-              <div key={d.id} className="text-sm border-b border-teal-50 last:border-0 pb-2 last:pb-0">
-                <div className="font-medium">{d.title}</div>
-                <div className="text-xs text-ink/50">{d.type}</div>
+              <div key={d.id} className="text-sm border-b border-teal-50 last:border-0 pb-2 last:pb-0 flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-medium">
+                    {d.fileUrl ? (
+                      <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue hover:underline">
+                        {d.title}
+                      </a>
+                    ) : (
+                      d.title
+                    )}
+                  </div>
+                  <div className="text-xs text-ink/50">
+                    {d.type}
+                    {d.fileSize ? ` · ${(d.fileSize / 1024).toFixed(0)} Ko` : ""}
+                    {!d.fileUrl && d.note ? " · texte importé" : ""}
+                  </div>
+                </div>
+                <DeleteDocumentButton id={d.id} />
               </div>
             ))}
             {documents.length === 0 && <div className="text-ink/50 text-sm">Aucun document importé.</div>}
