@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { checkMeetingConflicts } from "@/lib/meetingConflicts";
+import { requireUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const participantActorIds: string[] = Array.isArray(body.participantActorIds) ? body.participantActorIds : [];
   const date = new Date(body.date);

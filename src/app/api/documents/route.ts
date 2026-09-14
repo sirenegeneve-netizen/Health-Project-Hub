@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { analyzeText } from "@/lib/mailSuggest";
+import { requireUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const initiativeId = req.nextUrl.searchParams.get("initiativeId");
   if (!initiativeId) return NextResponse.json({ error: "initiativeId requis" }, { status: 400 });
   const docs = await prisma.documentRef.findMany({ where: { initiativeId }, orderBy: { createdAt: "desc" } });
@@ -11,6 +15,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const doc = await prisma.documentRef.create({
     data: {

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   let groupId = body.groupId as string | undefined;
   if (!groupId) {
@@ -20,6 +24,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const establishments = await prisma.establishment.findMany({
     include: { initiatives: { include: { initiative: true } } },
     orderBy: { name: "asc" },

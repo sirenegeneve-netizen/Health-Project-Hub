@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
+import { requireUser } from "@/lib/auth";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: {
@@ -26,6 +30,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const current = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!current) return NextResponse.json({ error: "not found" }, { status: 404 });

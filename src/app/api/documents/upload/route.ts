@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
+import { requireUser } from "@/lib/auth";
 
 // Upload d'un vrai fichier (PDF, Word, image...) vers Vercel Blob — distinct de
 // la route /api/documents qui gère l'import de texte collé (mail, compte rendu).
@@ -9,6 +10,9 @@ import { logTimelineEvent } from "@/lib/timeline";
 // Database → Blob) ; la variable BLOB_READ_WRITE_TOKEN est alors injectée
 // automatiquement, rien à configurer à la main.
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
       { error: "Aucun store Vercel Blob connecté à ce projet. Ajoutez-en un depuis l'onglet Storage de votre projet Vercel." },

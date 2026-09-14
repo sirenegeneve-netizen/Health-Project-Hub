@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const doc = await prisma.documentRef.findUnique({ where: { id: params.id } });
   if (doc?.fileUrl) {
     try {

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const initiativeType = searchParams.get("initiativeType");
   const stageKey = searchParams.get("stageKey");
@@ -13,6 +17,9 @@ export async function GET(req: NextRequest) {
 // Crée un critère dans le modèle de checklist d'un type de projet (ou du
 // modèle "defaut"). Le formulaire de Paramètres > Critères poste ici.
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const { initiativeType, stageKey, label } = body;
   if (!initiativeType || !stageKey || !label || !label.trim()) {

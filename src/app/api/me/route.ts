@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 const norm = (s: string | null) => (s || "").trim().toLowerCase();
 
 export async function GET(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const nom = req.nextUrl.searchParams.get("nom");
   if (!nom) return NextResponse.json({ items: [] });
   const n = norm(nom);

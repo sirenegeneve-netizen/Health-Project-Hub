@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 // Permet de surcharger la phase d'un établissement précis dans un projet
 // multi-sites (vue comparative) — envoyer phase: "" retire la surcharge et
 // fait retomber l'affichage sur la phase globale du projet.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const updated = await prisma.initiativeEstablishment.update({
     where: { id: params.id },

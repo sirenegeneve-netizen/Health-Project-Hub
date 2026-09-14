@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getWorkflowStages } from "@/lib/workflowStages";
+import { requireUser } from "@/lib/auth";
 
 export async function GET() {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const initiatives = await prisma.initiative.findMany({
     include: { group: true, establishments: { include: { establishment: true } } },
     orderBy: { createdAt: "desc" },
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
   const body = await req.json();
   const { establishmentIds, ...data } = body;
 

@@ -62,3 +62,12 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   return { id: session.user.id, email: session.user.email, name: session.user.name, actorId: session.user.actorId };
 }
+
+// Vérification réelle de session (base de données, expiration) à utiliser au
+// début de chaque route API — le middleware (runtime Edge) ne vérifie que la
+// présence du cookie, pas sa validité. `{ user: null }` signifie qu'il faut
+// répondre 401 et arrêter le traitement de la requête.
+export async function requireUser(): Promise<{ user: CurrentUser | null }> {
+  const user = await getCurrentUser();
+  return { user };
+}
