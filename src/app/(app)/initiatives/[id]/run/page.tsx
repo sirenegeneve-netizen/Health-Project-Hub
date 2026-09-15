@@ -32,7 +32,7 @@ export default async function RunPage({ params }: { params: { id: string } }) {
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
           <h1 className="font-display text-2xl text-ink">Stabilisation</h1>
-          <p className="text-sm text-muted">Le projet est-il stabilisé ?</p>
+          <p className="text-sm text-muted">L'initiative est-elle stabilisée ?</p>
         </div>
         <HealthBadge level={stability.level} label={stability.label} />
       </div>
@@ -100,7 +100,7 @@ export default async function RunPage({ params }: { params: { id: string } }) {
             })}
           </div>
         ) : (
-          <div className="card text-center text-ink/50 py-8">Aucun indicateur défini pour ce projet.</div>
+          <div className="card text-center text-ink/50 py-8">Aucun indicateur défini pour cette initiative.</div>
         )}
       </section>
     </div>

@@ -119,7 +119,7 @@ export default async function GlobalRisksPage() {
               <thead>
                 <tr className="bg-teal-50/50">
                   <th className="pl-4">Description</th>
-                  <th>Projet</th>
+                  <th>Initiative</th>
                   <th>Criticité</th>
                   <th>Propriétaire</th>
                   <th>Statut</th>

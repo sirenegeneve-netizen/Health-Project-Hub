@@ -87,7 +87,7 @@ export default async function RealisationPage({ params }: { params: { id: string
             }))}
           />
         ) : (
-          <div className="card text-center text-ink/50 py-8">Aucune action pour ce projet.</div>
+          <div className="card text-center text-ink/50 py-8">Aucune action pour cette initiative.</div>
         )}
       </section>
 

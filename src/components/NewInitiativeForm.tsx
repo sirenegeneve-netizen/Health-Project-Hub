@@ -53,7 +53,7 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
         <Field label="Référence">
           <input required className="input" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
         </Field>
-        <Field label="Nom du projet">
+        <Field label="Nom de l'initiative">
           <input required className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </Field>
       </div>
@@ -125,7 +125,7 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
       </Field>
 
       <button className="btn" disabled={saving} type="submit">
-        {saving ? "Création…" : "Créer le projet"}
+        {saving ? "Création…" : "Créer l'initiative"}
       </button>
     </form>
   );

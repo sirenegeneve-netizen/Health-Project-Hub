@@ -31,7 +31,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
       <div>
         <h1 className="font-display text-2xl text-ink mb-4">Actions</h1>
         <div className="card text-center text-ink/50 py-14">
-          Aucune action pour l'instant. Ouvrez un projet pour en créer.
+          Aucune action pour l'instant. Ouvrez une initiative pour en créer.
         </div>
       </div>
     );
@@ -87,7 +87,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
             <thead>
               <tr className="bg-teal-50/50">
                 <th className="pl-4">Tâche</th>
-                <th>Projet</th>
+                <th>Initiative</th>
                 <th>Responsable</th>
                 <th>Échéance</th>
                 <th>Origine</th>

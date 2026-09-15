@@ -25,7 +25,7 @@ export default async function TimelinePage({ params }: { params: { id: string } 
   return (
     <div>
       <InitiativeTabs initiativeId={params.id} />
-      <h1 className="font-display text-2xl text-ink mb-1">Mémoire du projet</h1>
+      <h1 className="font-display text-2xl text-ink mb-1">Mémoire de l'initiative</h1>
       <p className="text-ink/60 mb-6">Que s'est-il passé, et pourquoi ? Chaque événement significatif s'ajoute ici automatiquement — rien n'est saisi deux fois.</p>
 
       <div className="space-y-6">

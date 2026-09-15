@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 
       <div className="card max-w-md mt-6">
         <div className="font-medium text-sm mb-1">Critères de passage</div>
-        <p className="text-sm text-muted mb-2">Checklists des étapes Kick-off, Préparation et Clôture, par type de projet.</p>
+        <p className="text-sm text-muted mb-2">Checklists des étapes Kick-off, Préparation et Clôture, par type d'initiative.</p>
         <Link href="/settings/criteria" className="text-sm text-blue hover:underline">
           Configurer →
         </Link>

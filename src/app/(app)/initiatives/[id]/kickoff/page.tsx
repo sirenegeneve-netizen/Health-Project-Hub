@@ -52,7 +52,7 @@ export default async function KickoffPage({ params }: { params: { id: string } }
     <div>
       <InitiativeTabs initiativeId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-1">Kick-off</h1>
-      <p className="text-sm text-muted mb-6">Préparer, capturer et vérifier le lancement du projet.</p>
+      <p className="text-sm text-muted mb-6">Préparer, capturer et vérifier le lancement de l'initiative.</p>
 
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-2">

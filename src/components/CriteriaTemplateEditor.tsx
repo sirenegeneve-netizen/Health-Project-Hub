@@ -86,7 +86,7 @@ export function CriteriaTemplateEditor() {
           </div>
         </div>
         <div>
-          <div className="label mb-1">Type de projet</div>
+          <div className="label mb-1">Type d'initiative</div>
           <select className="input" value={initiativeType} onChange={(e) => setInitiativeType(e.target.value)}>
             {INITIATIVE_TYPES.map((t) => (
               <option key={t.key} value={t.key}>
@@ -99,7 +99,7 @@ export function CriteriaTemplateEditor() {
 
       {initiativeType !== "defaut" && items.length === 0 && !loading && (
         <p className="text-sm text-ink/50 mb-3">
-          Ce type de projet n'a pas de liste dédiée pour cette étape — les projets de ce type utilisent le modèle par
+          Ce type d'initiative n'a pas de liste dédiée pour cette étape — les initiatives de ce type utilisent le modèle par
           défaut. Ajouter un critère ci-dessous crée une liste propre à ce type.
         </p>
       )}

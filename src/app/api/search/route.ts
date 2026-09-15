@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     ]);
 
   const results = [
-    ...initiatives.map((p) => ({ kind: "Projet", label: p.name, href: `/initiatives/${p.id}` })),
+    ...initiatives.map((p) => ({ kind: "Initiative", label: p.name, href: `/initiatives/${p.id}` })),
     ...actions.map((a) => ({ kind: "Action", label: a.title, href: `/initiatives/${a.initiativeId}/actions` })),
     ...risks.map((r) => ({ kind: "Risque", label: r.description, href: `/initiatives/${r.initiativeId}/risks` })),
     ...decisions.map((d) => ({ kind: "Décision", label: d.subject, href: `/initiatives/${d.initiativeId}/decisions` })),

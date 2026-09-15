@@ -81,7 +81,7 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
             {risks.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-center py-8 text-ink/50">
-                  Aucun risque identifié pour ce projet.
+                  Aucun risque identifié pour cette initiative.
                 </td>
               </tr>
             )}

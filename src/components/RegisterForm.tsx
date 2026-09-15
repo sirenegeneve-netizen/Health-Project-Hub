@@ -40,7 +40,7 @@ export function RegisterForm() {
       </div>
       <div>
         <label className="label block mb-1">Nom et prénom</label>
-        <input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tel qu'il apparaît comme chef de projet ou responsable" />
+        <input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tel qu'il apparaît comme responsable dans le référentiel" />
       </div>
       <div>
         <label className="label block mb-1">Email</label>

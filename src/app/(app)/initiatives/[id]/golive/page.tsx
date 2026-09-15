@@ -75,7 +75,7 @@ export default async function GoLivePage({ params }: { params: { id: string } })
       </div>
 
       <p className="text-sm text-ink/60 mb-1">
-        Cette checklist ne couvre que les critères objectivables à partir des données du projet. Le paramétrage, la
+        Cette checklist ne couvre que les critères objectivables à partir des données de l'initiative. Le paramétrage, la
         migration et la documentation restent à vérifier manuellement avant la décision finale.
       </p>
       {criticalAnomalies.length > 0 && (

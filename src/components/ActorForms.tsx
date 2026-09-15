@@ -37,7 +37,7 @@ export function ActorForm({ initiativeId }: { initiativeId: string }) {
           <input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         </label>
         <label className="block">
-          <div className="label mb-1">Rôle dans le projet</div>
+          <div className="label mb-1">Rôle dans l'initiative</div>
           <select className="input" value={f.roleProjet} onChange={(e) => setF({ ...f, roleProjet: e.target.value })}>
             {ROLES_PROJET.map(([v, l]) => (
               <option key={v} value={v}>

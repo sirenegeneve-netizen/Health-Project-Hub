@@ -65,10 +65,10 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
     <div>
       <InitiativeTabs initiativeId={params.id} />
       <h1 className="font-display text-2xl text-ink mb-1">Établissements</h1>
-      <p className="text-sm text-muted mb-6">Comparer rapidement l'avancement des différents sites du projet.</p>
+      <p className="text-sm text-muted mb-6">Comparer rapidement l'avancement des différents sites de l'initiative.</p>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted">Aucun établissement rattaché à ce projet pour l'instant (à ajouter depuis l'onglet Cadrage).</p>
+        <p className="text-sm text-muted">Aucun établissement rattaché à cette initiative pour l'instant (à ajouter depuis l'onglet Cadrage).</p>
       ) : (
         <div className="card p-0 overflow-hidden">
           <table className="table-hp">
@@ -89,7 +89,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
                   <td>
                     <div className="flex items-center gap-2">
                       <InlineSelect endpoint={`/api/initiative-establishments/${r.id}`} field="phase" value={r.phase} options={PHASE_OPTIONS} />
-                      {r.phaseInherited && <span className="text-xs text-ink/40">(projet)</span>}
+                      {r.phaseInherited && <span className="text-xs text-ink/40">(initiative)</span>}
                     </div>
                   </td>
                   <td>{r.progress === null ? <span className="text-ink/40">—</span> : `${r.progress}%`}</td>
@@ -118,7 +118,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
           ]
             .filter(Boolean)
             .join(" et ")}{" "}
-          ne sont rattachés à aucun établissement précis (avancement/formation/risques de la vue globale du projet).
+          ne sont rattachés à aucun établissement précis (avancement/formation/risques de la vue globale de l'initiative).
         </p>
       )}
     </div>

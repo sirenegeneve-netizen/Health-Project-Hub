@@ -114,14 +114,14 @@ export function InitiativesExplorer({ initiatives, initialTab }: { initiatives: 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-3">
-        <input className="input max-w-xs" placeholder="Rechercher un projet…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input className="input max-w-xs" placeholder="Rechercher une initiative…" value={query} onChange={(e) => setQuery(e.target.value)} />
         {activeCount > 0 && (
           <button className="text-xs text-blue hover:underline" onClick={reset}>
             Réinitialiser les filtres ({activeCount})
           </button>
         )}
         <span className="text-xs text-ink/40 ml-auto">
-          {filtered.length} / {initiatives.length} projet{initiatives.length > 1 ? "s" : ""}
+          {filtered.length} / {initiatives.length} initiative{initiatives.length > 1 ? "s" : ""}
         </span>
       </div>
 
@@ -192,13 +192,13 @@ export function InitiativesExplorer({ initiatives, initialTab }: { initiatives: 
       </div>
 
       {filtered.length === 0 ? (
-        <div className="card text-center text-ink/50 py-14">Aucun projet ne correspond à ces filtres.</div>
+        <div className="card text-center text-ink/50 py-14">Aucune initiative ne correspond à ces filtres.</div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-ink/40 border-b border-line">
-                <th className="px-4 py-3 font-medium">Projet</th>
+                <th className="px-4 py-3 font-medium">Initiative</th>
                 <th className="px-4 py-3 font-medium">Établissement</th>
                 <th className="px-4 py-3 font-medium">Chef de projet</th>
                 <th className="px-4 py-3 font-medium">Étape</th>

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     });
   }
   if (body.initiativeId) {
-    await logTimelineEvent(body.initiativeId, "acteur", `Acteur ajouté à l'équipe projet : « ${actor.name} »`);
+    await logTimelineEvent(body.initiativeId, "acteur", `Acteur ajouté à l'équipe de l'initiative : « ${actor.name} »`);
   }
   return NextResponse.json(actor, { status: 201 });
 }

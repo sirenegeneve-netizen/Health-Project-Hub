@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Health Project Hub",
-  description: "Cockpit et mémoire des projets numériques en santé",
+  description: "Cockpit et mémoire des initiatives numériques en santé",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

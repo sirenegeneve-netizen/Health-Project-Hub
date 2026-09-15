@@ -35,7 +35,7 @@ export default async function CloturePage({ params }: { params: { id: string } }
         <h1 className="font-display text-2xl text-ink">Clôture</h1>
         <Pill text={`${percent}% du bilan`} tone={blocked ? "bad" : percent === 100 ? "ok" : "warn"} />
       </div>
-      <p className="text-sm text-muted mb-6">Bilan de fin de projet et transfert au support / à l'exploitation.</p>
+      <p className="text-sm text-muted mb-6">Bilan de fin d'initiative et transfert au support / à l'exploitation.</p>
 
       <div className="flex flex-wrap gap-8 mb-6 pb-6 border-b border-teal-100">
         <div>

@@ -60,7 +60,7 @@ export default async function InterfacesPage({ params }: { params: { id: string 
             {interfaces.length === 0 && (
               <tr>
                 <td colSpan={6} className="text-center py-8 text-ink/50">
-                  Aucune interface déclarée pour ce projet.
+                  Aucune interface déclarée pour cette initiative.
                 </td>
               </tr>
             )}

@@ -13,7 +13,7 @@ function levelFromScore(score: number, total: number): HealthLevel {
   return "rouge";
 }
 
-// Cadrage — « Le projet est-il suffisamment cadré pour être lancé ? »
+// Cadrage — « L'initiative est-elle suffisamment cadrée pour être lancée ? »
 export function computeCadrageReadiness(inputs: {
   hasObjectifs: boolean;
   stakeholdersCount: number;
@@ -38,7 +38,7 @@ export function computeCadrageReadiness(inputs: {
 // Réalisation — « Sommes-nous en train d'avancer ? »
 export function computeRealisationMomentum(inputs: { totalActions: number; lateActions: number; recentActivityCount: number }): Readiness {
   if (inputs.totalActions === 0) {
-    return { level: "rouge", label: "Pas de dynamique visible", reasons: ["aucune action enregistrée pour ce projet"] };
+    return { level: "rouge", label: "Pas de dynamique visible", reasons: ["aucune action enregistrée pour cette initiative"] };
   }
   const reasons: string[] = [];
   if (inputs.lateActions > 0) reasons.push(`${inputs.lateActions} action(s) en retard`);
@@ -48,7 +48,7 @@ export function computeRealisationMomentum(inputs: { totalActions: number; lateA
   if (inputs.lateActions >= 3 || inputs.recentActivityCount === 0) level = "rouge";
   else if (inputs.lateActions > 0) level = "orange";
 
-  const label = level === "vert" ? "Le projet avance" : level === "orange" ? "Avancement à surveiller" : "Avancement au ralenti";
+  const label = level === "vert" ? "L'initiative avance" : level === "orange" ? "Avancement à surveiller" : "Avancement au ralenti";
   return { level, label, reasons: reasons.length ? reasons : ["actions à jour, activité récente constatée"] };
 }
 
@@ -77,7 +77,7 @@ export function computeDeploymentReadiness(criteria: { ok: boolean; label: strin
   return { level, label, reasons: reasons.length ? reasons : ["tous les critères sont au vert"] };
 }
 
-// Run — « Le projet est-il stabilisé ? »
+// Run — « L'initiative est-elle stabilisée ? »
 export function computeStabilityReadiness(inputs: { blockingInterfaces: number; criticalOpenRisks: number; autonomyRate: number | null }): Readiness {
   const checks: [boolean, string][] = [
     [inputs.blockingInterfaces === 0, `${inputs.blockingInterfaces} interface(s) bloquante(s)`],
@@ -86,7 +86,7 @@ export function computeStabilityReadiness(inputs: { blockingInterfaces: number; 
   ];
   const passed = checks.filter(([ok]) => ok).length;
   const level = levelFromScore(passed, checks.length);
-  const label = level === "vert" ? "Projet stabilisé" : level === "orange" ? "Stabilisation en cours" : "Instable";
+  const label = level === "vert" ? "Initiative stabilisée" : level === "orange" ? "Stabilisation en cours" : "Instable";
   const reasons = checks.filter(([ok]) => !ok).map(([, r]) => r);
   return { level, label, reasons: reasons.length ? reasons : ["aucun signal d'instabilité"] };
 }

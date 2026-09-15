@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return NextResponse.json(
-      { error: "Aucun store Vercel Blob connecté à ce projet. Ajoutez-en un depuis l'onglet Storage de votre projet Vercel." },
+      { error: "Aucun store Vercel Blob connecté à ce projet Vercel. Ajoutez-en un depuis l'onglet Storage de votre projet Vercel." },
       { status: 503 }
     );
   }

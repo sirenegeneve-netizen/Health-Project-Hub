@@ -41,7 +41,7 @@ export function ActorMultiSelect({
     onChange(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
   }
   if (actors.length === 0) {
-    return <p className="text-xs text-ink/40">Aucun acteur dans le référentiel de ce projet pour l'instant.</p>;
+    return <p className="text-xs text-ink/40">Aucun acteur dans le référentiel de cette initiative pour l'instant.</p>;
   }
   return (
     <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 border border-line rounded-lg">

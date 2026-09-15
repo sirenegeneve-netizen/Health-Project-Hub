@@ -28,7 +28,7 @@ export function PortfolioHealthTable({ rows }: { rows: HealthRow[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-ink/40 border-b border-line">
-            <th className="px-4 py-2.5 font-medium">Projet</th>
+            <th className="px-4 py-2.5 font-medium">Initiative</th>
             <th className="px-4 py-2.5 font-medium">Avancement</th>
             <th className="px-4 py-2.5 font-medium">Planning</th>
             <th className="px-4 py-2.5 font-medium">Budget</th>

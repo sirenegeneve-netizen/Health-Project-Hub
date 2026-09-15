@@ -49,7 +49,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
       <div>
         <h1 className="font-display text-2xl text-ink mb-4">Ressources & charge</h1>
         <div className="card text-center text-ink/50 py-14">
-          Aucun acteur renseigné pour l'instant. Ajoutez des acteurs depuis l'onglet "Gouvernance & RACI" d'un projet.
+          Aucun acteur renseigné pour l'instant. Ajoutez des acteurs depuis l'onglet "Gouvernance & RACI" d'une initiative.
         </div>
       </div>
     );
@@ -139,7 +139,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
           <div className="font-display text-2xl mt-0.5">{people.length}</div>
         </div>
         <div className="card">
-          <div className="label">Sur plusieurs projets</div>
+          <div className="label">Sur plusieurs initiatives</div>
           <div className="font-display text-2xl mt-0.5">{keyPeople.length}</div>
         </div>
         {inTension.length > 0 && (
@@ -171,7 +171,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
               <tr className="bg-teal-50/50">
                 <th className="pl-4">Personne</th>
                 <th>Rôle(s)</th>
-                <th>Projets</th>
+                <th>Initiatives</th>
                 <th>Disponibilité déclarée</th>
               </tr>
             </thead>
@@ -214,7 +214,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
                       {p.name}
                       {p.records.length > 1 && (
                         <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-primary-50 text-primary">
-                          {p.records.length} projets
+                          {p.records.length} initiatives
                         </span>
                       )}
                     </div>

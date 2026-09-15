@@ -125,7 +125,7 @@ export default async function AccompagnementPage({ params }: { params: { id: str
             })}
           </div>
         ) : (
-          <div className="card text-center text-ink/50 py-8">Aucune population définie pour ce projet.</div>
+          <div className="card text-center text-ink/50 py-8">Aucune population définie pour cette initiative.</div>
         )}
       </section>
 

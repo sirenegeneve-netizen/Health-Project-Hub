@@ -247,16 +247,16 @@ export default async function HomePage() {
           )}
         </div>
         <Link href="/initiatives/new" className="btn">
-          + Nouveau projet
+          + Nouvelle initiative
         </Link>
       </div>
 
       {initiatives.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Projets" value={String(initiatives.length)} icon={Briefcase} color="primary" href="/initiatives" />
+          <StatCard label="Initiatives" value={String(initiatives.length)} icon={Briefcase} color="primary" href="/initiatives" />
           <StatCard label="En cours" value={String(enCours)} icon={Clock} color="blue" href="/initiatives?vue=actifs" />
           {atRisk > 0 && <StatCard label="À risque" value={String(atRisk)} icon={TriangleAlert} color="red" href="/initiatives?vue=a_risque" />}
-          {blockedCount > 0 && <StatCard label="Projets bloqués" value={String(blockedCount)} icon={Ban} color="red" href="/initiatives?vue=bloques" />}
+          {blockedCount > 0 && <StatCard label="Initiatives bloquées" value={String(blockedCount)} icon={Ban} color="red" href="/initiatives?vue=bloques" />}
           {lateActionsTotal > 0 && <StatCard label="Actions en retard" value={String(lateActionsTotal)} icon={TriangleAlert} color="orange" href="/actions?filtre=retard" />}
           {criticalDependencies > 0 && (
             <StatCard label="Dépendances critiques" value={String(criticalDependencies)} icon={GitFork} color="purple" href="/resources?vue=dependances" />
@@ -346,7 +346,7 @@ export default async function HomePage() {
         <div className="card">
           <div className="flex items-center gap-2 mb-1">
             <IconBadge color="orange" icon={Users} />
-            <div className="font-medium text-sm">Conflits interprojets</div>
+            <div className="font-medium text-sm">Conflits entre initiatives</div>
           </div>
           <p className="text-xs text-ink/40 mb-4">
             Détection par rapprochement de nom — indicative tant que les ressources ne sont pas rattachées au groupe (Phase 4).
@@ -402,9 +402,9 @@ export default async function HomePage() {
         <PortfolioList initiatives={portfolioInitiatives} />
       ) : (
         <div className="card text-center py-16">
-          <p className="text-ink/60 mb-4">Aucun projet pour le moment.</p>
+          <p className="text-ink/60 mb-4">Aucune initiative pour le moment.</p>
           <Link href="/initiatives/new" className="btn">
-            Créer le premier projet
+            Créer la première initiative
           </Link>
         </div>
       )}

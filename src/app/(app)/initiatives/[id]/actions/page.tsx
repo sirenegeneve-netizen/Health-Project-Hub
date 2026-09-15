@@ -52,7 +52,7 @@ export default async function ActionsPage({ params, searchParams }: { params: { 
       <ActionForm initiativeId={params.id} actors={actors} establishments={establishments} />
 
       {actions.length === 0 ? (
-        <div className="card text-center text-ink/50 py-10">Aucune action pour ce projet.</div>
+        <div className="card text-center text-ink/50 py-10">Aucune action pour cette initiative.</div>
       ) : vue === "kanban" ? (
         <ActionsKanban
           actions={actions.map((a) => ({

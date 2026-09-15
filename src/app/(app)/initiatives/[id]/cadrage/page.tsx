@@ -65,7 +65,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
       <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
         <div>
           <h1 className="font-display text-2xl text-ink">Cadrage</h1>
-          <p className="text-sm text-muted">Le projet est-il suffisamment cadré pour être lancé ?</p>
+          <p className="text-sm text-muted">L'initiative est-elle suffisamment cadrée pour être lancée ?</p>
         </div>
         <HealthBadge level={readiness.level} label={readiness.label} />
       </div>
@@ -81,7 +81,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
       <section className="mt-8">
         <SectionTitle>Contexte & enjeux</SectionTitle>
         <div className="grid md:grid-cols-2 gap-4">
-          <EditableField initiativeId={params.id} field="description" label="Contexte" placeholder="Pourquoi ce projet, dans quel contexte ?" initial={initiative.description || ""} />
+          <EditableField initiativeId={params.id} field="description" label="Contexte" placeholder="Pourquoi cette initiative, dans quel contexte ?" initial={initiative.description || ""} />
           <EditableField initiativeId={params.id} field="enjeux" label="Enjeux" placeholder="Ce qui est en jeu pour l'établissement, les équipes, les patients…" initial={initiative.enjeux || ""} />
         </div>
       </section>
@@ -89,15 +89,15 @@ export default async function CadragePage({ params }: { params: { id: string } }
       <section className="mt-8">
         <SectionTitle>Objectifs & critères de succès</SectionTitle>
         <div className="grid md:grid-cols-2 gap-4">
-          <EditableField initiativeId={params.id} field="objectifs" label="Objectifs" placeholder="Ce que le projet doit permettre d'atteindre" initial={initiative.objectifs || ""} />
-          <EditableField initiativeId={params.id} field="criteresSucces" label="Critères de succès" placeholder="Comment saura-t-on que le projet a réussi ?" initial={initiative.criteresSucces || ""} />
+          <EditableField initiativeId={params.id} field="objectifs" label="Objectifs" placeholder="Ce que l'initiative doit permettre d'atteindre" initial={initiative.objectifs || ""} />
+          <EditableField initiativeId={params.id} field="criteresSucces" label="Critères de succès" placeholder="Comment saura-t-on que l'initiative a réussi ?" initial={initiative.criteresSucces || ""} />
         </div>
       </section>
 
       <section className="mt-8">
         <SectionTitle>Périmètre</SectionTitle>
         <div className="grid md:grid-cols-2 gap-4">
-          <EditableField initiativeId={params.id} field="perimetre" label="Périmètre" placeholder="Ce qui est couvert par le projet" initial={initiative.perimetre || ""} />
+          <EditableField initiativeId={params.id} field="perimetre" label="Périmètre" placeholder="Ce qui est couvert par l'initiative" initial={initiative.perimetre || ""} />
           <EditableField initiativeId={params.id} field="exclusions" label="Exclusions" placeholder="Ce qui est explicitement hors périmètre" initial={initiative.exclusions || ""} />
         </div>
         {initiative.establishments.length > 0 && (
@@ -160,7 +160,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
 
         {actors.length === 0 ? (
           <>
-            <p className="text-sm text-body mb-3">Aucun acteur renseigné pour ce projet.</p>
+            <p className="text-sm text-body mb-3">Aucun acteur renseigné pour cette initiative.</p>
             <ActorForm initiativeId={params.id} />
           </>
         ) : (
@@ -235,7 +235,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
             </div>
           </div>
         ) : (
-          <div className="card text-center text-ink/50 py-6 mb-4">Aucun budget renseigné pour ce projet.</div>
+          <div className="card text-center text-ink/50 py-6 mb-4">Aucun budget renseigné pour cette initiative.</div>
         )}
         <BudgetLineForm initiativeId={params.id} />
         {initiative.budgetLines.length > 0 && <BudgetLinesTable lines={initiative.budgetLines} />}

@@ -75,7 +75,7 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
           </SynthItem>
         </div>
         <div className="mt-4 pt-4 border-t border-teal-50 text-sm">
-          <div className="font-medium mb-1">État du projet : {score.label}</div>
+          <div className="font-medium mb-1">État de l'initiative : {score.label}</div>
           <div className="text-ink/60">{score.reasons.join(" · ")}</div>
         </div>
         {eventsSince.length > 0 && (

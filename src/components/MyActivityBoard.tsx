@@ -35,7 +35,7 @@ export function MyActivityBoard({ defaultName }: { defaultName: string }) {
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Mon activité</h1>
         <p className="text-sm text-muted">
-          Ce qui vous concerne, rapproché par nom entre votre compte et les projets (chef de projet, responsable, propriétaire…).
+          Ce qui vous concerne, rapproché par nom entre votre compte et les initiatives (chef de projet, responsable, propriétaire…).
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export function MyActivityBoard({ defaultName }: { defaultName: string }) {
           load(name);
         }}
       >
-        <input className="input max-w-xs" placeholder="Nom utilisé dans les projets" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="input max-w-xs" placeholder="Nom utilisé dans les initiatives" value={name} onChange={(e) => setName(e.target.value)} />
         <button className="btn shrink-0" type="submit">
           Actualiser
         </button>
@@ -58,7 +58,7 @@ export function MyActivityBoard({ defaultName }: { defaultName: string }) {
         <>
           {items.length === 0 ? (
             <div className="card text-center text-ink/50 py-10">
-              Aucun élément trouvé pour « {name} » — vérifiez l'orthographe utilisée dans les projets (chef de projet, responsable…).
+              Aucun élément trouvé pour « {name} » — vérifiez l'orthographe utilisée dans les initiatives (chef de projet, responsable…).
             </div>
           ) : (
             <div className="space-y-2">

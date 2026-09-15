@@ -38,7 +38,7 @@ export default async function ReportsPage() {
       <div>
         <PortfolioTabs />
         <h1 className="font-display text-2xl text-ink mb-4">Rapports</h1>
-        <div className="card text-center text-ink/50 py-14">Aucun projet pour construire de statistiques.</div>
+        <div className="card text-center text-ink/50 py-14">Aucune initiative pour construire de statistiques.</div>
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default async function ReportsPage() {
           </div>
         )}
         <div className="card">
-          <div className="font-medium text-sm mb-3">Projets créés par mois</div>
+          <div className="font-medium text-sm mb-3">Initiatives créées par mois</div>
           <BarList data={months} />
         </div>
       </div>
@@ -124,7 +124,7 @@ export default async function ReportsPage() {
 
       <div className="card mt-6">
         <div className="font-medium text-sm mb-1">Synthèse COPIL</div>
-        <p className="text-xs text-muted mb-3">Générez en un clic la synthèse d'un projet pour préparer un comité de pilotage.</p>
+        <p className="text-xs text-muted mb-3">Générez en un clic la synthèse d'une initiative pour préparer un comité de pilotage.</p>
         <div className="flex flex-wrap gap-2">
           {initiatives.map((p) => (
             <Link key={p.id} href={`/initiatives/${p.id}/copil`} className="text-sm px-3 py-1.5 rounded-lg bg-ink/5 text-ink/70 hover:bg-teal-50 hover:text-primary transition-colors">

@@ -60,7 +60,7 @@ export function InitiativeDescriptionEditor({ initiativeId, initial }: { initiat
       initiativeId={initiativeId}
       field="description"
       label="Contexte"
-      placeholder="Pourquoi ce projet, dans quel contexte ?"
+      placeholder="Pourquoi cette initiative, dans quel contexte ?"
       initial={initial}
     />
   );

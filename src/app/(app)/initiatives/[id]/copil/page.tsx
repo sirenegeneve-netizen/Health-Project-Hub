@@ -79,7 +79,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
     <div className="max-w-3xl mx-auto print:max-w-none">
       <div className="flex items-center justify-between mb-6 print:hidden">
         <Link href={`/initiatives/${initiative.id}`} className="text-sm text-blue hover:underline">
-          ← Retour au projet
+          ← Retour à l'initiative
         </Link>
         <PrintButton />
       </div>
@@ -200,7 +200,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
             {formatEur(budget.reel)} consommés sur {formatEur(budget.budget)} ({budget.consumptionRate}%)
           </p>
         ) : (
-          <p className="text-sm text-ink/50">Budget non renseigné pour ce projet.</p>
+          <p className="text-sm text-ink/50">Budget non renseigné pour cette initiative.</p>
         )}
       </Section>
 

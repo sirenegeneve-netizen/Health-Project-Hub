@@ -62,11 +62,11 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
     <div>
       <PortfolioTabs />
       <div className="mb-6">
-        <h1 className="font-display text-2xl text-ink">Projets</h1>
+        <h1 className="font-display text-2xl text-ink">Initiatives</h1>
         <p className="text-sm text-muted">
           {scope.establishmentName
-            ? `Tous les projets de ${scope.establishmentName}.`
-            : "Tous les projets du groupe, tous établissements confondus."}
+            ? `Toutes les initiatives de ${scope.establishmentName}.`
+            : "Toutes les initiatives du groupe, tous établissements confondus."}
         </p>
       </div>
       <InitiativesExplorer initiatives={items} initialTab={searchParams.vue} />

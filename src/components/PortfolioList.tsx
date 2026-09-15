@@ -53,7 +53,7 @@ export function PortfolioList({ initiatives }: { initiatives: PortfolioInitiativ
       <div className="flex flex-wrap gap-3 mb-4">
         <input
           className="input max-w-xs"
-          placeholder="Rechercher un projet…"
+          placeholder="Rechercher une initiative…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -107,7 +107,7 @@ export function PortfolioList({ initiatives }: { initiatives: PortfolioInitiativ
             </div>
           </Link>
         ))}
-        {filtered.length === 0 && <div className="card text-center text-ink/50 py-10">Aucun projet ne correspond à ces filtres.</div>}
+        {filtered.length === 0 && <div className="card text-center text-ink/50 py-10">Aucune initiative ne correspond à ces filtres.</div>}
       </div>
     </div>
   );

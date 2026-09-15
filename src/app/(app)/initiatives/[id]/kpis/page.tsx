@@ -17,7 +17,7 @@ export default async function KpisPage({ params }: { params: { id: string } }) {
       <KpiForm initiativeId={params.id} />
 
       {kpis.length === 0 ? (
-        <div className="card text-center text-ink/50 py-10">Aucun indicateur défini pour ce projet.</div>
+        <div className="card text-center text-ink/50 py-10">Aucun indicateur défini pour cette initiative.</div>
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {kpis.map((k) => {

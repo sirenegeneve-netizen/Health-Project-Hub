@@ -54,7 +54,7 @@ export function InitiativeEditForm({
   if (!open) {
     return (
       <button className="btn-secondary" onClick={() => setOpen(true)}>
-        Mettre à jour le projet
+        Mettre à jour l'initiative
       </button>
     );
   }

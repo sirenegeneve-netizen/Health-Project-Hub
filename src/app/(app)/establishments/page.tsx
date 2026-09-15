@@ -26,7 +26,7 @@ export default async function EstablishmentsPage() {
 
       {establishments.length === 0 ? (
         <div className="card text-center text-ink/50 py-14">
-          Aucun établissement créé. Un projet ne peut être rattaché qu'à un établissement existant — créez-en un pour commencer.
+          Aucun établissement créé. Une initiative ne peut être rattachée qu'à un établissement existant — créez-en un pour commencer.
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-3">
@@ -50,7 +50,7 @@ export default async function EstablishmentsPage() {
                   ))}
                 </ul>
               ) : (
-                <div className="text-sm text-muted">Aucun projet rattaché</div>
+                <div className="text-sm text-muted">Aucune initiative rattachée</div>
               )}
             </div>
           ))}

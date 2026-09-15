@@ -28,7 +28,7 @@ export default async function ChangesPage({ params }: { params: { id: string } }
       <ChangeForm initiativeId={params.id} />
 
       {changes.length === 0 ? (
-        <div className="card text-center text-ink/50 py-10">Aucune demande de changement pour ce projet.</div>
+        <div className="card text-center text-ink/50 py-10">Aucune demande de changement pour cette initiative.</div>
       ) : (
         <div className="space-y-3">
           {changes.map((c) => (

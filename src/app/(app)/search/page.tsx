@@ -39,7 +39,7 @@ function SearchInner() {
       <input
         autoFocus
         className="input mb-6"
-        placeholder="Rechercher un projet, une action, une interface, un mail…"
+        placeholder="Rechercher une initiative, une action, une interface, un mail…"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);

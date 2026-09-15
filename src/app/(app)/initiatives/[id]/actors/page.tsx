@@ -39,7 +39,7 @@ export default async function GovernancePage({ params }: { params: { id: string 
 
       {actors.length === 0 ? (
         <>
-          <p className="text-sm text-body mb-3">Ajoutez d'abord les acteurs du projet pour construire la matrice.</p>
+          <p className="text-sm text-body mb-3">Ajoutez d'abord les acteurs de l'initiative pour construire la matrice.</p>
           <ActorForm initiativeId={params.id} />
         </>
       ) : (
@@ -61,7 +61,7 @@ export default async function GovernancePage({ params }: { params: { id: string 
                   <thead>
                     <tr className="bg-teal-50/50">
                       <th className="pl-4">Nom</th>
-                      <th>Rôle projet</th>
+                      <th>Rôle</th>
                       <th>Fonction</th>
                       <th>Organisation</th>
                       <th>Contact</th>

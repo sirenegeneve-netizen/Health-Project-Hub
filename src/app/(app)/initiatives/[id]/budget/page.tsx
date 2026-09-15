@@ -37,7 +37,7 @@ export default async function BudgetPage({ params }: { params: { id: string } })
         </div>
       ) : (
         <div className="card text-center py-10 mb-6">
-          <p className="text-ink/60 mb-1">Aucun budget renseigné pour ce projet.</p>
+          <p className="text-ink/60 mb-1">Aucun budget renseigné pour cette initiative.</p>
           <p className="text-sm text-ink/40">Définissez un budget cible ci-dessus pour suivre la consommation.</p>
         </div>
       )}

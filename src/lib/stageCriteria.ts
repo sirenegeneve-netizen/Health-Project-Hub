@@ -25,7 +25,7 @@ const SEED_DEFAULT_TEMPLATES: Record<CriteriaStageKey, string[]> = {
     "Planning détaillé partagé",
   ],
   cloture: [
-    "Objectifs du projet atteints",
+    "Objectifs de l'initiative atteints",
     "Livrables terminés",
     "Risques résiduels revus",
     "Budget final validé",

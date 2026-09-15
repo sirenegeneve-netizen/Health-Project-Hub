@@ -54,7 +54,7 @@ export default async function DeliverablesPage({ params }: { params: { id: strin
           </table>
         </div>
       ) : (
-        <div className="card text-center text-ink/50 py-10">Aucun livrable identifié pour ce projet.</div>
+        <div className="card text-center text-ink/50 py-10">Aucun livrable identifié pour cette initiative.</div>
       )}
     </div>
   );

@@ -35,7 +35,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     title: "Pilotage",
     items: [
       { href: "/", label: "Portefeuille", Icon: LayoutGrid },
-      { href: "/initiatives", label: "Projets", Icon: FolderKanban },
+      { href: "/initiatives", label: "Initiatives", Icon: FolderKanban },
     ],
   },
   {
@@ -170,7 +170,7 @@ export function Sidebar() {
           className="flex items-center gap-2 justify-center rounded-lg px-4 py-2.5 text-sm font-medium bg-primary hover:bg-primary-600 transition-colors"
         >
           <Plus size={16} />
-          Nouveau projet
+          Nouvelle initiative
         </Link>
       </div>
 

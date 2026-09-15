@@ -24,7 +24,7 @@ export default async function RoadmapPage() {
         <PlanningLevelToggle level="simple" />
         <h1 className="font-display text-2xl text-ink mb-4">Roadmap portefeuille</h1>
         <div className="card text-center text-ink/50 py-14">
-          Aucun projet avec une date de début ou une date cible pour construire la roadmap.
+          Aucune initiative avec une date de début ou une date cible pour construire la roadmap.
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export default async function RoadmapPage() {
       <PlanningLevelToggle level="simple" />
       <div className="mb-6">
         <h1 className="font-display text-2xl text-ink">Roadmap portefeuille</h1>
-        <p className="text-sm text-muted">Tous les projets actifs sur une même ligne temporelle — chevauchements et périodes critiques en un coup d'œil.</p>
+        <p className="text-sm text-muted">Toutes les initiatives actives sur une même ligne temporelle — chevauchements et périodes critiques en un coup d'œil.</p>
       </div>
 
       <div className="card overflow-x-auto">
@@ -127,7 +127,7 @@ export default async function RoadmapPage() {
 
       {initiatives.length > dated.length && (
         <p className="text-xs text-muted/70 mt-4">
-          {initiatives.length - dated.length} projet(s) actif(s) sans date de début ni date cible ne sont pas représentés.
+          {initiatives.length - dated.length} initiative(s) active(s) sans date de début ni date cible ne sont pas représentée(s).
         </p>
       )}
     </div>
