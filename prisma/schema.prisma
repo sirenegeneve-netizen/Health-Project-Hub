@@ -112,6 +112,8 @@ model Actor {
   trainingSessionsAsFormateur TrainingSession[] @relation("TrainingFormateur")
   trainingRecordsAsReferent   TrainingRecord[]  @relation("TrainingReferent")
   incidentsDeclares           Incident[]        @relation("IncidentDeclarant")
+  initiativesAsChefDeProjet   Initiative[]      @relation("InitiativeChefDeProjet")
+  initiativesAsSponsor        Initiative[]      @relation("InitiativeSponsor")
   createdAt       DateTime    @default(now())
 }
 
@@ -187,8 +189,19 @@ model Initiative {
   groupId     String
   group       Group    @relation(fields: [groupId], references: [id])
 
+  // Champs texte legacy — conservés en secours d'affichage/compatibilité.
+  // Ne pas supprimer avant validation complète de la migration vers
+  // chefDeProjetId/sponsorId en production (voir prisma/migrate-chef-sponsor.ts).
   chefDeProjet String?
   sponsor      String?
+
+  // Rattachement au référentiel Acteur (chantier "chefDeProjet/sponsor →
+  // Acteur"). Optionnels : peuvent rester non renseignés tant que la
+  // migration n'a pas statué sur un cas donné.
+  chefDeProjetId String?
+  chefDeProjetActor Actor? @relation("InitiativeChefDeProjet", fields: [chefDeProjetId], references: [id])
+  sponsorId      String?
+  sponsorActor   Actor? @relation("InitiativeSponsor", fields: [sponsorId], references: [id])
 
   startDate  DateTime?
   targetDate DateTime?

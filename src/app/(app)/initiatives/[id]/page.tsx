@@ -24,6 +24,9 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
       budgetLines: true,
       baselines: { orderBy: { createdAt: "asc" } },
       timelineEvents: { orderBy: { date: "desc" }, take: 6 },
+      chefDeProjetActor: true,
+      sponsorActor: true,
+      actors: { orderBy: { name: "asc" }, select: { id: true, name: true, fonction: true } },
     },
   });
   if (!initiative) notFound();
@@ -155,7 +158,10 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
             jhConsommes: initiative.jhConsommes,
             chefDeProjet: initiative.chefDeProjet,
             sponsor: initiative.sponsor,
+            chefDeProjetId: initiative.chefDeProjetId,
+            sponsorId: initiative.sponsorId,
           }}
+          acteurs={initiative.actors}
           phaseOptions={workflowStages.map((s) => ({ key: s.key, label: s.label }))}
         />
       </div>

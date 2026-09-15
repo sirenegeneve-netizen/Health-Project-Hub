@@ -70,6 +70,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       type: body.type,
       chefDeProjet: body.chefDeProjet,
       sponsor: body.sponsor,
+      // body.chefDeProjetId / sponsorId : string (id d'Acteur) | null (dérattacher) | undefined (ne pas toucher).
+      chefDeProjetId: body.chefDeProjetId !== undefined ? (body.chefDeProjetId || null) : undefined,
+      sponsorId: body.sponsorId !== undefined ? (body.sponsorId || null) : undefined,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       targetDate: body.targetDate ? new Date(body.targetDate) : undefined,
       status: body.status,

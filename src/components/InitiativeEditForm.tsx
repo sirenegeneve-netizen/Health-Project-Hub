@@ -14,13 +14,19 @@ type Initiative = {
   jhConsommes: number;
   chefDeProjet: string | null;
   sponsor: string | null;
+  chefDeProjetId: string | null;
+  sponsorId: string | null;
 };
+
+type ActeurOption = { id: string; name: string; fonction: string | null };
 
 export function InitiativeEditForm({
   initiative,
+  acteurs,
   phaseOptions,
 }: {
   initiative: Initiative;
+  acteurs: ActeurOption[];
   phaseOptions: { key: string; label: string }[];
 }) {
   const router = useRouter();
@@ -37,6 +43,8 @@ export function InitiativeEditForm({
     jhConsommes: String(initiative.jhConsommes),
     chefDeProjet: initiative.chefDeProjet || "",
     sponsor: initiative.sponsor || "",
+    chefDeProjetId: initiative.chefDeProjetId || "",
+    sponsorId: initiative.sponsorId || "",
   });
 
   async function save() {
@@ -96,11 +104,33 @@ export function InitiativeEditForm({
       </Field>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Field label="Chef de projet">
+        <Field label="Chef de projet (texte libre — historique)">
           <input className="input" value={form.chefDeProjet} onChange={(e) => setForm({ ...form, chefDeProjet: e.target.value })} />
         </Field>
-        <Field label="Sponsor">
+        <Field label="Sponsor (texte libre — historique)">
           <input className="input" value={form.sponsor} onChange={(e) => setForm({ ...form, sponsor: e.target.value })} />
+        </Field>
+        <Field label="Chef de projet — Acteur rattaché">
+          <select className="input" value={form.chefDeProjetId} onChange={(e) => setForm({ ...form, chefDeProjetId: e.target.value })}>
+            <option value="">— Non rattaché —</option>
+            {acteurs.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+                {a.fonction ? ` — ${a.fonction}` : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Sponsor — Acteur rattaché">
+          <select className="input" value={form.sponsorId} onChange={(e) => setForm({ ...form, sponsorId: e.target.value })}>
+            <option value="">— Non rattaché —</option>
+            {acteurs.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+                {a.fonction ? ` — ${a.fonction}` : ""}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="JH budgétés">
           <input type="number" className="input" value={form.budgetJh} onChange={(e) => setForm({ ...form, budgetJh: e.target.value })} />
