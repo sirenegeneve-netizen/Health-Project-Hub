@@ -7,11 +7,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
-  let groupId = body.groupId as string | undefined;
+  const groupId = body.groupId as string | undefined;
   if (!groupId) {
-    const firstGroup = await prisma.group.findFirst();
-    groupId = firstGroup ? firstGroup.id : (await prisma.group.create({ data: { name: "Groupe par défaut" } })).id;
+    return NextResponse.json({ error: "groupId est requis — un établissement doit être rattaché à un groupe explicitement choisi." }, { status: 400 });
   }
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return NextResponse.json({ error: "Groupe introuvable." }, { status: 404 });
+
   const establishment = await prisma.establishment.create({
     data: {
       name: body.name,

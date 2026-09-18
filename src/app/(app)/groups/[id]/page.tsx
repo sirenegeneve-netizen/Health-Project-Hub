@@ -5,6 +5,7 @@ import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary } from "@/lib/metrics";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
 import { GroupContacts } from "@/components/GroupContacts";
+import { EstablishmentForm } from "@/components/EstablishmentForm";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +137,7 @@ export default async function GroupDetailPage({ params }: { params: { id: string
       <div className="space-y-4">
         <div className="card">
           <h3 className="font-medium text-ink mb-3">Établissements</h3>
+          <EstablishmentForm groupId={group.id} />
           {group.establishments.length === 0 ? (
             <p className="text-sm text-ink/40">Aucun établissement.</p>
           ) : (

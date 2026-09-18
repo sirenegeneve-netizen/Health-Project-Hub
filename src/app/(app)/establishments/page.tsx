@@ -14,15 +14,18 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function EstablishmentsPage() {
-  const establishments = await prisma.establishment.findMany({
-    include: { initiatives: { include: { initiative: true } }, group: true },
-    orderBy: { name: "asc" },
-  });
+  const [establishments, groups] = await Promise.all([
+    prisma.establishment.findMany({
+      include: { initiatives: { include: { initiative: true } }, group: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.group.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
 
   return (
     <div>
       <h1 className="font-display text-2xl text-ink mb-4">Établissements</h1>
-      <EstablishmentForm />
+      <EstablishmentForm groups={groups} />
 
       {establishments.length === 0 ? (
         <div className="card text-center text-ink/50 py-14">

@@ -16,9 +16,16 @@ const TYPES = [
   ["autre", "Autre"],
 ];
 
-export function NewInitiativeForm({ establishments }: { establishments: { id: string; name: string }[] }) {
+export function NewInitiativeForm({
+  groups,
+  establishments,
+}: {
+  groups: { id: string; name: string }[];
+  establishments: { id: string; name: string; groupId: string }[];
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [groupId, setGroupId] = useState(groups[0]?.id || "");
   const [form, setForm] = useState({
     reference: "",
     name: "",
@@ -34,21 +41,52 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
   });
   const [establishmentIds, setEstablishmentIds] = useState<string[]>([]);
 
+  const establishmentsInGroup = establishments.filter((e) => e.groupId === groupId);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!groupId) return;
     setSaving(true);
     const res = await fetch("/api/initiatives", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, establishmentIds }),
+      body: JSON.stringify({ ...form, groupId, establishmentIds }),
     });
     const initiative = await res.json();
     setSaving(false);
     router.push(`/initiatives/${initiative.id}`);
   }
 
+  if (groups.length === 0) {
+    return (
+      <div className="card max-w-2xl">
+        <p className="text-sm text-bad">
+          Créez d'abord un groupe (page Groupes) avant de pouvoir créer une initiative — une initiative appartient toujours à un groupe.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={submit} className="card space-y-4 max-w-2xl">
+      <Field label="Groupe">
+        <select
+          required
+          className="input"
+          value={groupId}
+          onChange={(e) => {
+            setGroupId(e.target.value);
+            setEstablishmentIds([]); // les établissements sélectionnés dépendent du groupe
+          }}
+        >
+          {groups.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+
       <div className="grid grid-cols-2 gap-4">
         <Field label="Référence">
           <input required className="input" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
@@ -106,9 +144,9 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
         </Field>
       </div>
 
-      <Field label="Établissement(s) concerné(s)">
+      <Field label="Établissement(s) concerné(s) — dans le groupe sélectionné">
         <div className="flex flex-wrap gap-2">
-          {establishments.map((e) => (
+          {establishmentsInGroup.map((e) => (
             <label key={e.id} className="flex items-center gap-1.5 text-sm border border-teal-100 rounded px-2 py-1">
               <input
                 type="checkbox"
@@ -120,11 +158,13 @@ export function NewInitiativeForm({ establishments }: { establishments: { id: st
               {e.name}
             </label>
           ))}
-          {establishments.length === 0 && <span className="text-sm text-ink/50">Aucun établissement enregistré pour l'instant.</span>}
+          {establishmentsInGroup.length === 0 && (
+            <span className="text-sm text-ink/50">Aucun établissement dans ce groupe pour l'instant.</span>
+          )}
         </div>
       </Field>
 
-      <button className="btn" disabled={saving} type="submit">
+      <button className="btn" disabled={saving || !groupId} type="submit">
         {saving ? "Création…" : "Créer l'initiative"}
       </button>
     </form>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary } from "@/lib/metrics";
+import { GroupForm } from "@/components/GroupForm";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,8 @@ export default async function GroupsPage() {
         <h1 className="font-display text-2xl text-ink">Groupes</h1>
         <p className="text-sm text-muted">Vision consolidée par groupe de santé — établissements, initiatives, santé du portefeuille, budget.</p>
       </div>
+
+      <GroupForm />
 
       {rows.length === 0 ? (
         <p className="text-sm text-ink/40">Aucun groupe pour l'instant.</p>

@@ -21,10 +21,18 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { establishmentIds, ...data } = body;
 
-  let groupId = data.groupId as string | undefined;
+  const groupId = data.groupId as string | undefined;
   if (!groupId) {
-    const firstGroup = await prisma.group.findFirst();
-    groupId = firstGroup ? firstGroup.id : (await prisma.group.create({ data: { name: "Groupe par défaut" } })).id;
+    return NextResponse.json({ error: "groupId est requis — une initiative doit être rattachée à un groupe explicitement choisi." }, { status: 400 });
+  }
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return NextResponse.json({ error: "Groupe introuvable." }, { status: 404 });
+
+  if (establishmentIds?.length) {
+    const count = await prisma.establishment.count({ where: { id: { in: establishmentIds }, groupId } });
+    if (count !== establishmentIds.length) {
+      return NextResponse.json({ error: "Un ou plusieurs établissements sélectionnés n'appartiennent pas au groupe choisi." }, { status: 400 });
+    }
   }
 
   const initiativeType = data.type || "autre";
