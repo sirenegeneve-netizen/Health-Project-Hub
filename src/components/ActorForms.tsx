@@ -156,6 +156,8 @@ export function ActorManageRow({
     </tr>
   );
 }
+
+export function ActorForm({ initiativeId }: { initiativeId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ name: "", fonction: "", organisation: "", roleProjet: "consultant", email: "", disponibiliteJh: "" });
