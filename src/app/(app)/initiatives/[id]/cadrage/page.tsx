@@ -12,6 +12,7 @@ import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 import { computeCadrageReadiness } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
+import { InitiativeEstablishmentManager } from "@/components/InitiativeEstablishmentManager";
 
 export const dynamic = "force-dynamic";
 
@@ -39,11 +40,12 @@ export default async function CadragePage({ params }: { params: { id: string } }
   });
   if (!initiative) notFound();
 
-  const [stakeholders, actors, raciEntries, risks] = await Promise.all([
+  const [stakeholders, actors, raciEntries, risks, groupEstablishments] = await Promise.all([
     prisma.stakeholder.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } }),
     findInitiativeActors(params.id),
     prisma.raciEntry.findMany({ where: { initiativeId: params.id } }),
     prisma.risk.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
+    prisma.establishment.findMany({ where: { groupId: initiative.groupId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   const actorsById = new Map(actors.map((a) => [a.id, a.name]));
@@ -100,13 +102,16 @@ export default async function CadragePage({ params }: { params: { id: string } }
           <EditableField initiativeId={params.id} field="perimetre" label="Périmètre" placeholder="Ce qui est couvert par l'initiative" initial={initiative.perimetre || ""} />
           <EditableField initiativeId={params.id} field="exclusions" label="Exclusions" placeholder="Ce qui est explicitement hors périmètre" initial={initiative.exclusions || ""} />
         </div>
-        {initiative.establishments.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
-            {initiative.establishments.map((e) => (
-              <Pill key={e.id} text={e.establishment.name} />
-            ))}
-          </div>
-        )}
+        <div className="mt-4">
+          <div className="label mb-1.5">Établissements rattachés</div>
+          <InitiativeEstablishmentManager
+            initiativeId={params.id}
+            linked={initiative.establishments.map((e) => ({ linkId: e.id, id: e.establishmentId, name: e.establishment.name }))}
+            available={groupEstablishments
+              .filter((ge) => !initiative.establishments.some((e) => e.establishmentId === ge.id))
+              .map((ge) => ({ id: ge.id, name: ge.name }))}
+          />
+        </div>
       </section>
 
       <section className="mt-8 mb-4">

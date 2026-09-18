@@ -16,3 +16,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
   return NextResponse.json(updated);
 }
+
+// Retire le rattachement d'un établissement à l'initiative (ne supprime pas
+// l'établissement lui-même, juste le lien many-to-many pour cette initiative).
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { user } = await requireUser();
+  if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
+  await prisma.initiativeEstablishment.delete({ where: { id: params.id } });
+  return NextResponse.json({ ok: true });
+}
