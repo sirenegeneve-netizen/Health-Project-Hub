@@ -9,6 +9,7 @@ import { InitiativeEditForm } from "@/components/InitiativeEditForm";
 import { InitiativeJourney } from "@/components/InitiativeJourney";
 import { computeStages } from "@/lib/lifecycle";
 import { getWorkflowStages } from "@/lib/workflowStages";
+import { findInitiativeActors } from "@/lib/actorScope";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,15 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
       timelineEvents: { orderBy: { date: "desc" }, take: 6 },
       chefDeProjetActor: true,
       sponsorActor: true,
-      actors: { orderBy: { name: "asc" }, select: { id: true, name: true, fonction: true } },
     },
   });
   if (!initiative) notFound();
+
+  const scopedActeurs = await findInitiativeActors(params.id, {
+    id: true,
+    name: true,
+    fonction: true,
+  } as any);
 
   const workflowStages = await getWorkflowStages(initiative.type);
 
@@ -161,7 +167,7 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
             chefDeProjetId: initiative.chefDeProjetId,
             sponsorId: initiative.sponsorId,
           }}
-          acteurs={initiative.actors}
+          acteurs={scopedActeurs as any}
           phaseOptions={workflowStages.map((s) => ({ key: s.key, label: s.label }))}
         />
       </div>

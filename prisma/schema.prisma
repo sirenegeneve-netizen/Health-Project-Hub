@@ -93,6 +93,12 @@ model Actor {
   initiativeId       String? @map("projectId")
   initiative         Initiative?     @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
   name            String
+  // Désactivation douce plutôt que suppression : un Acteur est référencé par
+  // beaucoup d'historique (RACI, actions, risques, décisions, réunions,
+  // formations, incidents, chefDeProjet/sponsor d'Initiative). Le supprimer
+  // pour de vrai effacerait ou casserait cet historique. `actif = false`
+  // retire l'acteur des listes de sélection sans toucher à l'existant.
+  actif           Boolean     @default(true)
   fonction        String?
   organisation    String?
   roleProjet      String? // chef_de_projet | consultant | consultant_fonctionnel | consultant_interop | expert_metier | developpeur | formateur | support | expert_externe | referent_etablissement

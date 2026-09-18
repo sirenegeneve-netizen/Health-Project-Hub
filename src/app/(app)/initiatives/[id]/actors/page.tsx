@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
-import { ActorForm } from "@/components/ActorForms";
+import { ActorForm, ActorManageRow } from "@/components/ActorForms";
 import { RaciBoard } from "@/components/RaciBoard";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +24,23 @@ export default async function GovernancePage({ params }: { params: { id: string 
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
 
-  const [actors, raciEntries] = await Promise.all([
+  const [activeActors, allActors, raciEntries] = await Promise.all([
     findInitiativeActors(params.id),
+    findInitiativeActors(params.id, undefined, { includeInactive: true }),
     prisma.raciEntry.findMany({ where: { initiativeId: params.id } }),
   ]);
+  const actors = allActors as unknown as Array<{
+    id: string;
+    name: string;
+    actif: boolean;
+    roleProjet: string | null;
+    fonction: string | null;
+    organisation: string | null;
+    email: string | null;
+    telephone: string | null;
+    disponibiliteJh: number | null;
+    competences: string | null;
+  }>;
 
   return (
     <div>
@@ -37,7 +50,7 @@ export default async function GovernancePage({ params }: { params: { id: string 
         <p className="text-sm text-muted">Qui est responsable de quoi — la matrice est l'objet principal, pas une conséquence de la liste d'acteurs.</p>
       </div>
 
-      {actors.length === 0 ? (
+      {activeActors.length === 0 ? (
         <>
           <p className="text-sm text-body mb-3">Ajoutez d'abord les acteurs de l'initiative pour construire la matrice.</p>
           <ActorForm initiativeId={params.id} />
@@ -46,7 +59,7 @@ export default async function GovernancePage({ params }: { params: { id: string 
         <>
           <RaciBoard
             initiativeId={params.id}
-            actors={actors.map((a) => ({ id: a.id, name: a.name }))}
+            actors={activeActors.map((a) => ({ id: a.id, name: a.name }))}
             entries={raciEntries.map((e) => ({ actorId: e.actorId, activite: e.activite, role: e.role }))}
           />
 
@@ -66,18 +79,13 @@ export default async function GovernancePage({ params }: { params: { id: string 
                       <th>Organisation</th>
                       <th>Contact</th>
                       <th>Disponibilité</th>
+                      <th>Statut</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {actors.map((a) => (
-                      <tr key={a.id}>
-                        <td className="pl-4 font-medium">{a.name}</td>
-                        <td>{a.roleProjet ? ROLE_LABELS[a.roleProjet] || a.roleProjet : "—"}</td>
-                        <td>{a.fonction || "—"}</td>
-                        <td>{a.organisation || "—"}</td>
-                        <td className="text-sm">{a.email || "—"}</td>
-                        <td>{a.disponibiliteJh !== null ? `${a.disponibiliteJh} JH` : "—"}</td>
-                      </tr>
+                      <ActorManageRow key={a.id} actor={a} roleLabels={ROLE_LABELS} />
                     ))}
                   </tbody>
                 </table>

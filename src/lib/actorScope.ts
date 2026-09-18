@@ -8,7 +8,8 @@ import { prisma } from "@/lib/db";
 // même établissement au lieu de le recréer à chaque fois.
 export async function findInitiativeActors<T extends { id: true; name: true } | undefined = undefined>(
   initiativeId: string,
-  select?: T
+  select?: T,
+  options?: { includeInactive?: boolean }
 ) {
   const initiative = await prisma.initiative.findUnique({
     where: { id: initiativeId },
@@ -20,6 +21,7 @@ export async function findInitiativeActors<T extends { id: true; name: true } | 
 
   return prisma.actor.findMany({
     where: {
+      ...(options?.includeInactive ? {} : { actif: true }),
       OR: [
         { initiativeId },
         {
