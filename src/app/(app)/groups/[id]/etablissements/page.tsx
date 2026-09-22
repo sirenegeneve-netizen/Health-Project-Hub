@@ -22,6 +22,8 @@ export default async function GroupEstablishmentsPage({ params }: { params: { id
   });
   if (!group) notFound();
 
+  const actifs = group.establishments.filter((e) => e.status !== "inactif").length;
+
   return (
     <div>
       <div className="mb-4">
@@ -32,7 +34,9 @@ export default async function GroupEstablishmentsPage({ params }: { params: { id
       <h1 className="font-display text-2xl text-ink mb-1">{group.name}</h1>
       <GroupTabs groupId={group.id} />
 
-      <h2 className="font-medium text-ink mb-3">Établissements ({group.establishments.length})</h2>
+      <h2 className="font-medium text-ink mb-3">
+        Établissements ({group.establishments.length}, {actifs} actif{actifs > 1 ? "s" : ""})
+      </h2>
       <EstablishmentForm groupId={group.id} />
 
       {group.establishments.length === 0 ? (
@@ -43,7 +47,10 @@ export default async function GroupEstablishmentsPage({ params }: { params: { id
             <Link key={e.id} href={`/establishments/${e.id}`} className="card hover:border-blue transition-colors">
               <div className="flex items-start justify-between gap-3 mb-1">
                 <span className="font-medium text-ink">{e.name}</span>
-                {e.type && <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5">{TYPE_LABELS[e.type] || e.type}</span>}
+                <div className="flex gap-1.5 shrink-0">
+                  {e.status === "inactif" && <span className="text-xs bg-ink/10 text-ink/60 rounded px-2 py-0.5">Inactif</span>}
+                  {e.type && <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5">{TYPE_LABELS[e.type] || e.type}</span>}
+                </div>
               </div>
               <div className="text-xs text-muted">{e.localisation || "Localisation non renseignée"}</div>
               <div className="text-xs text-ink/40 mt-1">

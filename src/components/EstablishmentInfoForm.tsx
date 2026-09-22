@@ -3,8 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const TYPES = [
+  ["hopital", "Hôpital"],
+  ["clinique", "Clinique"],
+  ["ehpad", "EHPAD"],
+  ["cabinet", "Cabinet"],
+  ["ght", "GHT"],
+  ["autre", "Autre"],
+];
+
 interface EstablishmentInfo {
   id: string;
+  name: string;
+  type: string | null;
+  status: string;
+  localisation: string | null;
   adresse: string | null;
   ville: string | null;
   pays: string | null;
@@ -29,6 +42,10 @@ export function EstablishmentInfoForm({ establishment }: { establishment: Establ
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [f, setF] = useState({
+    name: establishment.name,
+    type: establishment.type || "hopital",
+    status: establishment.status || "actif",
+    localisation: establishment.localisation || "",
     adresse: establishment.adresse || "",
     ville: establishment.ville || "",
     pays: establishment.pays || "",
@@ -59,12 +76,24 @@ export function EstablishmentInfoForm({ establishment }: { establishment: Establ
     return (
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-ink">Infos générales &amp; contrat</h3>
+          <h3 className="font-medium text-ink">Identité &amp; contrat</h3>
           <button className="btn-secondary text-sm" onClick={() => setEditing(true)}>
             Modifier
           </button>
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <dt className="text-ink/40">Type</dt>
+            <dd>{TYPES.find(([v]) => v === establishment.type)?.[1] || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-ink/40">Statut</dt>
+            <dd>{establishment.status === "inactif" ? "Inactif" : "Actif"}</dd>
+          </div>
+          <div>
+            <dt className="text-ink/40">Localisation</dt>
+            <dd>{establishment.localisation || "—"}</dd>
+          </div>
           <div>
             <dt className="text-ink/40">Adresse</dt>
             <dd>{establishment.adresse || "—"}{establishment.ville ? `, ${establishment.ville}` : ""}{establishment.pays ? ` (${establishment.pays})` : ""}</dd>
@@ -112,7 +141,31 @@ export function EstablishmentInfoForm({ establishment }: { establishment: Establ
 
   return (
     <div className="card space-y-3">
-      <h3 className="font-medium text-ink">Infos générales &amp; contrat</h3>
+      <h3 className="font-medium text-ink">Identité &amp; contrat</h3>
+      <div className="grid grid-cols-3 gap-2">
+        <label className="block">
+          <div className="label mb-1">Nom</div>
+          <input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        </label>
+        <label className="block">
+          <div className="label mb-1">Type</div>
+          <select className="input" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+            {TYPES.map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <div className="label mb-1">Statut</div>
+          <select className="input" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+          </select>
+        </label>
+      </div>
+      <input className="input" placeholder="Localisation" value={f.localisation} onChange={(e) => setF({ ...f, localisation: e.target.value })} />
       <div className="grid grid-cols-3 gap-2">
         <input className="input" placeholder="Adresse" value={f.adresse} onChange={(e) => setF({ ...f, adresse: e.target.value })} />
         <input className="input" placeholder="Ville" value={f.ville} onChange={(e) => setF({ ...f, ville: e.target.value })} />

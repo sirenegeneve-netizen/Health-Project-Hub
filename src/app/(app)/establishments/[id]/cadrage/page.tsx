@@ -23,6 +23,10 @@ export default async function EstablishmentCadragePage({ params }: { params: { i
       <EstablishmentInfoForm
         establishment={{
           id: establishment.id,
+          name: establishment.name,
+          type: establishment.type,
+          status: establishment.status,
+          localisation: establishment.localisation,
           adresse: establishment.adresse,
           ville: establishment.ville,
           pays: establishment.pays,

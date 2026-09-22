@@ -14,7 +14,13 @@ const TYPE_LABELS: Record<string, string> = {
   autre: "Autre",
 };
 
-export default async function EstablishmentDetailPage({ params }: { params: { id: string } }) {
+export default async function EstablishmentDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { onboarding?: string };
+}) {
   const establishment = await prisma.establishment.findUnique({
     where: { id: params.id },
     include: {
@@ -40,9 +46,14 @@ export default async function EstablishmentDetailPage({ params }: { params: { id
       </div>
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-display text-2xl text-ink">{establishment.name}</h1>
-        {establishment.type && (
-          <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5 mt-1.5">{TYPE_LABELS[establishment.type] || establishment.type}</span>
-        )}
+        <div className="flex gap-2 mt-1.5">
+          {establishment.status === "inactif" && (
+            <span className="text-xs bg-ink/10 text-ink/60 rounded px-2 py-0.5">Inactif</span>
+          )}
+          {establishment.type && (
+            <span className="text-xs bg-ink/5 text-ink/70 rounded px-2 py-0.5">{TYPE_LABELS[establishment.type] || establishment.type}</span>
+          )}
+        </div>
       </div>
       <div className="text-sm text-muted mb-6">
         <Link href={`/groups/${establishment.groupId}`} className="hover:underline">
@@ -52,6 +63,22 @@ export default async function EstablishmentDetailPage({ params }: { params: { id
       </div>
 
       <EstablishmentTabs establishmentId={establishment.id} />
+
+      {searchParams.onboarding === "1" && (
+        <div className="card mb-4 bg-teal-50/50 border-blue/30 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm text-ink/70">
+            Établissement créé. Vous pouvez compléter les contacts et le périmètre SI quand vous voulez, rien n'est obligatoire maintenant.
+          </div>
+          <div className="flex gap-2 text-sm">
+            <Link href={`/establishments/${establishment.id}/gouvernance`} className="btn-secondary">
+              Ajouter des contacts
+            </Link>
+            <Link href={`/establishments/${establishment.id}/si`} className="btn-secondary">
+              Renseigner le SI
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
         <Link href={`/establishments/${establishment.id}/initiatives`} className="card hover:border-blue transition-colors">

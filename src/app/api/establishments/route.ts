@@ -20,6 +20,15 @@ export async function POST(req: NextRequest) {
       groupId,
       type: body.type || null,
       localisation: body.localisation || null,
+      status: body.status || undefined,
+      adresse: body.adresse || null,
+      ville: body.ville || null,
+      pays: body.pays || null,
+      siteWeb: body.siteWeb || null,
+      activite: body.activite || null,
+      nombreLits: body.nombreLits ? Number(body.nombreLits) : null,
+      nombrePlaces: body.nombrePlaces ? Number(body.nombrePlaces) : null,
+      nombreUtilisateurs: body.nombreUtilisateurs ? Number(body.nombreUtilisateurs) : null,
     },
   });
   return NextResponse.json(establishment, { status: 201 });

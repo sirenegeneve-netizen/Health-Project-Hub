@@ -30,6 +30,7 @@ model Establishment {
   group        Group                  @relation(fields: [groupId], references: [id])
   type         String? // hopital | clinique | ehpad | cabinet | ght | autre
   localisation String?
+  status       String                 @default("actif") // actif | inactif
 
   // Infos générales (architecture Groupe > Établissement > Initiative)
   adresse             String?

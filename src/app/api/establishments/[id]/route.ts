@@ -10,9 +10,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const establishment = await prisma.establishment.update({
     where: { id: params.id },
     data: {
-      name: body.name ?? undefined,
+      name: body.name || undefined,
       type: body.type ?? undefined,
       localisation: body.localisation ?? undefined,
+      status: body.status ?? undefined,
       adresse: body.adresse ?? undefined,
       ville: body.ville ?? undefined,
       pays: body.pays ?? undefined,

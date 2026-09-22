@@ -65,7 +65,9 @@ export default async function GroupDetailPage({ params }: { params: { id: string
       </div>
       <h1 className="font-display text-2xl text-ink mb-1">{group.name}</h1>
       <div className="text-sm text-muted mb-6">
-        {group.establishments.length} établissement{group.establishments.length > 1 ? "s" : ""} · {group.initiatives.length} initiative
+        {group.establishments.length} établissement{group.establishments.length > 1 ? "s" : ""}
+        {" "}({group.establishments.filter((e) => e.status !== "inactif").length} actif
+        {group.establishments.filter((e) => e.status !== "inactif").length > 1 ? "s" : ""}) · {group.initiatives.length} initiative
         {group.initiatives.length > 1 ? "s" : ""}
       </div>
 
