@@ -19,19 +19,29 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+
+  const ownerType = body.ownerType || "initiative"; // groupe | etablissement | initiative
+  const ownerId = body.ownerId || body.initiativeId;
+  const initiativeId = ownerType === "initiative" ? body.initiativeId : null;
+  if (!ownerId) return NextResponse.json({ error: "Portée (ownerId) requise." }, { status: 400 });
+
   const doc = await prisma.documentRef.create({
     data: {
-      initiativeId: body.initiativeId,
+      initiativeId,
+      ownerType,
+      ownerId,
       title: body.title,
       type: body.type || "mail",
       note: body.note || null,
     },
   });
-  await logTimelineEvent(body.initiativeId, "document", `Document importé : « ${doc.title} »`);
+  if (initiativeId) {
+    await logTimelineEvent(initiativeId, "document", `Document importé : « ${doc.title} »`);
+  }
 
   let suggestions = null;
-  if (body.note) {
-    const interfaces = await prisma.interface.findMany({ where: { initiativeId: body.initiativeId }, select: { name: true } });
+  if (body.note && initiativeId) {
+    const interfaces = await prisma.interface.findMany({ where: { initiativeId }, select: { name: true } });
     suggestions = analyzeText(body.note, interfaces.map((i) => i.name));
   }
 

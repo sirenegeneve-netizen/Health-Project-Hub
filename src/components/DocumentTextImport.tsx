@@ -21,7 +21,15 @@ interface MailSuggestion {
   suggestedRiskDescription?: string;
 }
 
-export function DocumentTextImport({ initiativeId }: { initiativeId: string }) {
+export function DocumentTextImport({
+  initiativeId,
+  ownerType = "initiative",
+  ownerId,
+}: {
+  initiativeId: string;
+  ownerType?: "initiative" | "groupe" | "etablissement";
+  ownerId?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ title: "", type: "mail", note: "" });
@@ -32,7 +40,12 @@ export function DocumentTextImport({ initiativeId }: { initiativeId: string }) {
     const res = await fetch("/api/documents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...f, initiativeId }),
+      body: JSON.stringify({
+        ...f,
+        initiativeId: ownerType === "initiative" ? initiativeId : null,
+        ownerType,
+        ownerId: ownerType === "initiative" ? initiativeId : ownerId,
+      }),
     });
     const data = await res.json();
     const hasSomethingToShow = data.suggestions && (data.suggestions.suggestRisk || data.suggestions.suggestAction || data.suggestions.matchedInterfaces?.length);

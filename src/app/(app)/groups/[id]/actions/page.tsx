@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { Pill, statusTone } from "@/components/Pill";
+import { ActionForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,14 @@ export default async function GroupActionsPage({ params }: { params: { id: strin
   const group = await prisma.group.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!group) notFound();
 
-  const actions = await prisma.action.findMany({
-    where: { initiative: { groupId: params.id } },
-    include: { initiative: true, establishment: true, responsableActor: true },
-    orderBy: [{ status: "asc" }, { echeance: "asc" }],
-  });
+  const [actions, actors] = await Promise.all([
+    prisma.action.findMany({
+      where: { OR: [{ initiative: { groupId: params.id } }, { ownerType: "groupe", ownerId: params.id }] },
+      include: { initiative: true, establishment: true, responsableActor: true },
+      orderBy: [{ status: "asc" }, { echeance: "asc" }],
+    }),
+    prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
+  ]);
   const now = new Date();
   const lateActions = actions.filter((a) => a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status));
 
@@ -29,9 +33,11 @@ export default async function GroupActionsPage({ params }: { params: { id: strin
       <GroupTabs groupId={group.id} />
 
       <p className="text-sm text-ink/60 mb-4">
-        Actions des initiatives du groupe, {lateActions.length} en retard sur {actions.length}. Une action se crée toujours depuis
-        l'initiative concernée — cette vue consolide, elle ne duplique pas.
+        Actions des initiatives du groupe et actions propres au groupe, {lateActions.length} en retard sur {actions.length}. Une action liée
+        à une initiative se crée toujours depuis celle-ci ; une action propre au groupe peut se créer directement ici.
       </p>
+
+      <ActionForm initiativeId="" ownerType="groupe" ownerId={group.id} actors={actors} label="+ Nouvelle action propre au groupe" />
 
       {actions.length === 0 ? (
         <div className="card text-center text-ink/50 py-10">Aucune action pour ce groupe.</div>
@@ -55,9 +61,13 @@ export default async function GroupActionsPage({ params }: { params: { id: strin
                   <tr key={a.id}>
                     <td className="pl-4 text-sm">{a.title}</td>
                     <td className="text-sm">
-                      <Link href={`/initiatives/${a.initiativeId}/actions`} className="text-blue hover:underline">
-                        {a.initiative.name}
-                      </Link>
+                      {a.initiative ? (
+                        <Link href={`/initiatives/${a.initiativeId}/actions`} className="text-blue hover:underline">
+                          {a.initiative.name}
+                        </Link>
+                      ) : (
+                        <span className="text-ink/50">Propre au groupe</span>
+                      )}
                     </td>
                     <td className="text-sm text-ink/60">{a.establishment?.name || "—"}</td>
                     <td className="text-sm text-ink/60">{a.responsableActor?.name || a.responsable || "—"}</td>

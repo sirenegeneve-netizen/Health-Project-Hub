@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const action = await prisma.action.update({ where: { id: params.id }, data });
 
-  if (body.status && body.status !== before.status) {
+  if (body.status && body.status !== before.status && action.initiativeId) {
     await logTimelineEvent(action.initiativeId, "action", `Action « ${action.title} » → ${body.status}`);
   }
   return NextResponse.json(action);

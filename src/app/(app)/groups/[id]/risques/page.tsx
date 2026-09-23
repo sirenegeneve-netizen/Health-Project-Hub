@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { Pill } from "@/components/Pill";
+import { RiskForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,14 @@ export default async function GroupRisquesPage({ params }: { params: { id: strin
   const group = await prisma.group.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!group) notFound();
 
-  const risks = await prisma.risk.findMany({
-    where: { initiative: { groupId: params.id } },
-    include: { initiative: true, establishment: true, proprietaireActor: true },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-  });
+  const [risks, actors] = await Promise.all([
+    prisma.risk.findMany({
+      where: { OR: [{ initiative: { groupId: params.id } }, { ownerType: "groupe", ownerId: params.id }] },
+      include: { initiative: true, establishment: true, proprietaireActor: true },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
+  ]);
   const openRisks = risks.filter((r) => !["maitrise", "cloture"].includes(r.status));
 
   return (
@@ -28,9 +32,12 @@ export default async function GroupRisquesPage({ params }: { params: { id: strin
       <GroupTabs groupId={group.id} />
 
       <p className="text-sm text-ink/60 mb-4">
-        Risques des initiatives du groupe, {openRisks.length} ouvert{openRisks.length > 1 ? "s" : ""} sur {risks.length}. Un risque se crée
-        toujours depuis l'initiative concernée — cette vue consolide, elle ne duplique pas.
+        Risques des initiatives du groupe et risques propres au groupe, {openRisks.length} ouvert{openRisks.length > 1 ? "s" : ""} sur{" "}
+        {risks.length}. Un risque lié à une initiative se crée toujours depuis celle-ci ; un risque propre au groupe (gouvernance, contrat
+        cadre...) peut se créer directement ici.
       </p>
+
+      <RiskForm initiativeId="" ownerType="groupe" ownerId={group.id} actors={actors} label="+ Nouveau risque propre au groupe" />
 
       {risks.length === 0 ? (
         <div className="card text-center text-ink/50 py-10">Aucun risque pour ce groupe.</div>
@@ -52,9 +59,13 @@ export default async function GroupRisquesPage({ params }: { params: { id: strin
                 <tr key={r.id}>
                   <td className="pl-4 text-sm">{r.description}</td>
                   <td className="text-sm">
-                    <Link href={`/initiatives/${r.initiativeId}/risks`} className="text-blue hover:underline">
-                      {r.initiative.name}
-                    </Link>
+                    {r.initiative ? (
+                      <Link href={`/initiatives/${r.initiativeId}/risks`} className="text-blue hover:underline">
+                        {r.initiative.name}
+                      </Link>
+                    ) : (
+                      <span className="text-ink/50">Propre au groupe</span>
+                    )}
                   </td>
                   <td className="text-sm text-ink/60">{r.establishment?.name || "—"}</td>
                   <td className="text-sm text-ink/60">{r.proprietaireActor?.name || r.proprietaire || "—"}</td>

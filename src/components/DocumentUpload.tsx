@@ -13,7 +13,15 @@ const TYPES = [
   ["autre", "Autre"],
 ];
 
-export function DocumentUpload({ initiativeId }: { initiativeId: string }) {
+export function DocumentUpload({
+  initiativeId,
+  ownerType = "initiative",
+  ownerId,
+}: {
+  initiativeId: string;
+  ownerType?: "initiative" | "groupe" | "etablissement";
+  ownerId?: string;
+}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -27,7 +35,9 @@ export function DocumentUpload({ initiativeId }: { initiativeId: string }) {
     setError(null);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("initiativeId", initiativeId);
+    formData.append("ownerType", ownerType);
+    formData.append("ownerId", ownerType === "initiative" ? initiativeId : ownerId || "");
+    if (ownerType === "initiative") formData.append("initiativeId", initiativeId);
     formData.append("title", title || file.name);
     formData.append("type", type);
     const res = await fetch("/api/documents/upload", { method: "POST", body: formData });

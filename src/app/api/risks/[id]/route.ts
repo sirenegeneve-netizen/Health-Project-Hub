@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       status: body.status ?? undefined,
     },
   });
-  if (body.status && body.status !== before.status) {
+  if (body.status && body.status !== before.status && risk.initiativeId) {
     await logTimelineEvent(risk.initiativeId, "risque", `Risque « ${risk.description} » → ${body.status}`);
   }
   return NextResponse.json(risk);

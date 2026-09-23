@@ -22,11 +22,11 @@ export async function GET(req: NextRequest) {
 
   const items = [
     ...actions
-      .filter((a) => norm(a.responsable) === n && !["termine", "abandonne"].includes(a.status))
-      .map((a) => ({ kind: "Action", label: a.title, initiativeName: a.initiative.name, href: `/initiatives/${a.initiativeId}/actions`, date: a.echeance ? a.echeance.toISOString() : null })),
+      .filter((a) => a.initiative && norm(a.responsable) === n && !["termine", "abandonne"].includes(a.status))
+      .map((a) => ({ kind: "Action", label: a.title, initiativeName: a.initiative!.name, href: `/initiatives/${a.initiativeId}/actions`, date: a.echeance ? a.echeance.toISOString() : null })),
     ...decisions
-      .filter((d) => norm(d.decideur) === n && d.status !== "decision_prise")
-      .map((d) => ({ kind: "Décision", label: d.subject, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/decisions`, date: null })),
+      .filter((d) => d.initiative && norm(d.decideur) === n && d.status !== "decision_prise")
+      .map((d) => ({ kind: "Décision", label: d.subject, initiativeName: d.initiative!.name, href: `/initiatives/${d.initiativeId}/decisions`, date: null })),
     ...deliverables
       .filter((d) => norm(d.responsable) === n && d.status !== "valide")
       .map((d) => ({ kind: "Livrable", label: d.name, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/conception`, date: d.datePrevue ? d.datePrevue.toISOString() : null })),

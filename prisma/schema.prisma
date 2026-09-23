@@ -425,8 +425,10 @@ model Meeting {
 
 model Action {
   id             String    @id @default(cuid())
-  initiativeId      String @map("projectId")
-  initiative        Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  initiativeId      String?   @map("projectId")
+  initiative        Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  ownerType      String    @default("initiative") // groupe | etablissement | initiative
+  ownerId        String?
   meetingId      String?
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
   riskId         String?
@@ -452,8 +454,10 @@ model Action {
 
 model Risk {
   id           String    @id @default(cuid())
-  initiativeId    String @map("projectId")
-  initiative      Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  initiativeId    String?   @map("projectId")
+  initiative      Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  ownerType    String    @default("initiative") // groupe | etablissement | initiative
+  ownerId      String?
   meetingId    String?
   meeting      Meeting?  @relation(fields: [meetingId], references: [id])
   interfaceId  String?
@@ -478,8 +482,10 @@ model Risk {
 
 model Decision {
   id             String    @id @default(cuid())
-  initiativeId      String @map("projectId")
-  initiative        Initiative   @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  initiativeId      String?   @map("projectId")
+  initiative        Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  ownerType      String    @default("initiative") // groupe | etablissement | initiative
+  ownerId        String?
   meetingId      String?
   meeting        Meeting?  @relation(fields: [meetingId], references: [id])
   subject        String
@@ -587,8 +593,10 @@ model TrainingSession {
 
 model DocumentRef {
   id          String   @id @default(cuid())
-  initiativeId   String @map("projectId")
-  initiative     Initiative  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  initiativeId   String?   @map("projectId")
+  initiative     Initiative?  @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  ownerType   String   @default("initiative") // groupe | etablissement | initiative
+  ownerId     String?
   title       String
   type        String? // compte_rendu | specification | recette | formation | interop | mail | autre
   note        String? // résumé ou contenu texte (mail collé, etc.)

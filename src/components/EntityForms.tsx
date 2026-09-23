@@ -38,6 +38,8 @@ export function ActionForm({
   actors,
   establishments,
   label,
+  ownerType = "initiative",
+  ownerId,
 }: {
   initiativeId: string;
   meetingId?: string;
@@ -46,6 +48,8 @@ export function ActionForm({
   actors: { id: string; name: string }[];
   establishments?: { id: string; name: string }[];
   label?: string;
+  ownerType?: "initiative" | "groupe" | "etablissement";
+  ownerId?: string;
 }) {
   const router = useRouter();
   const [f, setF] = useState({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
@@ -76,7 +80,7 @@ export function ActionForm({
               </select>
             </Field>
           </div>
-          {establishments && establishments.length > 1 && (
+          {ownerType === "initiative" && establishments && establishments.length > 1 && (
             <Field label="Établissement (optionnel)">
               <select className={inputCls} value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
                 <option value="">Tous établissements</option>
@@ -93,7 +97,18 @@ export function ActionForm({
               className="btn"
               onClick={async () => {
                 if (!f.title) return;
-                await post("/api/actions", { initiativeId, meetingId, riskId, decisionId, origine, ...f, establishmentId: f.establishmentId || null });
+                const finalOwnerId = ownerType === "initiative" ? initiativeId : ownerId;
+                await post("/api/actions", {
+                  initiativeId: ownerType === "initiative" ? initiativeId : null,
+                  ownerType,
+                  ownerId: finalOwnerId,
+                  meetingId,
+                  riskId,
+                  decisionId,
+                  origine,
+                  ...f,
+                  establishmentId: ownerType === "etablissement" ? ownerId : f.establishmentId || null,
+                });
                 setF({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
                 close();
                 router.refresh();
@@ -117,12 +132,16 @@ export function RiskForm({
   actors,
   establishments,
   label,
+  ownerType = "initiative",
+  ownerId,
 }: {
   initiativeId: string;
   meetingId?: string;
   actors: { id: string; name: string }[];
   establishments?: { id: string; name: string }[];
   label?: string;
+  ownerType?: "initiative" | "groupe" | "etablissement";
+  ownerId?: string;
 }) {
   const router = useRouter();
   const [f, setF] = useState({
@@ -172,7 +191,7 @@ export function RiskForm({
               </select>
             </Field>
           </div>
-          {establishments && establishments.length > 1 && (
+          {ownerType === "initiative" && establishments && establishments.length > 1 && (
             <Field label="Établissement (optionnel)">
               <select className={inputCls} value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
                 <option value="">Tous établissements</option>
@@ -192,7 +211,15 @@ export function RiskForm({
               className="btn"
               onClick={async () => {
                 if (!f.description) return;
-                await post("/api/risks", { initiativeId, meetingId, ...f, establishmentId: f.establishmentId || null });
+                const finalOwnerId = ownerType === "initiative" ? initiativeId : ownerId;
+                await post("/api/risks", {
+                  initiativeId: ownerType === "initiative" ? initiativeId : null,
+                  ownerType,
+                  ownerId: finalOwnerId,
+                  meetingId,
+                  ...f,
+                  establishmentId: ownerType === "etablissement" ? ownerId : f.establishmentId || null,
+                });
                 close();
                 router.refresh();
               }}
@@ -209,7 +236,21 @@ export function RiskForm({
   );
 }
 
-export function DecisionForm({ initiativeId, meetingId, actors, label }: { initiativeId: string; meetingId?: string; actors: { id: string; name: string }[]; label?: string }) {
+export function DecisionForm({
+  initiativeId,
+  meetingId,
+  actors,
+  label,
+  ownerType = "initiative",
+  ownerId,
+}: {
+  initiativeId: string;
+  meetingId?: string;
+  actors: { id: string; name: string }[];
+  label?: string;
+  ownerType?: "initiative" | "groupe" | "etablissement";
+  ownerId?: string;
+}) {
   const router = useRouter();
   const [f, setF] = useState({ subject: "", context: "", options: "", recommendation: "", decideurActorId: "" });
   return (
@@ -238,7 +279,14 @@ export function DecisionForm({ initiativeId, meetingId, actors, label }: { initi
               className="btn"
               onClick={async () => {
                 if (!f.subject) return;
-                await post("/api/decisions", { initiativeId, meetingId, ...f });
+                const finalOwnerId = ownerType === "initiative" ? initiativeId : ownerId;
+                await post("/api/decisions", {
+                  initiativeId: ownerType === "initiative" ? initiativeId : null,
+                  ownerType,
+                  ownerId: finalOwnerId,
+                  meetingId,
+                  ...f,
+                });
                 close();
                 router.refresh();
               }}

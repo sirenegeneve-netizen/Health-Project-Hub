@@ -36,19 +36,19 @@ export default async function CalendarPage() {
     ...deliverables.map((d) => ({ date: d.datePrevue!.toISOString(), title: d.name, type: "livrable", initiativeId: d.initiativeId, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/conception` })),
     ...sessions.map((s) => ({ date: s.date.toISOString(), title: `Formation (${s.nbInscrits} inscrits)`, type: "formation", initiativeId: s.initiativeId, initiativeName: s.initiative.name, href: `/initiatives/${s.initiativeId}/training` })),
     ...interfaces.map((i) => ({ date: i.datePrevue!.toISOString(), title: `Interface ${i.name}`, type: "interface", initiativeId: i.initiativeId, initiativeName: i.initiative.name, href: `/initiatives/${i.initiativeId}/interfaces` })),
-    ...actions.map((a) => ({
+    ...actions.filter((a) => a.initiative).map((a) => ({
       date: a.echeance!.toISOString(),
       title: a.title,
       type: "action",
       initiativeId: a.initiativeId,
-      initiativeName: a.initiative.name,
+      initiativeName: a.initiative!.name,
       href: `/initiatives/${a.initiativeId}/actions`,
       late: a.echeance! < now,
     })),
     // Les décisions n'ont pas d'échéance dédiée dans le modèle actuel : on les
     // positionne à leur date de création pour les faire apparaître comme
     // "décisions attendues" tant qu'elles ne sont pas tranchées.
-    ...decisions.map((d) => ({ date: d.createdAt.toISOString(), title: d.subject, type: "decision", initiativeId: d.initiativeId, initiativeName: d.initiative.name, href: `/initiatives/${d.initiativeId}/decisions` })),
+    ...decisions.filter((d) => d.initiative).map((d) => ({ date: d.createdAt.toISOString(), title: d.subject, type: "decision", initiativeId: d.initiativeId, initiativeName: d.initiative!.name, href: `/initiatives/${d.initiativeId}/decisions` })),
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (

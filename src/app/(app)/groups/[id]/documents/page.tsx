@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { DocumentTextImport } from "@/components/DocumentTextImport";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,7 @@ export default async function GroupDocumentsPage({ params }: { params: { id: str
   if (!group) notFound();
 
   const documents = await prisma.documentRef.findMany({
-    where: { initiative: { groupId: params.id } },
+    where: { OR: [{ initiative: { groupId: params.id } }, { ownerType: "groupe", ownerId: params.id }] },
     include: { initiative: true },
     orderBy: { createdAt: "desc" },
   });
@@ -26,8 +28,14 @@ export default async function GroupDocumentsPage({ params }: { params: { id: str
       <GroupTabs groupId={group.id} />
 
       <p className="text-sm text-ink/60 mb-4">
-        Documents des initiatives du groupe. Un document se dépose toujours depuis l'initiative concernée — cette vue consolide.
+        Documents des initiatives du groupe et documents propres au groupe. Un document lié à une initiative se dépose toujours depuis
+        celle-ci ; un document propre au groupe (contrat cadre, gouvernance...) peut se déposer directement ici.
       </p>
+
+      <div className="card mb-4 space-y-3">
+        <DocumentUpload initiativeId="" ownerType="groupe" ownerId={group.id} />
+        <DocumentTextImport initiativeId="" ownerType="groupe" ownerId={group.id} />
+      </div>
 
       {documents.length === 0 ? (
         <div className="card text-center text-ink/50 py-10">Aucun document pour ce groupe.</div>
@@ -47,9 +55,13 @@ export default async function GroupDocumentsPage({ params }: { params: { id: str
                 </div>
                 <div className="text-xs text-ink/50">
                   {d.type || "document"} ·{" "}
-                  <Link href={`/initiatives/${d.initiativeId}/timeline`} className="hover:underline">
-                    {d.initiative.name}
-                  </Link>
+                  {d.initiative ? (
+                    <Link href={`/initiatives/${d.initiativeId}/timeline`} className="hover:underline">
+                      {d.initiative.name}
+                    </Link>
+                  ) : (
+                    "Propre au groupe"
+                  )}
                 </div>
               </div>
             </div>

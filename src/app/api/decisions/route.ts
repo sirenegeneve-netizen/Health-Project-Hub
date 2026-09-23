@@ -9,9 +9,17 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+
+  const ownerType = body.ownerType || "initiative"; // groupe | etablissement | initiative
+  const ownerId = body.ownerId || body.initiativeId;
+  const initiativeId = ownerType === "initiative" ? body.initiativeId : null;
+  if (!ownerId) return NextResponse.json({ error: "Portée (ownerId) requise." }, { status: 400 });
+
   const decision = await prisma.decision.create({
     data: {
-      initiativeId: body.initiativeId,
+      initiativeId,
+      ownerType,
+      ownerId,
       meetingId: body.meetingId || null,
       subject: body.subject,
       context: body.context || null,
@@ -25,6 +33,8 @@ export async function POST(req: NextRequest) {
       status: body.status || "en_attente",
     },
   });
-  await logTimelineEvent(body.initiativeId, "decision", `Décision ouverte : « ${decision.subject} »`);
+  if (initiativeId) {
+    await logTimelineEvent(initiativeId, "decision", `Décision ouverte : « ${decision.subject} »`);
+  }
   return NextResponse.json(decision, { status: 201 });
 }

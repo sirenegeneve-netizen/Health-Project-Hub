@@ -78,7 +78,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
-            initiativeName: a.initiative.name,
+            initiativeName: a.initiative?.name || (a.ownerType === "groupe" ? "Groupe" : a.ownerType === "etablissement" ? "Établissement" : "—"),
           }))}
         />
       ) : (
@@ -101,9 +101,13 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                   <tr key={a.id} className={isLate ? "bg-bad/5" : ""}>
                     <td className="pl-4">{a.title}</td>
                     <td>
-                      <Link href={`/initiatives/${a.initiativeId}`} className="text-blue hover:underline">
-                        {a.initiative.name}
-                      </Link>
+                      {a.initiative ? (
+                        <Link href={`/initiatives/${a.initiativeId}`} className="text-blue hover:underline">
+                          {a.initiative.name}
+                        </Link>
+                      ) : (
+                        <span className="text-ink/50 text-xs">{a.ownerType === "groupe" ? "Portée groupe" : "Portée établissement"}</span>
+                      )}
                     </td>
                     <td>{a.responsableActor?.name || a.responsable || "—"}</td>
                     <td className={isLate ? "text-bad font-medium" : ""}>

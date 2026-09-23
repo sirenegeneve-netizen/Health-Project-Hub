@@ -120,8 +120,8 @@ export default async function HomePage() {
   ]);
 
   const priorities = [
-    ...pendingDecisions.map((d) => ({ label: d.subject, initiativeName: d.initiative.name, initiativeId: d.initiativeId, kind: "Décision à trancher", date: null as string | null, href: `/initiatives/${d.initiativeId}/decisions` })),
-    ...dueSoonActions.map((a) => ({ label: a.title, initiativeName: a.initiative.name, initiativeId: a.initiativeId, kind: "Action due", date: a.echeance!.toISOString(), href: `/initiatives/${a.initiativeId}/actions` })),
+    ...pendingDecisions.filter((d) => d.initiative).map((d) => ({ label: d.subject, initiativeName: d.initiative!.name, initiativeId: d.initiativeId, kind: "Décision à trancher", date: null as string | null, href: `/initiatives/${d.initiativeId}/decisions` })),
+    ...dueSoonActions.filter((a) => a.initiative).map((a) => ({ label: a.title, initiativeName: a.initiative!.name, initiativeId: a.initiativeId, kind: "Action due", date: a.echeance!.toISOString(), href: `/initiatives/${a.initiativeId}/actions` })),
     ...imminentDeliverables.map((d) => ({ label: d.name, initiativeName: d.initiative.name, initiativeId: d.initiativeId, kind: "Livrable attendu", date: d.datePrevue!.toISOString(), href: `/initiatives/${d.initiativeId}/conception` })),
   ]
     .sort((a, b) => (a.date ? new Date(a.date).getTime() : 0) - (b.date ? new Date(b.date).getTime() : 0))

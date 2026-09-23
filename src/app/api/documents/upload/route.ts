@@ -22,12 +22,16 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
-  const initiativeId = formData.get("initiativeId") as string | null;
+  const initiativeIdRaw = formData.get("initiativeId") as string | null;
+  const ownerType = (formData.get("ownerType") as string | null) || "initiative"; // groupe | etablissement | initiative
+  const ownerIdRaw = (formData.get("ownerId") as string | null) || initiativeIdRaw;
   const title = (formData.get("title") as string | null) || file?.name || "Document";
   const type = (formData.get("type") as string | null) || "autre";
 
-  if (!file || !initiativeId) {
-    return NextResponse.json({ error: "Fichier et initiativeId requis." }, { status: 400 });
+  const initiativeId = ownerType === "initiative" ? initiativeIdRaw : null;
+
+  if (!file || !ownerIdRaw) {
+    return NextResponse.json({ error: "Fichier et portée (ownerId) requis." }, { status: 400 });
   }
 
   const blob = await put(file.name, file, { access: "public", addRandomSuffix: true });
@@ -35,6 +39,8 @@ export async function POST(req: NextRequest) {
   const doc = await prisma.documentRef.create({
     data: {
       initiativeId,
+      ownerType,
+      ownerId: ownerIdRaw,
       title,
       type,
       fileUrl: blob.url,
@@ -44,7 +50,9 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await logTimelineEvent(initiativeId, "document", `Fichier importé : « ${doc.title} »`);
+  if (initiativeId) {
+    await logTimelineEvent(initiativeId, "document", `Fichier importé : « ${doc.title} »`);
+  }
 
   return NextResponse.json(doc, { status: 201 });
 }

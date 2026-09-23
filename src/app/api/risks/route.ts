@@ -15,9 +15,16 @@ export async function POST(req: NextRequest) {
     proprietaireName = actor?.name || null;
   }
 
+  const ownerType = body.ownerType || "initiative"; // groupe | etablissement | initiative
+  const ownerId = body.ownerId || body.initiativeId;
+  const initiativeId = ownerType === "initiative" ? body.initiativeId : null;
+  if (!ownerId) return NextResponse.json({ error: "Portée (ownerId) requise." }, { status: 400 });
+
   const risk = await prisma.risk.create({
     data: {
-      initiativeId: body.initiativeId,
+      initiativeId,
+      ownerType,
+      ownerId,
       meetingId: body.meetingId || null,
       interfaceId: body.interfaceId || null,
       establishmentId: body.establishmentId || null,
@@ -33,6 +40,8 @@ export async function POST(req: NextRequest) {
       echeance: body.echeance ? new Date(body.echeance) : null,
     },
   });
-  await logTimelineEvent(body.initiativeId, "risque", `Risque identifié : « ${risk.description} »`);
+  if (initiativeId) {
+    await logTimelineEvent(initiativeId, "risque", `Risque identifié : « ${risk.description} »`);
+  }
   return NextResponse.json(risk, { status: 201 });
 }
