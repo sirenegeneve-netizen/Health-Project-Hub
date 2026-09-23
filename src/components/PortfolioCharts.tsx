@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-interface Bucket {
+export interface Bucket {
   label: string;
   value: number;
   items: { id: string; name: string; sub?: string }[];
@@ -28,7 +28,7 @@ function DrilldownList({ items }: { items: { id: string; name: string; sub?: str
   );
 }
 
-function DonutCard({ title, data }: { title: string; data: Bucket[] }) {
+export function DonutCard({ title, data }: { title: string; data: Bucket[] }) {
   const [selected, setSelected] = useState<string | null>(null);
   const active = data.find((d) => d.label === selected);
 
@@ -80,7 +80,7 @@ function DonutCard({ title, data }: { title: string; data: Bucket[] }) {
   );
 }
 
-function BarCard({ title, data, color = "#0EA5A8" }: { title: string; data: Bucket[]; color?: string }) {
+export function BarCard({ title, data, color = "#0EA5A8" }: { title: string; data: Bucket[]; color?: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const active = data.find((d) => d.label === selected);
 
