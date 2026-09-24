@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 type AuditUser = { id: string; name: string } | null;
@@ -41,7 +42,7 @@ export async function logAudit(params: {
       entityId: params.entityId,
       entityLabel: params.entityLabel,
       action: params.action,
-      changes: params.changes && Object.keys(params.changes).length > 0 ? params.changes : undefined,
+      changes: params.changes && Object.keys(params.changes).length > 0 ? (params.changes as Prisma.InputJsonValue) : undefined,
       userId: params.user?.id || null,
       userName: params.user?.name || "Système",
     },
