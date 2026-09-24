@@ -4,11 +4,11 @@ import { InitiativeTabsClient, type SubTab } from "@/components/InitiativeTabsCl
 
 // Pour le Déploiement, le groupe "Parcours" garde ses 8 pages dédiées
 // existantes (Kick-off, Préparation... chacune avec son propre contenu métier).
-// Pour les 9 autres types, il n'existe pas encore de page dédiée par étape
-// (voir InitiativeJourney) — le sous-menu affiche donc les vraies étapes du
-// type choisi, mais toutes renvoient vers la page de suivi transverse commune
-// (Actions/Planning/Décisions/Réunions), pour rester honnête sur ce qui existe
-// réellement plutôt que de fabriquer des destinations différentes.
+// Pour les 9 autres types, chaque étape a sa propre page (/etape/[key]) avec un
+// texte de contexte adapté — mais affiche pour l'instant le même suivi
+// transverse (Actions/Risques/Décisions/Réunions) que pour le Déploiement : pas
+// encore de filtrage des éléments par étape (nécessiterait de taguer chaque
+// action/risque/décision par étape à sa création).
 const DEPLOIEMENT_PARCOURS: SubTab[] = [
   { href: "/kickoff", label: "Kick-off", match: ["/kickoff"] },
   { href: "/preparation", label: "Préparation", match: ["/preparation", "/conception", "/deliverables", "/changes", "/interfaces"] },
@@ -20,8 +20,6 @@ const DEPLOIEMENT_PARCOURS: SubTab[] = [
   { href: "/cloture", label: "Clôture", match: ["/cloture"] },
 ];
 
-const SUIVI_MATCH = ["/realisation", "/actions", "/planning", "/decisions", "/meetings"];
-
 export async function InitiativeTabsServer({ initiativeId }: { initiativeId: string }) {
   const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId }, select: { type: true } });
   const type = initiative?.type || "deploiement";
@@ -31,9 +29,7 @@ export async function InitiativeTabsServer({ initiativeId }: { initiativeId: str
     parcoursChildren = DEPLOIEMENT_PARCOURS;
   } else {
     const stages = await getWorkflowStages(type);
-    // Toutes les étapes renvoient vers la même page de suivi transverse : pas
-    // de page dédiée par étape pour ces types, donc pas de destination fictive.
-    parcoursChildren = stages.map((s) => ({ href: "/realisation", label: s.label, match: SUIVI_MATCH }));
+    parcoursChildren = stages.map((s) => ({ href: `/etape/${s.key}`, label: s.label, match: [`/etape/${s.key}`] }));
   }
 
   return <InitiativeTabsClient initiativeId={initiativeId} parcoursChildren={parcoursChildren} />;
