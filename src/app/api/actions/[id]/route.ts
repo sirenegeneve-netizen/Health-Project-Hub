@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit, diffRecords, truncateLabel } from "@/lib/audit";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -30,6 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.status && body.status !== before.status && action.initiativeId) {
     await logTimelineEvent(action.initiativeId, "action", `Action « ${action.title} » → ${body.status}`);
   }
+  await logAudit({ entityType: "action", entityId: action.id, entityLabel: truncateLabel(action.title), action: "update", changes: diffRecords(before, action), user });
   return NextResponse.json(action);
 }
 
@@ -37,6 +39,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
+  const before = await prisma.action.findUnique({ where: { id: params.id } });
   await prisma.action.delete({ where: { id: params.id } });
+  if (before) {
+    await logAudit({ entityType: "action", entityId: params.id, entityLabel: truncateLabel(before.title), action: "delete", user });
+  }
   return NextResponse.json({ ok: true });
 }

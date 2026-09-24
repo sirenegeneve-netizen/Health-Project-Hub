@@ -764,3 +764,24 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+// Journal d'audit générique — "qui a changé quoi, quand", tous objets métier
+// confondus. entityLabel/userName sont des instantanés (texte figé au moment
+// de l'action) : ils restent lisibles même si l'objet est renommé/supprimé ou
+// si le compte utilisateur est supprimé — volontairement pas de relation FK
+// vers les entités auditées (trop nombreuses et hétérogènes) ni vers User
+// (userId gardé à titre indicatif seulement, non contraint).
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String   // initiative | risk | action | decision | document | actor | establishment | group
+  entityId    String
+  entityLabel String
+  action      String   // create | update | delete
+  changes     Json?    // { champ: { from, to } }, uniquement pour action = update
+  userId      String?
+  userName    String
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

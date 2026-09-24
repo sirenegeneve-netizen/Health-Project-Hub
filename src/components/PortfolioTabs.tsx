@@ -14,6 +14,7 @@ const TABS = [
   { href: "/risks", label: "Risques & alertes", match: ["/risks"] },
   { href: "/portfolio/relations", label: "Interactions & dépendances", match: ["/portfolio/relations"] },
   { href: "/reports", label: "Indicateurs", match: ["/reports"] },
+  { href: "/journal", label: "Journal d'activité", match: ["/journal"] },
 ];
 
 export function PortfolioTabs() {

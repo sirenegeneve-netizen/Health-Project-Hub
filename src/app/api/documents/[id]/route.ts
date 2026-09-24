@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -17,5 +18,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     }
   }
   await prisma.documentRef.delete({ where: { id: params.id } });
+  if (doc) {
+    await logAudit({ entityType: "document", entityId: params.id, entityLabel: truncateLabel(doc.title), action: "delete", user });
+  }
   return NextResponse.json({ ok: true });
 }

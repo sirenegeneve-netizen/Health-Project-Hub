@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -42,5 +43,6 @@ export async function POST(req: NextRequest) {
   if (initiativeId) {
     await logTimelineEvent(initiativeId, "action", `Action créée : « ${action.title} »`);
   }
+  await logAudit({ entityType: "action", entityId: action.id, entityLabel: truncateLabel(action.title), action: "create", user });
   return NextResponse.json(action, { status: 201 });
 }

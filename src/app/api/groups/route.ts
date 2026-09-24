@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -12,5 +13,6 @@ export async function POST(req: NextRequest) {
   }
 
   const group = await prisma.group.create({ data: { name: String(body.name).trim() } });
+  await logAudit({ entityType: "group", entityId: group.id, entityLabel: group.name, action: "create", user });
   return NextResponse.json(group, { status: 201 });
 }

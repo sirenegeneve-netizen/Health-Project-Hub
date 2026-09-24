@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { analyzeText } from "@/lib/mailSuggest";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const { user } = await requireUser();
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
   if (initiativeId) {
     await logTimelineEvent(initiativeId, "document", `Document importé : « ${doc.title} »`);
   }
+  await logAudit({ entityType: "document", entityId: doc.id, entityLabel: truncateLabel(doc.title), action: "create", user });
 
   let suggestions = null;
   if (body.note && initiativeId) {

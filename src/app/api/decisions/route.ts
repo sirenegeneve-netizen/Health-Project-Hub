@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { resolveActorName } from "@/lib/actorResolve";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -36,5 +37,6 @@ export async function POST(req: NextRequest) {
   if (initiativeId) {
     await logTimelineEvent(initiativeId, "decision", `Décision ouverte : « ${decision.subject} »`);
   }
+  await logAudit({ entityType: "decision", entityId: decision.id, entityLabel: truncateLabel(decision.subject), action: "create", user });
   return NextResponse.json(decision, { status: 201 });
 }

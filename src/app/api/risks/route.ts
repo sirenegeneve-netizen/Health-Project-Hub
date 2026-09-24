@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -43,5 +44,6 @@ export async function POST(req: NextRequest) {
   if (initiativeId) {
     await logTimelineEvent(initiativeId, "risque", `Risque identifié : « ${risk.description} »`);
   }
+  await logAudit({ entityType: "risk", entityId: risk.id, entityLabel: truncateLabel(risk.description), action: "create", user });
   return NextResponse.json(risk, { status: 201 });
 }

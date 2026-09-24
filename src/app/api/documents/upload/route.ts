@@ -3,6 +3,7 @@ import { put } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit, truncateLabel } from "@/lib/audit";
 
 // Upload d'un vrai fichier (PDF, Word, image...) vers Vercel Blob — distinct de
 // la route /api/documents qui gère l'import de texte collé (mail, compte rendu).
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
   if (initiativeId) {
     await logTimelineEvent(initiativeId, "document", `Fichier importé : « ${doc.title} »`);
   }
+  await logAudit({ entityType: "document", entityId: doc.id, entityLabel: truncateLabel(doc.title), action: "create", user });
 
   return NextResponse.json(doc, { status: 201 });
 }

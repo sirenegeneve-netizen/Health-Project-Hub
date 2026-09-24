@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -36,5 +37,6 @@ export async function POST(req: NextRequest) {
   if (body.initiativeId) {
     await logTimelineEvent(body.initiativeId, "acteur", `Acteur ajouté à l'équipe de l'initiative : « ${actor.name} »`);
   }
+  await logAudit({ entityType: "actor", entityId: actor.id, entityLabel: actor.name, action: "create", user });
   return NextResponse.json(actor, { status: 201 });
 }

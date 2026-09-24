@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getWorkflowStages } from "@/lib/workflowStages";
 import { requireUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   const { user } = await requireUser();
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
       data: { initiativeId: initiative.id, label: "Baseline initiale", targetDate: initiative.targetDate },
     });
   }
+  await logAudit({ entityType: "initiative", entityId: initiative.id, entityLabel: initiative.name, action: "create", user });
 
   return NextResponse.json(initiative, { status: 201 });
 }

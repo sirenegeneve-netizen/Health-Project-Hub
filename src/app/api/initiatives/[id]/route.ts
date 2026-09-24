@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { logAudit, diffRecords } from "@/lib/audit";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -86,5 +87,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       budgetReviseEur: body.budgetReviseEur !== undefined ? (body.budgetReviseEur ? Number(body.budgetReviseEur) : null) : undefined,
     },
   });
+  await logAudit({ entityType: "initiative", entityId: initiative.id, entityLabel: initiative.name, action: "update", changes: diffRecords(current, initiative), user });
   return NextResponse.json(initiative);
 }

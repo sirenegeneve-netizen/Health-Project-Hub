@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { logAudit, diffRecords } from "@/lib/audit";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
+  const before = await prisma.establishment.findUnique({ where: { id: params.id } });
   const body = await req.json();
   const establishment = await prisma.establishment.update({
     where: { id: params.id },
@@ -30,5 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       support: body.support ?? undefined,
     },
   });
+  if (before) {
+    await logAudit({ entityType: "establishment", entityId: establishment.id, entityLabel: establishment.name, action: "update", changes: diffRecords(before, establishment), user });
+  }
   return NextResponse.json(establishment);
 }
