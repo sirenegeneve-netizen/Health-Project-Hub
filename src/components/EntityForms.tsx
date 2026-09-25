@@ -364,13 +364,17 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
   const [conflicts, setConflicts] = useState<
     { meetingId: string; title: string; date: string; initiativeId: string; initiativeName: string; sharedActorNames: string[] }[] | null
   >(null);
+  const [unavailable, setUnavailable] = useState<
+    { actorId: string; actorName: string; startDate: string; endDate: string; reason: string | null }[] | null
+  >(null);
 
   async function submit(force = false) {
     if (!f.title || !f.date) return;
     const res = await post("/api/meetings", { initiativeId, participantActorIds, force, ...f });
     if (res.status === 409) {
       const data = await res.json();
-      setConflicts(data.conflicts);
+      setConflicts(data.conflicts || []);
+      setUnavailable(data.unavailable || []);
       return;
     }
     const meeting = await res.json();
@@ -405,6 +409,7 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
               onChange={(e) => {
                 setF({ ...f, date: e.target.value });
                 setConflicts(null);
+                setUnavailable(null);
               }}
             />
           </Field>
@@ -424,6 +429,24 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
                     « {c.title} » — {new Date(c.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} ({c.initiativeName})
                     <br />
                     <span className="text-xs text-ink/50">Concerné : {c.sharedActorNames.join(", ")}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="text-xs text-blue hover:underline" onClick={() => submit(true)}>
+                Maintenir quand même →
+              </button>
+            </div>
+          )}
+
+          {unavailable && unavailable.length > 0 && (
+            <div className="bg-warn/10 border border-warn/30 rounded-lg p-3 text-sm mb-2">
+              <div className="font-medium text-warn mb-1">⚠️ Participant indisponible sur cette date</div>
+              <ul className="space-y-1 mb-2">
+                {unavailable.map((u) => (
+                  <li key={u.actorId} className="text-ink/70">
+                    {u.actorName} — indisponible du {new Date(u.startDate).toLocaleDateString("fr-FR")} au{" "}
+                    {new Date(u.endDate).toLocaleDateString("fr-FR")}
+                    {u.reason && <span className="text-ink/50"> ({u.reason})</span>}
                   </li>
                 ))}
               </ul>

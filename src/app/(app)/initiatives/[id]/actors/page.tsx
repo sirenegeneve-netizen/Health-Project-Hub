@@ -42,6 +42,16 @@ export default async function GovernancePage({ params }: { params: { id: string 
     competences: string | null;
   }>;
 
+  const unavailabilities = await prisma.actorUnavailability.findMany({
+    where: { actorId: { in: actors.map((a) => a.id) } },
+    orderBy: { startDate: "asc" },
+  });
+  const unavailabilitiesByActor = new Map<string, typeof unavailabilities>();
+  for (const u of unavailabilities) {
+    if (!unavailabilitiesByActor.has(u.actorId)) unavailabilitiesByActor.set(u.actorId, []);
+    unavailabilitiesByActor.get(u.actorId)!.push(u);
+  }
+
   return (
     <div>
       <InitiativeTabs initiativeId={params.id} />
@@ -85,7 +95,17 @@ export default async function GovernancePage({ params }: { params: { id: string 
                   </thead>
                   <tbody>
                     {actors.map((a) => (
-                      <ActorManageRow key={a.id} actor={a} roleLabels={ROLE_LABELS} />
+                      <ActorManageRow
+                        key={a.id}
+                        actor={a}
+                        roleLabels={ROLE_LABELS}
+                        unavailabilities={(unavailabilitiesByActor.get(a.id) || []).map((u) => ({
+                          id: u.id,
+                          startDate: u.startDate.toISOString(),
+                          endDate: u.endDate.toISOString(),
+                          reason: u.reason,
+                        }))}
+                      />
                     ))}
                   </tbody>
                 </table>

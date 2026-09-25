@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { checkMeetingConflicts } from "@/lib/meetingConflicts";
+import { checkUnavailableParticipants } from "@/lib/actorAvailability";
 import { requireUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -13,9 +14,12 @@ export async function POST(req: NextRequest) {
   const date = new Date(body.date);
 
   if (!body.force) {
-    const conflicts = await checkMeetingConflicts(participantActorIds, date);
-    if (conflicts.length > 0) {
-      return NextResponse.json({ conflicts }, { status: 409 });
+    const [conflicts, unavailable] = await Promise.all([
+      checkMeetingConflicts(participantActorIds, date),
+      checkUnavailableParticipants(participantActorIds, date),
+    ]);
+    if (conflicts.length > 0 || unavailable.length > 0) {
+      return NextResponse.json({ conflicts, unavailable }, { status: 409 });
     }
   }
 
