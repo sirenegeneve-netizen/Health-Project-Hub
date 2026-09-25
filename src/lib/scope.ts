@@ -35,3 +35,18 @@ export function initiativeScopeWhere(scope: Scope) {
   if (!scope.establishmentId) return {};
   return { establishments: { some: { establishmentId: scope.establishmentId } } };
 }
+
+// Équivalent pour les risques (et modèles avec la même forme owner : Action) :
+// inclut les risques des initiatives de l'établissement du scope, ET les
+// risques propres à cet établissement (ownerType="etablissement"). Un risque
+// propre à un Groupe n'apparaît que dans la vue Groupe non scopée (return {}
+// ci-dessous ne filtre rien, donc groupe/établissement/initiative confondus).
+export function riskScopeWhere(scope: Scope) {
+  if (!scope.establishmentId) return {};
+  return {
+    OR: [
+      { initiative: { establishments: { some: { establishmentId: scope.establishmentId } } } },
+      { ownerType: "etablissement", ownerId: scope.establishmentId },
+    ],
+  };
+}

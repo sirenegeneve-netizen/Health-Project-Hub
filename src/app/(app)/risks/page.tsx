@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { InlineSelect } from "@/components/InlineSelect";
 import { RiskMatrix } from "@/components/RiskMatrix";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere, riskScopeWhere } from "@/lib/scope";
 import { computeHealthScore } from "@/lib/healthScore";
 import { severityFor, reasonHref, ALERT_STYLES, computeAdditionalAlerts, type PortfolioAlert } from "@/lib/portfolioAlerts";
 
@@ -55,7 +55,7 @@ export default async function GlobalRisksPage() {
   const criticalCount = allAlerts.filter((a) => a.level === "critique").length;
 
   const risks = await prisma.risk.findMany({
-    where: { initiativeId: { in: initiatives.map((p) => p.id) } },
+    where: riskScopeWhere(scope),
     include: { initiative: true },
     orderBy: { createdAt: "desc" },
   });
@@ -130,9 +130,19 @@ export default async function GlobalRisksPage() {
                   <tr key={r.id}>
                     <td className="pl-4">{r.description}</td>
                     <td>
-                      <Link href={`/initiatives/${r.initiativeId}`} className="text-blue hover:underline">
-                        {r.initiative.name}
-                      </Link>
+                      {r.initiative ? (
+                        <Link href={`/initiatives/${r.initiativeId}`} className="text-blue hover:underline">
+                          {r.initiative.name}
+                        </Link>
+                      ) : r.ownerType === "groupe" ? (
+                        <Link href={`/groups/${r.ownerId}/risques`} className="text-ink/50 hover:underline">
+                          Propre au groupe
+                        </Link>
+                      ) : (
+                        <Link href={`/establishments/${r.ownerId}/risques`} className="text-ink/50 hover:underline">
+                          Propre à l'établissement
+                        </Link>
+                      )}
                     </td>
                     <td className="capitalize">{r.criticite}</td>
                     <td>{r.proprietaire || "—"}</td>

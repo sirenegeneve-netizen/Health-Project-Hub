@@ -7,18 +7,18 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 export interface Bucket {
   label: string;
   value: number;
-  items: { id: string; name: string; sub?: string }[];
+  items: { id: string; name: string; sub?: string; href?: string }[];
 }
 
 const COLORS = ["#0EA5A8", "#2563EB", "#7C3AED", "#F59E0B", "#DC2626", "#16A34A", "#64748B", "#0891B2", "#DB2777", "#65A30D"];
 
-function DrilldownList({ items }: { items: { id: string; name: string; sub?: string }[] }) {
+function DrilldownList({ items }: { items: { id: string; name: string; sub?: string; href?: string }[] }) {
   if (items.length === 0) return <p className="text-xs text-ink/40 mt-2">Aucun élément.</p>;
   return (
     <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
       {items.map((it) => (
         <li key={it.id} className="text-xs">
-          <Link href={`/initiatives/${it.id}`} className="text-blue hover:underline">
+          <Link href={it.href || `/initiatives/${it.id}`} className="text-blue hover:underline">
             {it.name}
           </Link>
           {it.sub && <span className="text-ink/40"> — {it.sub}</span>}

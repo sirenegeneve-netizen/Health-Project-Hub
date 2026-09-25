@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { ReportsCharts } from "@/components/ReportsCharts";
 import { computeHealthScore } from "@/lib/healthScore";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere, riskScopeWhere } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -26,17 +26,22 @@ function bucketBy<T>(items: T[], keyFn: (item: T) => string | null, itemFn: (ite
 
 export default async function ReportsPage() {
   const scope = await getScope();
-  const [initiatives, risksAllRaw] = await Promise.all([
+  const [initiatives, risksAll] = await Promise.all([
     prisma.initiative.findMany({ where: initiativeScopeWhere(scope), include: { establishments: { include: { establishment: true } } } }),
     prisma.risk.findMany({
-      where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined,
-      select: { createdAt: true, criticite: true, status: true, description: true, initiativeId: true, initiative: { select: { id: true, name: true } } },
+      where: riskScopeWhere(scope),
+      select: { createdAt: true, criticite: true, status: true, description: true, initiativeId: true, ownerType: true, ownerId: true, initiative: { select: { id: true, name: true } } },
     }),
   ]);
-  // Cette page reste, comme avant, centrée sur les initiatives : les risques
-  // propres à un groupe ou un établissement (sans initiative) ne sont pas
-  // représentés ici pour l'instant.
-  const risksAll = risksAllRaw.filter((r) => r.initiative);
+
+  // Un risque propre à un groupe ou un établissement (sans initiative) n'a pas
+  // de fiche "/initiatives/...", donc son lien de drilldown pointe vers son
+  // onglet Risques respectif.
+  function riskLabel(r: (typeof risksAll)[number]) {
+    if (r.initiative) return { id: r.initiativeId!, name: r.description, sub: r.initiative.name, href: `/initiatives/${r.initiativeId}` };
+    if (r.ownerType === "groupe") return { id: r.ownerId!, name: r.description, sub: "Propre au groupe", href: `/groups/${r.ownerId}/risques` };
+    return { id: r.ownerId!, name: r.description, sub: "Propre à l'établissement", href: `/establishments/${r.ownerId}/risques` };
+  }
 
   if (initiatives.length === 0) {
     return (
@@ -74,7 +79,7 @@ export default async function ReportsPage() {
   const risksByCriticite = bucketBy(
     openRisks,
     (r) => CRITICITE_LABELS[r.criticite] || r.criticite,
-    (r) => ({ id: r.initiativeId!, name: r.description, sub: r.initiative!.name })
+    (r) => riskLabel(r)
   );
 
   // Tendance de création — dérivée de vraies dates de création, mois par mois.
@@ -92,7 +97,7 @@ export default async function ReportsPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - (8 - i), 1);
     const items = risksAll
       .filter((r) => r.createdAt.getFullYear() === d.getFullYear() && r.createdAt.getMonth() === d.getMonth())
-      .map((r) => ({ id: r.initiativeId!, name: r.description, sub: r.initiative!.name }));
+      .map((r) => riskLabel(r));
     return { label: m.label, value: items.length, items };
   });
 
@@ -120,8 +125,7 @@ export default async function ReportsPage() {
 
       <p className="text-xs text-muted/70 mt-6">
         L'évolution du budget consommé et la charge par ressource ne sont pas encore représentées ici : elles nécessitent un
-        historique dans le temps que l'outil ne conserve pas encore (photos successives plutôt qu'un seul chiffre courant). Les
-        risques/actions propres à un groupe ou un établissement (sans initiative) ne sont pas non plus repris ici.
+        historique dans le temps que l'outil ne conserve pas encore (photos successives plutôt qu'un seul chiffre courant).
       </p>
 
       <div className="card mt-6">
