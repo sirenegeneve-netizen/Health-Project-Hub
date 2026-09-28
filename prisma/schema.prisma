@@ -121,6 +121,7 @@ model Actor {
   incidentsDeclares           Incident[]        @relation("IncidentDeclarant")
   initiativesAsChefDeProjet   Initiative[]      @relation("InitiativeChefDeProjet")
   unavailabilities            ActorUnavailability[]
+  allocations                  ActorAllocation[]
   initiativesAsSponsor        Initiative[]      @relation("InitiativeSponsor")
   createdAt       DateTime    @default(now())
 }
@@ -246,6 +247,7 @@ model Initiative {
   kpis             Kpi[]
   changeRequests   ChangeRequest[]
   actors           Actor[]
+  allocations      ActorAllocation[]
   raciEntries      RaciEntry[]
   requirements     Requirement[]
   gaps             Gap[]
@@ -800,4 +802,26 @@ model ActorUnavailability {
   createdAt DateTime @default(now())
 
   @@index([actorId])
+}
+
+// Allocation de charge déclarée pour un Acteur sur une Initiative, semaine par
+// semaine (weekStart = lundi de la semaine, à minuit). joursAlloues est un JH
+// déclaré manuellement — l'outil ne calcule ni n'estime rien automatiquement.
+// Une ligne par (acteur, initiative, semaine) ; la charge totale d'un acteur
+// sur une semaine se calcule en sommant ses lignes sur cette semaine, toutes
+// initiatives confondues.
+model ActorAllocation {
+  id           String     @id @default(cuid())
+  actorId      String
+  actor        Actor      @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  initiativeId String
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  weekStart    DateTime
+  joursAlloues Float
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([actorId, initiativeId, weekStart])
+  @@index([actorId, weekStart])
+  @@index([initiativeId])
 }
