@@ -13,6 +13,7 @@ import { computeCadrageReadiness } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 import { InitiativeEstablishmentManager } from "@/components/InitiativeEstablishmentManager";
+import { InitiativeGoalContributionManager } from "@/components/InitiativeGoalContributionManager";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,12 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 export default async function CadragePage({ params }: { params: { id: string } }) {
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
-    include: { budgetLines: true, baselines: { orderBy: { createdAt: "asc" } }, establishments: { include: { establishment: true } } },
+    include: {
+      budgetLines: true,
+      baselines: { orderBy: { createdAt: "asc" } },
+      establishments: { include: { establishment: true } },
+      goalContributions: { include: { strategicGoalCycle: { include: { strategicGoal: true, strategicPlan: true } } } },
+    },
   });
   if (!initiative) notFound();
 
@@ -47,6 +53,23 @@ export default async function CadragePage({ params }: { params: { id: string } }
     prisma.risk.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.establishment.findMany({ where: { groupId: initiative.groupId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
+
+  // Objectifs stratégiques disponibles : portés par le Groupe de l'initiative,
+  // ou par un des Établissements de ce Groupe (mêmes règles de portée que
+  // pour le rattachement établissements ci-dessus).
+  const availableCycles = await prisma.strategicGoalCycle.findMany({
+    where: {
+      OR: [
+        { strategicGoal: { ownerType: "groupe", ownerId: initiative.groupId } },
+        { strategicGoal: { ownerType: "etablissement", ownerId: { in: groupEstablishments.map((e) => e.id) } } },
+      ],
+    },
+    include: { strategicGoal: true, strategicPlan: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const linkedCycleIds = new Set(initiative.goalContributions.map((c) => c.strategicGoalCycleId));
+  const cycleLabel = (goalLibelle: string, cycleLibelle: string | null, planLibelle: string) =>
+    `${goalLibelle}${cycleLibelle ? " — " + cycleLibelle : ""} (${planLibelle})`;
 
   const actorsById = new Map(actors.map((a) => [a.id, a.name]));
   const dependencies = findSinglePointsOfFailure(raciEntries, actorsById);
@@ -112,6 +135,25 @@ export default async function CadragePage({ params }: { params: { id: string } }
               .map((ge) => ({ id: ge.id, name: ge.name }))}
           />
         </div>
+      </section>
+
+      <section className="mt-8">
+        <SectionTitle>Contribue à</SectionTitle>
+        <p className="text-sm text-muted mb-3">
+          Objectifs stratégiques du groupe ou de ses établissements auxquels cette initiative contribue — une initiative sans objectif rattaché
+          apparaît comme orpheline dans le portefeuille.
+        </p>
+        <InitiativeGoalContributionManager
+          initiativeId={params.id}
+          linked={initiative.goalContributions.map((c) => ({
+            linkId: c.id,
+            cycleId: c.strategicGoalCycleId,
+            label: cycleLabel(c.strategicGoalCycle.strategicGoal.libelle, c.strategicGoalCycle.libelle, c.strategicGoalCycle.strategicPlan.libelle),
+          }))}
+          available={availableCycles
+            .filter((cy) => !linkedCycleIds.has(cy.id))
+            .map((cy) => ({ id: cy.id, label: cycleLabel(cy.strategicGoal.libelle, cy.libelle, cy.strategicPlan.libelle) }))}
+        />
       </section>
 
       <section className="mt-8 mb-4">

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActorSelect, ActorMultiSelect } from "@/components/ActorSelect";
 
-function Toggle({ label, children }: { label: string; children: (close: () => void) => React.ReactNode }) {
+export function Toggle({ label, children }: { label: string; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   if (!open) {
     return (
@@ -16,8 +16,8 @@ function Toggle({ label, children }: { label: string; children: (close: () => vo
   return <div className="card mb-4 space-y-3">{children(() => setOpen(false))}</div>;
 }
 
-const inputCls = "input";
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export const inputCls = "input";
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <div className="label mb-1">{label}</div>
@@ -26,7 +26,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-async function post(url: string, body: unknown) {
+export async function post(url: string, body: unknown) {
   return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 }
 

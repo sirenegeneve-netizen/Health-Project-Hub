@@ -251,6 +251,7 @@ model Initiative {
   raciEntries      RaciEntry[]
   requirements     Requirement[]
   gaps             Gap[]
+  goalContributions InitiativeGoalContribution[]
   stageCriteria    StageCriterion[]
   relationsSource  InitiativeRelation[] @relation("RelationSource")
   relationsCible   InitiativeRelation[] @relation("RelationCible")
@@ -824,4 +825,81 @@ model ActorAllocation {
   @@unique([actorId, initiativeId, weekStart])
   @@index([actorId, weekStart])
   @@index([initiativeId])
+}
+
+// ---------------------------------------------------------------------------
+// Chantier "vision gouvernance intégrée" — Phase 1 : donner du sens aux
+// initiatives via des objectifs stratégiques versionnés par cycle de plan.
+//
+// StrategicGoal = identité stable d'un objectif ("Améliorer la sécurité
+// médicamenteuse"). StrategicPlan = un exercice daté partagé par plusieurs
+// objectifs ("Plan stratégique 2026–2028"). StrategicGoalCycle = la
+// déclinaison d'un Goal dans un Plan donné (cible/indicateurs spécifiques à ce
+// cycle, éventuelle reformulation) — c'est CE cycle, et non le Goal stable,
+// qui reçoit les contributions d'Initiative, pour garder la traçabilité :
+// "quels objectifs étaient poursuivis lors du plan précédent, et quelles
+// initiatives y ont contribué" reste répondable sans jamais écraser
+// l'historique d'un cycle passé.
+//
+// ownerType/ownerId réutilise le pattern du lot 3 (Risk/Action/Decision/
+// DocumentRef), mais restreint à "groupe" | "etablissement" — un objectif
+// stratégique n'est jamais porté par une initiative elle-même.
+// ---------------------------------------------------------------------------
+
+model StrategicPlan {
+  id        String   @id @default(cuid())
+  ownerType String // groupe | etablissement
+  ownerId   String
+  libelle   String
+  startDate DateTime
+  endDate   DateTime
+  statut    String   @default("actif") // brouillon | actif | clos
+  cycles    StrategicGoalCycle[]
+  createdAt DateTime @default(now())
+
+  @@index([ownerType, ownerId])
+}
+
+model StrategicGoal {
+  id          String   @id @default(cuid())
+  ownerType   String // groupe | etablissement
+  ownerId     String
+  libelle     String
+  description String?
+  cycles      StrategicGoalCycle[]
+  createdAt   DateTime @default(now())
+
+  @@index([ownerType, ownerId])
+}
+
+model StrategicGoalCycle {
+  id                String        @id @default(cuid())
+  strategicGoalId   String
+  strategicGoal     StrategicGoal @relation(fields: [strategicGoalId], references: [id], onDelete: Cascade)
+  strategicPlanId   String
+  strategicPlan     StrategicPlan @relation(fields: [strategicPlanId], references: [id], onDelete: Cascade)
+  libelle           String? // reformulation propre à ce cycle ; si vide, on affiche le libellé du Goal stable
+  statut            String        @default("actif") // actif | atteint | abandonne | reporte
+  cible             String?
+  indicateurs       String?
+  contributions     InitiativeGoalContribution[]
+  createdAt         DateTime      @default(now())
+
+  @@unique([strategicGoalId, strategicPlanId])
+}
+
+// Relation facultative des deux côtés (ni l'Initiative ni le Cycle n'imposent
+// de contrepartie) : permet de détecter symétriquement les initiatives
+// orphelines (aucune contribution) et les objectifs du plan actif non pris en
+// charge par une initiative.
+model InitiativeGoalContribution {
+  id                   String             @id @default(cuid())
+  initiativeId         String
+  initiative           Initiative         @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  strategicGoalCycleId String
+  strategicGoalCycle   StrategicGoalCycle @relation(fields: [strategicGoalCycleId], references: [id], onDelete: Cascade)
+  niveau               String             @default("principale") // principale | secondaire
+  createdAt            DateTime           @default(now())
+
+  @@unique([initiativeId, strategicGoalCycleId])
 }
