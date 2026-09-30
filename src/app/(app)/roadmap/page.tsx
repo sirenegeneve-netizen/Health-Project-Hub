@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { PlanningLevelToggle } from "@/components/PlanningLevelToggle";
+import { RoadmapRow } from "@/components/RoadmapRow";
 
 export const dynamic = "force-dynamic";
 
@@ -82,35 +82,29 @@ export default async function RoadmapPage() {
               const end = (p.targetDate || p.startDate || p.createdAt).getTime();
               const left = ((start - rangeStart) / span) * 100;
               const width = Math.max(((end - start) / span) * 100, 0.6);
+              const milestones = p.deliverables
+                .filter((d) => d.datePrevue)
+                .sort((a, b) => a.datePrevue!.getTime() - b.datePrevue!.getTime())
+                .map((d) => {
+                  const pct = ((d.datePrevue!.getTime() - rangeStart) / span) * 100;
+                  return {
+                    id: d.id,
+                    name: d.name,
+                    pct: pct >= 0 && pct <= 100 ? pct : null,
+                    dateLabel: d.datePrevue!.toLocaleDateString("fr-FR"),
+                  };
+                });
               return (
-                <div key={p.id} className="flex items-center">
-                  <Link href={`/initiatives/${p.id}`} className="w-56 shrink-0 pr-3 text-sm text-ink hover:text-blue truncate">
-                    {p.name}
-                  </Link>
-                  <div className="relative h-7 flex-1 bg-ink/[0.03] rounded">
-                    <div
-                      className={`absolute top-1 bottom-1 rounded ${HEALTH_COLOR[scores[i].level]} opacity-80`}
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                      title={`${p.name} — ${scores[i].label}`}
-                    />
-                    {p.deliverables
-                      .filter((d) => d.datePrevue)
-                      .map((d) => {
-                        const pct = ((d.datePrevue!.getTime() - rangeStart) / span) * 100;
-                        if (pct < 0 || pct > 100) return null;
-                        return (
-                          <span
-                            key={d.id}
-                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-ink/70 text-xs leading-none"
-                            style={{ left: `${pct}%` }}
-                            title={`Jalon : ${d.name} — ${d.datePrevue!.toLocaleDateString("fr-FR")}`}
-                          >
-                            ◆
-                          </span>
-                        );
-                      })}
-                  </div>
-                </div>
+                <RoadmapRow
+                  key={p.id}
+                  id={p.id}
+                  name={p.name}
+                  left={left}
+                  width={width}
+                  healthColorClass={HEALTH_COLOR[scores[i].level]}
+                  healthLabel={scores[i].label}
+                  milestones={milestones}
+                />
               );
             })}
           </div>
