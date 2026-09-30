@@ -149,6 +149,74 @@ export function QualityRequirementForm({ ownerType, ownerId }: { ownerType: "gro
     </Toggle>
   );
 }
+
+export const FINDING_TYPES: Record<string, string> = { ecart: "Écart", observation: "Observation", point_fort: "Point fort" };
+
+export function AuditFindingForm({
+  ownerType,
+  ownerId,
+  requirements,
+}: {
+  ownerType: "groupe" | "etablissement";
+  ownerId: string;
+  requirements: { id: string; label: string }[];
+}) {
+  const router = useRouter();
+  const [f, setF] = useState({ type: "ecart", libelle: "", description: "", qualityRequirementId: "" });
+  return (
+    <Toggle label="+ Nouveau constat d'audit">
+      {(close) => (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Type">
+              <select className={inputCls} value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+                {Object.entries(FINDING_TYPES).map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Exigence liée (optionnel)">
+              <select className={inputCls} value={f.qualityRequirementId} onChange={(e) => setF({ ...f, qualityRequirementId: e.target.value })}>
+                <option value="">— Aucune —</option>
+                {requirements.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <Field label="Libellé">
+            <input className={inputCls} value={f.libelle} onChange={(e) => setF({ ...f, libelle: e.target.value })} />
+          </Field>
+          <Field label="Description (optionnel)">
+            <input className={inputCls} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+          </Field>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.libelle) return;
+                await post("/api/audit-findings", { ownerType, ownerId, ...f, qualityRequirementId: f.qualityRequirementId || null });
+                setF({ type: "ecart", libelle: "", description: "", qualityRequirementId: "" });
+                close();
+                router.refresh();
+              }}
+            >
+              Créer
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
+
 // deux listes déroulantes ne proposent que les objets de la même portée
 // (owner) — passés déjà filtrés par la page appelante.
 export function StrategicGoalCycleForm({

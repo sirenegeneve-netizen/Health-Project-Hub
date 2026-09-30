@@ -440,6 +440,8 @@ model Action {
   risk           Risk?     @relation(fields: [riskId], references: [id])
   decisionId     String?
   decision       Decision? @relation(fields: [decisionId], references: [id])
+  auditFindingId String?
+  auditFinding   AuditFinding? @relation(fields: [auditFindingId], references: [id])
   establishmentId String?
   establishment   Establishment? @relation(fields: [establishmentId], references: [id])
   responsableActorId String?
@@ -449,7 +451,7 @@ model Action {
   dateDebut      DateTime?
   echeance       DateTime?
   priority       String    @default("normale")
-  origine        String?   // reunion | risque | decision | mail | document | manuel
+  origine        String?   // reunion | risque | decision | audit | mail | document | manuel
   status         String    @default("a_faire") // a_faire | en_cours | en_attente | termine | abandonne
   comments       String?
   postponedCount Int       @default(0)
@@ -927,6 +929,7 @@ model QualityRequirement {
   description String?
   applicable  Boolean  @default(true)
   coverages   InitiativeRequirementCoverage[]
+  auditFindings AuditFinding[]
   createdAt   DateTime @default(now())
 
   @@index([ownerType, ownerId])
@@ -945,4 +948,29 @@ model InitiativeRequirementCoverage {
   createdAt            DateTime           @default(now())
 
   @@unique([initiativeId, qualityRequirementId])
+}
+
+// ---------------------------------------------------------------------------
+// Chantier "vision gouvernance intégrée" — Phase 3 : constats d'audit, liés
+// (optionnellement) à une exigence qualité, générant des Actions correctrices
+// via le champ Action.auditFindingId — pas de nouveau modèle d'action, on
+// réutilise Action exactement comme pour un Risque ou une Décision
+// (Action.riskId / Action.decisionId).
+// ---------------------------------------------------------------------------
+
+model AuditFinding {
+  id                   String   @id @default(cuid())
+  ownerType            String // groupe | etablissement
+  ownerId              String
+  qualityRequirementId String?
+  qualityRequirement   QualityRequirement? @relation(fields: [qualityRequirementId], references: [id], onDelete: SetNull)
+  type                 String   @default("ecart") // ecart | observation | point_fort
+  libelle              String
+  description          String?
+  dateConstat          DateTime @default(now())
+  statut               String   @default("ouvert") // ouvert | en_traitement | cloture
+  actions              Action[]
+  createdAt            DateTime @default(now())
+
+  @@index([ownerType, ownerId])
 }

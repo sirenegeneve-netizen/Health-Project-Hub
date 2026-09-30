@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       meetingId: body.meetingId || null,
       riskId: body.riskId || null,
       decisionId: body.decisionId || null,
+      auditFindingId: body.auditFindingId || null,
       establishmentId: body.establishmentId || null,
       title: body.title,
       responsableActorId: body.responsableActorId || null,

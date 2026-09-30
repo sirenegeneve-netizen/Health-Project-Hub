@@ -3,7 +3,15 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { Pill } from "@/components/Pill";
-import { StrategicPlanForm, StrategicGoalForm, StrategicGoalCycleForm, QualityRequirementForm } from "@/components/GovernanceForms";
+import {
+  StrategicPlanForm,
+  StrategicGoalForm,
+  StrategicGoalCycleForm,
+  QualityRequirementForm,
+  AuditFindingForm,
+  FINDING_TYPES as FINDING_TYPE_LABELS,
+} from "@/components/GovernanceForms";
+import { ActionForm } from "@/components/EntityForms";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +20,7 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
   if (!group) notFound();
 
   const ownerType = "groupe" as const;
-  const [plans, goals, cycles, requirements] = await Promise.all([
+  const [plans, goals, cycles, requirements, findings, actors] = await Promise.all([
     prisma.strategicPlan.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { startDate: "desc" } }),
     prisma.strategicGoal.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.strategicGoalCycle.findMany({
@@ -29,6 +37,12 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
       include: { coverages: { include: { initiative: { select: { id: true, name: true } } } } },
       orderBy: [{ referentiel: "asc" }, { createdAt: "asc" }],
     }),
+    prisma.auditFinding.findMany({
+      where: { ownerType, ownerId: params.id },
+      include: { qualityRequirement: true, actions: true },
+      orderBy: { dateConstat: "desc" },
+    }),
+    prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
   ]);
 
   const applicableRequirements = requirements.filter((r) => r.applicable);
@@ -228,6 +242,69 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10 mb-4">
+        <h2 className="font-display text-lg text-ink mb-3">Constats d'audit</h2>
+        <p className="text-sm text-muted mb-3">
+          Écarts, observations et points forts constatés, optionnellement liés à une exigence. Un écart ouvert sans action correctrice reste visible
+          comme non traité.
+        </p>
+        <AuditFindingForm
+          ownerType={ownerType}
+          ownerId={group.id}
+          requirements={applicableRequirements.map((r) => ({ id: r.id, label: `${r.referentiel}${r.code ? " " + r.code : ""} — ${r.libelle}` }))}
+        />
+        {findings.length === 0 ? (
+          <div className="card text-center text-muted py-8">Aucun constat d'audit déclaré.</div>
+        ) : (
+          <div className="space-y-3">
+            {findings.map((f) => (
+              <div key={f.id} className="card">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <div className="flex items-center gap-2">
+                    <Pill
+                      text={FINDING_TYPE_LABELS[f.type] || f.type}
+                      tone={f.type === "ecart" ? "bad" : f.type === "point_fort" ? "ok" : "neutral"}
+                    />
+                    <span className="font-medium text-ink text-sm">{f.libelle}</span>
+                  </div>
+                  <Pill text={f.statut.replace(/_/g, " ")} tone={f.statut === "cloture" ? "ok" : f.statut === "en_traitement" ? "warn" : "bad"} />
+                </div>
+                {f.qualityRequirement && (
+                  <p className="text-xs text-muted mb-2">
+                    Exigence : {f.qualityRequirement.referentiel}
+                    {f.qualityRequirement.code ? " " + f.qualityRequirement.code : ""} — {f.qualityRequirement.libelle}
+                  </p>
+                )}
+                {f.description && <p className="text-sm text-ink/70 mb-2">{f.description}</p>}
+
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-muted mb-1">Actions correctrices</p>
+                  {f.actions.length === 0 ? (
+                    <p className="text-xs text-muted mb-2">Aucune — constat non traité.</p>
+                  ) : (
+                    <ul className="text-sm mb-2">
+                      {f.actions.map((a) => (
+                        <li key={a.id}>
+                          {a.title} — <span className="text-muted">{a.status.replace(/_/g, " ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <ActionForm
+                    initiativeId=""
+                    ownerType={ownerType}
+                    ownerId={group.id}
+                    auditFindingId={f.id}
+                    actors={actors}
+                    label="+ Action correctrice"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

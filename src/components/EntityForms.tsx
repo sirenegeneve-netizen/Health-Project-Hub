@@ -35,6 +35,7 @@ export function ActionForm({
   meetingId,
   riskId,
   decisionId,
+  auditFindingId,
   actors,
   establishments,
   label,
@@ -45,6 +46,7 @@ export function ActionForm({
   meetingId?: string;
   riskId?: string;
   decisionId?: string;
+  auditFindingId?: string;
   actors: { id: string; name: string }[];
   establishments?: { id: string; name: string }[];
   label?: string;
@@ -53,7 +55,7 @@ export function ActionForm({
 }) {
   const router = useRouter();
   const [f, setF] = useState({ title: "", responsableActorId: "", dateDebut: "", echeance: "", priority: "normale", comments: "", establishmentId: "" });
-  const origine = meetingId ? "reunion" : riskId ? "risque" : decisionId ? "decision" : "manuel";
+  const origine = meetingId ? "reunion" : riskId ? "risque" : decisionId ? "decision" : auditFindingId ? "audit" : "manuel";
   return (
     <Toggle label={label || "+ Nouvelle action"}>
       {(close) => (
@@ -105,6 +107,7 @@ export function ActionForm({
                   meetingId,
                   riskId,
                   decisionId,
+                  auditFindingId,
                   origine,
                   ...f,
                   establishmentId: ownerType === "etablissement" ? ownerId : f.establishmentId || null,
