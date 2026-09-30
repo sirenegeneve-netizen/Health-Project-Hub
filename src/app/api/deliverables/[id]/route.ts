@@ -16,6 +16,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       description: body.description ?? undefined,
       responsable: body.responsable ?? undefined,
       datePrevue: body.datePrevue !== undefined ? (body.datePrevue ? new Date(body.datePrevue) : null) : undefined,
+      heureDebut: body.heureDebut !== undefined ? body.heureDebut : undefined,
+      heureFin: body.heureFin !== undefined ? body.heureFin : undefined,
       dateReelle: body.dateReelle !== undefined ? (body.dateReelle ? new Date(body.dateReelle) : null) : undefined,
       version: body.version ?? undefined,
       status: body.status ?? undefined,

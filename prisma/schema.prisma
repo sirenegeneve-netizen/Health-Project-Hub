@@ -416,6 +416,7 @@ model Meeting {
   type         String // kick-off | comite_projet | copil | atelier_metier | atelier_interop | atelier_parametrage | suivi | go_no_go | hypercare | retex
   title        String
   date         DateTime
+  heureFin     String? // "HH:mm" — fin de réunion, même jour que `date` (qui porte déjà l'heure de début via datetime-local)
   participants String? // liste libre, séparée par virgules — legacy, conservé en secours d'affichage
   meetingParticipants MeetingParticipant[]
   agenda       String?
@@ -587,6 +588,8 @@ model TrainingSession {
   trainingRecordId String
   trainingRecord   TrainingRecord @relation(fields: [trainingRecordId], references: [id], onDelete: Cascade)
   date             DateTime
+  heureDebut       String? // "HH:mm" — si renseignée avec heureFin, dureeHeures est calculée automatiquement à la création
+  heureFin         String? // "HH:mm"
   dureeHeures      Float?
   formateur        String?
   formateurActorId String?
@@ -665,6 +668,8 @@ model Deliverable {
   responsableActorId String?
   responsableActor   Actor? @relation("DeliverableResponsable", fields: [responsableActorId], references: [id])
   datePrevue  DateTime?
+  heureDebut  String? // "HH:mm" — optionnel, seulement si le livrable correspond à une session programmée (ex. recette) avec le responsable
+  heureFin    String?
   dateReelle  DateTime?
   version     String?
   status      String    @default("a_venir") // a_venir | en_cours | valide | rejete

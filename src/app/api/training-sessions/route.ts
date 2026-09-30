@@ -3,18 +3,23 @@ import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { resolveActorName } from "@/lib/actorResolve";
 import { requireUser } from "@/lib/auth";
+import { hoursBetween } from "@/lib/time";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const date = new Date(body.date);
+  const dureeCalculee = hoursBetween(date, body.heureDebut, body.heureFin);
   const session = await prisma.trainingSession.create({
     data: {
       initiativeId: body.initiativeId,
       trainingRecordId: body.trainingRecordId,
-      date: new Date(body.date),
-      dureeHeures: body.dureeHeures ? Number(body.dureeHeures) : null,
+      date,
+      heureDebut: body.heureDebut || null,
+      heureFin: body.heureFin || null,
+      dureeHeures: dureeCalculee ?? (body.dureeHeures ? Number(body.dureeHeures) : null),
       formateurActorId: body.formateurActorId || null,
       formateur: await resolveActorName(body.formateurActorId),
       format: body.format || null,

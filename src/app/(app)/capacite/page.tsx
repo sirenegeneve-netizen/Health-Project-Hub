@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { CapacityHeatmap } from "@/components/CapacityHeatmap";
+import { ObservedLoadTable } from "@/components/ObservedLoadTable";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { mondayOf, addWeeks, weekLabel, isoDate } from "@/lib/weeks";
+import { computeObservedLoad, totalsByActorWeek } from "@/lib/observedLoad";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +17,16 @@ export default async function CapacitePage({ searchParams }: { searchParams: { f
   const weeks = weekDates.map((d) => ({ start: isoDate(d), label: weekLabel(d) }));
   const rangeEnd = addWeeks(baseMonday, WEEK_COUNT);
 
-  const [initiatives, actors, allocations] = await Promise.all([
+  const [initiatives, actors, allocations, observedEntries] = await Promise.all([
     prisma.initiative.findMany({ where: initiativeScopeWhere(scope), select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.actor.findMany({ where: { actif: true }, select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
     prisma.actorAllocation.findMany({
       where: { weekStart: { gte: baseMonday, lt: rangeEnd }, initiative: initiativeScopeWhere(scope) },
       include: { initiative: { select: { id: true, name: true } } },
     }),
+    computeObservedLoad(baseMonday, rangeEnd, initiativeScopeWhere(scope)),
   ]);
+  const observedTotals = totalsByActorWeek(observedEntries);
 
   const totals: Record<string, Record<string, number>> = {};
   const detail: Record<string, Record<string, { initiativeId: string; initiativeName: string; joursAlloues: number }[]>> = {};
@@ -63,6 +67,7 @@ export default async function CapacitePage({ searchParams }: { searchParams: { f
       </div>
 
       <CapacityHeatmap weeks={weeks} actors={actors} initiatives={initiatives} totals={totals} detail={detail} />
+      <ObservedLoadTable weeks={weeks} actors={actors} totals={observedTotals} />
     </div>
   );
 }

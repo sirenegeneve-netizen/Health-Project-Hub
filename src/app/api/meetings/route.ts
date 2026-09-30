@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   if (!body.force) {
     const [conflicts, unavailable] = await Promise.all([
-      checkMeetingConflicts(participantActorIds, date),
+      checkMeetingConflicts(participantActorIds, date, body.heureFin || null),
       checkUnavailableParticipants(participantActorIds, date),
     ]);
     if (conflicts.length > 0 || unavailable.length > 0) {
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
       type: body.type || "suivi",
       title: body.title,
       date,
+      heureFin: body.heureFin || null,
       participants: participantsLegacy,
       agenda: body.agenda || null,
       meetingParticipants: { create: participantActorIds.map((actorId) => ({ actorId })) },

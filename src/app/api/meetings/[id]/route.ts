@@ -23,6 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     where: { id: params.id },
     data: {
       title: body.title ?? undefined,
+      heureFin: body.heureFin !== undefined ? body.heureFin : undefined,
       agenda: body.agenda ?? undefined,
       notes: body.notes ?? undefined,
       participants: body.participants ?? undefined,

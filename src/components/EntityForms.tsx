@@ -362,7 +362,7 @@ export function InterfaceForm({ initiativeId, actors }: { initiativeId: string; 
 
 export function MeetingForm({ initiativeId, actors }: { initiativeId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ title: "", type: "suivi", date: "", agenda: "" });
+  const [f, setF] = useState({ title: "", type: "suivi", date: "", heureFin: "", agenda: "" });
   const [participantActorIds, setParticipantActorIds] = useState<string[]>([]);
   const [conflicts, setConflicts] = useState<
     { meetingId: string; title: string; date: string; initiativeId: string; initiativeName: string; sharedActorNames: string[] }[] | null
@@ -404,18 +404,32 @@ export function MeetingForm({ initiativeId, actors }: { initiativeId: string; ac
               </select>
             </Field>
           </div>
-          <Field label="Date">
-            <input
-              type="datetime-local"
-              className={inputCls}
-              value={f.date}
-              onChange={(e) => {
-                setF({ ...f, date: e.target.value });
-                setConflicts(null);
-                setUnavailable(null);
-              }}
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Date et heure de début">
+              <input
+                type="datetime-local"
+                className={inputCls}
+                value={f.date}
+                onChange={(e) => {
+                  setF({ ...f, date: e.target.value });
+                  setConflicts(null);
+                  setUnavailable(null);
+                }}
+              />
+            </Field>
+            <Field label="Heure de fin (optionnel)">
+              <input
+                type="time"
+                className={inputCls}
+                value={f.heureFin}
+                onChange={(e) => {
+                  setF({ ...f, heureFin: e.target.value });
+                  setConflicts(null);
+                  setUnavailable(null);
+                }}
+              />
+            </Field>
+          </div>
           <Field label="Participants">
             <ActorMultiSelect actors={actors} values={participantActorIds} onChange={setParticipantActorIds} />
           </Field>
@@ -675,7 +689,7 @@ export function BacklogForm({ initiativeId }: { initiativeId: string }) {
 
 export function DeliverableForm({ initiativeId, actors }: { initiativeId: string; actors: { id: string; name: string }[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ name: "", responsableActorId: "", datePrevue: "", version: "" });
+  const [f, setF] = useState({ name: "", responsableActorId: "", datePrevue: "", heureDebut: "", heureFin: "", version: "" });
   return (
     <Toggle label="+ Nouveau livrable">
       {(close) => (
@@ -692,6 +706,14 @@ export function DeliverableForm({ initiativeId, actors }: { initiativeId: string
             </Field>
             <Field label="Version">
               <input className={inputCls} value={f.version} onChange={(e) => setF({ ...f, version: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Heure de début (si session programmée)">
+              <input type="time" className={inputCls} value={f.heureDebut} onChange={(e) => setF({ ...f, heureDebut: e.target.value })} />
+            </Field>
+            <Field label="Heure de fin">
+              <input type="time" className={inputCls} value={f.heureFin} onChange={(e) => setF({ ...f, heureFin: e.target.value })} />
             </Field>
           </div>
           <div className="flex gap-2">
@@ -1014,6 +1036,8 @@ export function TrainingSessionForm({ initiativeId, populations, actors }: { ini
   const [f, setF] = useState({
     trainingRecordId: populations[0]?.id || "",
     date: "",
+    heureDebut: "",
+    heureFin: "",
     dureeHeures: "",
     formateurActorId: "",
     format: "presentiel",
@@ -1041,6 +1065,14 @@ export function TrainingSessionForm({ initiativeId, populations, actors }: { ini
               <input type="date" className={inputCls} value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
             </Field>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Heure de début">
+              <input type="time" className={inputCls} value={f.heureDebut} onChange={(e) => setF({ ...f, heureDebut: e.target.value })} />
+            </Field>
+            <Field label="Heure de fin">
+              <input type="time" className={inputCls} value={f.heureFin} onChange={(e) => setF({ ...f, heureFin: e.target.value })} />
+            </Field>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Formateur">
               <ActorSelect actors={actors} value={f.formateurActorId} onChange={(id) => setF({ ...f, formateurActorId: id })} />
@@ -1052,8 +1084,14 @@ export function TrainingSessionForm({ initiativeId, populations, actors }: { ini
                 <option value="elearning">E-learning</option>
               </select>
             </Field>
-            <Field label="Durée (h)">
-              <input type="number" className={inputCls} value={f.dureeHeures} onChange={(e) => setF({ ...f, dureeHeures: e.target.value })} />
+            <Field label="Durée (h) si pas d'heures">
+              <input
+                type="number"
+                className={inputCls}
+                value={f.dureeHeures}
+                disabled={!!(f.heureDebut && f.heureFin)}
+                onChange={(e) => setF({ ...f, dureeHeures: e.target.value })}
+              />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">

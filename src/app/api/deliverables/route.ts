@@ -17,6 +17,8 @@ export async function POST(req: NextRequest) {
       responsableActorId: body.responsableActorId || null,
       responsable: await resolveActorName(body.responsableActorId),
       datePrevue: body.datePrevue ? new Date(body.datePrevue) : null,
+      heureDebut: body.heureDebut || null,
+      heureFin: body.heureFin || null,
       version: body.version || null,
     },
   });
