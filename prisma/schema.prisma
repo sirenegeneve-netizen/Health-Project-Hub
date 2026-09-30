@@ -252,6 +252,7 @@ model Initiative {
   requirements     Requirement[]
   gaps             Gap[]
   goalContributions InitiativeGoalContribution[]
+  requirementCoverages InitiativeRequirementCoverage[]
   stageCriteria    StageCriterion[]
   relationsSource  InitiativeRelation[] @relation("RelationSource")
   relationsCible   InitiativeRelation[] @relation("RelationCible")
@@ -902,4 +903,46 @@ model InitiativeGoalContribution {
   createdAt            DateTime           @default(now())
 
   @@unique([initiativeId, strategicGoalCycleId])
+}
+
+// ---------------------------------------------------------------------------
+// Chantier "vision gouvernance intégrée" — Phase 2 : référentiel qualité
+// générique. Un seul modèle pour toutes les normes (ISO 9001, ISO 13485,
+// HAS, ANQ, interne...) — `referentiel` est un champ libre, pas un objet par
+// norme, pour éviter l'usine à gaz. `applicable=false` retire une exigence de
+// la couverture calculée sans supprimer son historique (même logique douce
+// que Actor.actif). Le statut de couverture (couverte/partielle/non couverte)
+// n'est volontairement pas stocké : il se calcule à partir des lignes de
+// InitiativeRequirementCoverage existantes, conformément au principe "jamais
+// de donnée fabriquée dans l'UI".
+// ---------------------------------------------------------------------------
+
+model QualityRequirement {
+  id          String   @id @default(cuid())
+  ownerType   String // groupe | etablissement
+  ownerId     String
+  referentiel String // ISO 9001 | ISO 13485 | ISO 14971 | ISO 27001 | ISO 22301 | RGPD/LPD | ANQ | HAS | interne | autre
+  code        String? // ex. "§7.5" — référence de clause, optionnel
+  libelle     String
+  description String?
+  applicable  Boolean  @default(true)
+  coverages   InitiativeRequirementCoverage[]
+  createdAt   DateTime @default(now())
+
+  @@index([ownerType, ownerId])
+}
+
+// Relation facultative des deux côtés, même logique que
+// InitiativeGoalContribution : détecte symétriquement les initiatives sans
+// exigence couverte et les exigences applicables sans initiative.
+model InitiativeRequirementCoverage {
+  id                   String             @id @default(cuid())
+  initiativeId         String
+  initiative           Initiative         @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  qualityRequirementId String
+  qualityRequirement   QualityRequirement @relation(fields: [qualityRequirementId], references: [id], onDelete: Cascade)
+  niveau               String             @default("totale") // totale | partielle
+  createdAt            DateTime           @default(now())
+
+  @@unique([initiativeId, qualityRequirementId])
 }

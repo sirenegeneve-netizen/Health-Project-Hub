@@ -8,7 +8,7 @@ const TABS = [
   { href: "/etablissements", label: "Établissements" },
   { href: "/initiatives", label: "Initiatives" },
   { href: "/gouvernance", label: "Gouvernance" },
-  { href: "/objectifs", label: "Objectifs stratégiques" },
+  { href: "/objectifs", label: "Objectifs & conformité" },
   { href: "/risques", label: "Risques" },
   { href: "/actions", label: "Actions" },
   { href: "/documents", label: "Documents" },

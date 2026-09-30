@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
 import { Pill } from "@/components/Pill";
-import { StrategicPlanForm, StrategicGoalForm, StrategicGoalCycleForm } from "@/components/GovernanceForms";
+import { StrategicPlanForm, StrategicGoalForm, StrategicGoalCycleForm, QualityRequirementForm } from "@/components/GovernanceForms";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
   if (!establishment) notFound();
 
   const ownerType = "etablissement" as const;
-  const [plans, goals, cycles] = await Promise.all([
+  const [plans, goals, cycles, requirements] = await Promise.all([
     prisma.strategicPlan.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { startDate: "desc" } }),
     prisma.strategicGoal.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.strategicGoalCycle.findMany({
@@ -24,7 +24,20 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
       },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.qualityRequirement.findMany({
+      where: { ownerType, ownerId: params.id },
+      include: { coverages: { include: { initiative: { select: { id: true, name: true } } } } },
+      orderBy: [{ referentiel: "asc" }, { createdAt: "asc" }],
+    }),
   ]);
+
+  const applicableRequirements = requirements.filter((r) => r.applicable);
+  const couvertes = applicableRequirements.filter((r) => r.coverages.some((c) => c.niveau === "totale")).length;
+  const partielles = applicableRequirements.filter(
+    (r) => !r.coverages.some((c) => c.niveau === "totale") && r.coverages.some((c) => c.niveau === "partielle")
+  ).length;
+  const nonCouvertes = applicableRequirements.length - couvertes - partielles;
+  const tauxCouverture = applicableRequirements.length > 0 ? Math.round((couvertes / applicableRequirements.length) * 100) : null;
 
   const cyclesByPlan = new Map<string, typeof cycles>();
   for (const cy of cycles) {
@@ -145,6 +158,77 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
               </div>
             );
           })
+        )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-display text-lg text-ink mb-3">Exigences qualité & conformité</h2>
+        {tauxCouverture !== null && (
+          <div className="card px-4 py-3 mb-4 text-sm">
+            <span className="font-medium text-ink">{tauxCouverture}% des exigences applicables sont couvertes</span>{" "}
+            <span className="text-muted">
+              ({couvertes} couvertes, {partielles} partiellement, {nonCouvertes} non couvertes — {applicableRequirements.length} exigences applicables)
+            </span>
+          </div>
+        )}
+        <QualityRequirementForm ownerType={ownerType} ownerId={establishment.id} />
+        {requirements.length === 0 ? (
+          <div className="card text-center text-muted py-8">Aucune exigence qualité déclarée.</div>
+        ) : (
+          <div className="card p-0 overflow-hidden">
+            <table className="table-hp">
+              <thead>
+                <tr className="bg-teal-50/50">
+                  <th className="pl-4">Référentiel</th>
+                  <th>Exigence</th>
+                  <th>Couverture</th>
+                  <th>Initiatives</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requirements.map((r) => {
+                  const totale = r.coverages.some((c) => c.niveau === "totale");
+                  const partielle = !totale && r.coverages.some((c) => c.niveau === "partielle");
+                  return (
+                    <tr key={r.id} className={!r.applicable ? "opacity-50" : ""}>
+                      <td className="pl-4 text-sm text-muted whitespace-nowrap">
+                        {r.referentiel}
+                        {r.code && <span> {r.code}</span>}
+                      </td>
+                      <td className="text-sm">
+                        {r.libelle}
+                        {!r.applicable && <span className="text-muted"> (non applicable)</span>}
+                      </td>
+                      <td>
+                        {!r.applicable ? (
+                          <Pill text="n/a" tone="neutral" />
+                        ) : totale ? (
+                          <Pill text="couverte" tone="ok" />
+                        ) : partielle ? (
+                          <Pill text="partielle" tone="warn" />
+                        ) : (
+                          <Pill text="non couverte" tone="bad" />
+                        )}
+                      </td>
+                      <td className="text-sm">
+                        {r.coverages.length === 0 ? (
+                          <span className="text-muted">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {r.coverages.map((c) => (
+                              <Link key={c.id} href={`/initiatives/${c.initiative.id}/cadrage`} className="text-blue hover:underline">
+                                {c.initiative.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

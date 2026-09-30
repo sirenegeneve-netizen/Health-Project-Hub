@@ -14,6 +14,7 @@ import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 import { InitiativeEstablishmentManager } from "@/components/InitiativeEstablishmentManager";
 import { InitiativeGoalContributionManager } from "@/components/InitiativeGoalContributionManager";
+import { InitiativeRequirementCoverageManager } from "@/components/InitiativeRequirementCoverageManager";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function CadragePage({ params }: { params: { id: string } }
       baselines: { orderBy: { createdAt: "asc" } },
       establishments: { include: { establishment: true } },
       goalContributions: { include: { strategicGoalCycle: { include: { strategicGoal: true, strategicPlan: true } } } },
+      requirementCoverages: { include: { qualityRequirement: true } },
     },
   });
   if (!initiative) notFound();
@@ -70,6 +72,22 @@ export default async function CadragePage({ params }: { params: { id: string } }
   const linkedCycleIds = new Set(initiative.goalContributions.map((c) => c.strategicGoalCycleId));
   const cycleLabel = (goalLibelle: string, cycleLibelle: string | null, planLibelle: string) =>
     `${goalLibelle}${cycleLibelle ? " — " + cycleLibelle : ""} (${planLibelle})`;
+
+  // Exigences qualité disponibles : mêmes règles de portée que les objectifs
+  // stratégiques (groupe de l'initiative, ou établissements de ce groupe).
+  const availableRequirements = await prisma.qualityRequirement.findMany({
+    where: {
+      applicable: true,
+      OR: [
+        { ownerType: "groupe", ownerId: initiative.groupId },
+        { ownerType: "etablissement", ownerId: { in: groupEstablishments.map((e) => e.id) } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  const linkedRequirementIds = new Set(initiative.requirementCoverages.map((c) => c.qualityRequirementId));
+  const requirementLabel = (r: { referentiel: string; code: string | null; libelle: string }) =>
+    `${r.referentiel}${r.code ? " " + r.code : ""} — ${r.libelle}`;
 
   const actorsById = new Map(actors.map((a) => [a.id, a.name]));
   const dependencies = findSinglePointsOfFailure(raciEntries, actorsById);
@@ -153,6 +171,24 @@ export default async function CadragePage({ params }: { params: { id: string } }
           available={availableCycles
             .filter((cy) => !linkedCycleIds.has(cy.id))
             .map((cy) => ({ id: cy.id, label: cycleLabel(cy.strategicGoal.libelle, cy.libelle, cy.strategicPlan.libelle) }))}
+        />
+      </section>
+
+      <section className="mt-8">
+        <SectionTitle>Couvre</SectionTitle>
+        <p className="text-sm text-muted mb-3">
+          Exigences qualité/conformité (ISO, HAS, ANQ, internes…) du groupe ou de ses établissements que cette initiative couvre.
+        </p>
+        <InitiativeRequirementCoverageManager
+          initiativeId={params.id}
+          linked={initiative.requirementCoverages.map((c) => ({
+            linkId: c.id,
+            requirementId: c.qualityRequirementId,
+            label: requirementLabel(c.qualityRequirement),
+          }))}
+          available={availableRequirements
+            .filter((r) => !linkedRequirementIds.has(r.id))
+            .map((r) => ({ id: r.id, label: requirementLabel(r) }))}
         />
       </section>
 

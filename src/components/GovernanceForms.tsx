@@ -91,7 +91,64 @@ export function StrategicGoalForm({ ownerType, ownerId }: { ownerType: "groupe" 
   );
 }
 
-// Décline un Objectif existant dans un Plan existant (crée le Cycle). Les
+export const REFERENTIEL_OPTIONS = ["ISO 9001", "ISO 13485", "ISO 14971", "ISO 27001", "ISO 22301", "RGPD/LPD", "ANQ", "HAS", "interne", "autre"];
+
+export function QualityRequirementForm({ ownerType, ownerId }: { ownerType: "groupe" | "etablissement"; ownerId: string }) {
+  const router = useRouter();
+  const [f, setF] = useState({ referentiel: "ISO 9001", referentielAutre: "", code: "", libelle: "", description: "" });
+  return (
+    <Toggle label="+ Nouvelle exigence qualité">
+      {(close) => (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Référentiel">
+              <select className={inputCls} value={f.referentiel} onChange={(e) => setF({ ...f, referentiel: e.target.value })}>
+                {REFERENTIEL_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {f.referentiel === "autre" && (
+              <Field label="Préciser le référentiel">
+                <input className={inputCls} value={f.referentielAutre} onChange={(e) => setF({ ...f, referentielAutre: e.target.value })} />
+              </Field>
+            )}
+            <Field label="Code / clause (optionnel)">
+              <input className={inputCls} placeholder="§7.5" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Libellé">
+            <input className={inputCls} value={f.libelle} onChange={(e) => setF({ ...f, libelle: e.target.value })} />
+          </Field>
+          <Field label="Description (optionnel)">
+            <input className={inputCls} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+          </Field>
+          <div className="flex gap-2">
+            <button
+              className="btn"
+              onClick={async () => {
+                if (!f.libelle) return;
+                const referentiel = f.referentiel === "autre" ? f.referentielAutre : f.referentiel;
+                if (!referentiel) return;
+                await post("/api/quality-requirements", { ownerType, ownerId, referentiel, code: f.code, libelle: f.libelle, description: f.description });
+                setF({ referentiel: "ISO 9001", referentielAutre: "", code: "", libelle: "", description: "" });
+                close();
+                router.refresh();
+              }}
+            >
+              Créer
+            </button>
+            <button className="btn-secondary" onClick={close}>
+              Annuler
+            </button>
+          </div>
+        </>
+      )}
+    </Toggle>
+  );
+}
 // deux listes déroulantes ne proposent que les objets de la même portée
 // (owner) — passés déjà filtrés par la page appelante.
 export function StrategicGoalCycleForm({
