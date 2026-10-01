@@ -32,6 +32,14 @@ export default async function SettingsPage() {
       </div>
 
       <div className="card max-w-md mt-6">
+        <div className="font-medium text-sm mb-1">Comptes utilisateurs</div>
+        <p className="text-sm text-muted mb-2">Créer des comptes, affecter rôles et périmètres, suspendre un accès.</p>
+        <Link href="/admin/users" className="text-sm text-blue hover:underline">
+          Gérer →
+        </Link>
+      </div>
+
+      <div className="card max-w-md mt-6">
         <div className="font-medium text-sm mb-1">Chef de projet / Sponsor à rattacher</div>
         <p className="text-sm text-muted mb-2">Reliquat de la migration vers le référentiel Acteur : cas saisis en texte libre sans Acteur rattaché.</p>
         <Link href="/admin/chef-sponsor" className="text-sm text-blue hover:underline">

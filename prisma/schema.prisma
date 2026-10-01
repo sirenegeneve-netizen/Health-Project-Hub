@@ -760,12 +760,53 @@ model Gap {
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
-  passwordHash String
+  passwordHash String?   // nullable : un compte "invited" n'a pas encore défini son mot de passe
   name         String
+  telephone    String?
+  avatarUrl    String?
+  status       String    @default("active") // invited | active | suspended
   actorId      String?   @unique
   actor        Actor?    @relation(fields: [actorId], references: [id])
+  lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   sessions     Session[]
+  assignments  UserAssignment[]
+  inviteTokens InviteToken[]
+}
+
+// Affectation rôle × périmètre — le cœur du système d'autorisation. Un
+// utilisateur a une ligne par affectation (ex. Claire = chef_de_projet/groupe/G1
+// ET chef_de_projet/initiative/X). scopeType="plateforme" est le seul cas où
+// scopeId vaut le sentinel "GLOBAL" plutôt qu'un id réel — évite les pièges
+// d'unicité Postgres sur colonnes NULL (NULL ≠ NULL dans une contrainte unique).
+// Compatibilité rôle/scopeType vérifiée en code (src/lib/authz.ts), pas en base :
+// administrateur → plateforme|groupe ; referent_etablissement → etablissement ;
+// directeur → groupe|etablissement ; chef_de_projet → groupe|etablissement|initiative.
+model UserAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // administrateur | referent_etablissement | directeur | chef_de_projet
+  scopeType String   // plateforme | groupe | etablissement | initiative
+  scopeId   String   // "GLOBAL" si scopeType = "plateforme"
+  createdAt DateTime @default(now())
+
+  @@unique([userId, role, scopeType, scopeId])
+}
+
+// Lien d'invitation à usage unique : définir son mot de passe active le
+// compte (status "invited" → "active"). Pas d'email envoyé en V1 — le lien
+// est affiché à l'administrateur pour qu'il le transmette lui-même, comme le
+// code d'invitation partagé déjà en place aujourd'hui.
+model InviteToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Session {
