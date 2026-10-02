@@ -37,7 +37,7 @@ export function UserDetailPanel({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [newRole, setNewRole] = useState<Role>("chef_de_projet");
-  const [newScopeType, setNewScopeType] = useState<ScopeType>("initiative");
+  const [newScopeType, setNewScopeType] = useState<ScopeType>("groupe");
   const [newScopeId, setNewScopeId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState(latestInviteUrl);

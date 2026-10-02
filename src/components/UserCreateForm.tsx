@@ -32,7 +32,7 @@ export function UserCreateForm({
   const [actorMode, setActorMode] = useState<"existing" | "new" | "none">("none");
   const [actorId, setActorId] = useState("");
   const [actorFonction, setActorFonction] = useState("");
-  const [rows, setRows] = useState<AssignmentRow[]>([{ role: "chef_de_projet", scopeType: "initiative", scopeId: "" }]);
+  const [rows, setRows] = useState<AssignmentRow[]>([{ role: "chef_de_projet", scopeType: "groupe", scopeId: "" }]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
@@ -54,7 +54,12 @@ export function UserCreateForm({
       setError("Nom et email sont requis.");
       return;
     }
-    const assignments = rows.filter((r) => r.scopeType === "plateforme" || r.scopeId);
+    const incomplete = rows.some((r) => r.scopeType !== "plateforme" && !r.scopeId);
+    if (incomplete) {
+      setError("Choisissez un périmètre pour chaque affectation (ou supprimez la ligne avec ×).");
+      return;
+    }
+    const assignments = rows;
     setLoading(true);
     try {
       const res = await fetch("/api/admin/users", {
@@ -199,7 +204,7 @@ export function UserCreateForm({
         <button
           type="button"
           className="btn-secondary text-sm mt-3"
-          onClick={() => setRows((r) => [...r, { role: "chef_de_projet", scopeType: "initiative", scopeId: "" }])}
+          onClick={() => setRows((r) => [...r, { role: "chef_de_projet", scopeType: "groupe", scopeId: "" }])}
         >
           + Ajouter une affectation
         </button>
