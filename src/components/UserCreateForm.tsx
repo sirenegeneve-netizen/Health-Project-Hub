@@ -159,45 +159,61 @@ export function UserCreateForm({
         <p className="text-sm text-muted mb-3">Un ou plusieurs rôles, chacun rattaché à un périmètre.</p>
         <div className="space-y-2">
           {rows.map((row, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <select
-                className="input"
-                value={row.role}
-                onChange={(e) => {
-                  const role = e.target.value as Role;
-                  updateRow(i, { role, scopeType: ROLE_ALLOWED_SCOPES[role][0], scopeId: "" });
-                }}
+            <div key={i} className="border border-line rounded-lg p-3 relative">
+              <button
+                type="button"
+                aria-label="Retirer cette affectation"
+                className="absolute top-2 right-2 text-ink/40 hover:text-bad text-sm w-6 h-6 flex items-center justify-center"
+                onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}
               >
-                {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="input"
-                value={row.scopeType}
-                onChange={(e) => updateRow(i, { scopeType: e.target.value as ScopeType, scopeId: "" })}
-              >
-                {ROLE_ALLOWED_SCOPES[row.role].map((st) => (
-                  <option key={st} value={st}>
-                    {SCOPE_TYPE_LABELS[st]}
-                  </option>
-                ))}
-              </select>
-              {row.scopeType !== "plateforme" && (
-                <select className="input flex-1" value={row.scopeId} onChange={(e) => updateRow(i, { scopeId: e.target.value })}>
-                  <option value="">— Choisir —</option>
-                  {optionsFor(row.scopeType).map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <button type="button" className="text-ink/40 hover:text-bad text-sm px-2" onClick={() => setRows((r) => r.filter((_, idx) => idx !== i))}>
                 ×
               </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-6">
+                <div>
+                  <label className="label block mb-1">Rôle</label>
+                  <select
+                    className="input w-full"
+                    value={row.role}
+                    onChange={(e) => {
+                      const role = e.target.value as Role;
+                      updateRow(i, { role, scopeType: ROLE_ALLOWED_SCOPES[role][0], scopeId: "" });
+                    }}
+                  >
+                    {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label block mb-1">Portée</label>
+                  <select
+                    className="input w-full"
+                    value={row.scopeType}
+                    onChange={(e) => updateRow(i, { scopeType: e.target.value as ScopeType, scopeId: "" })}
+                  >
+                    {ROLE_ALLOWED_SCOPES[row.role].map((st) => (
+                      <option key={st} value={st}>
+                        {SCOPE_TYPE_LABELS[st]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {row.scopeType !== "plateforme" && (
+                  <div className="sm:col-span-2">
+                    <label className="label block mb-1">{SCOPE_TYPE_LABELS[row.scopeType]}</label>
+                    <select className="input w-full" value={row.scopeId} onChange={(e) => updateRow(i, { scopeId: e.target.value })}>
+                      <option value="">— Choisir —</option>
+                      {optionsFor(row.scopeType).map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

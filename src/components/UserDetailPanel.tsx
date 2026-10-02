@@ -159,40 +159,51 @@ export function UserDetailPanel({
           </ul>
         )}
 
-        <div className="flex gap-2 items-center flex-wrap">
-          <select
-            className="input"
-            value={newRole}
-            onChange={(e) => {
-              const role = e.target.value as Role;
-              setNewRole(role);
-              setNewScopeType(ROLE_ALLOWED_SCOPES[role][0]);
-              setNewScopeId("");
-            }}
-          >
-            {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          <select className="input" value={newScopeType} onChange={(e) => setNewScopeType(e.target.value as ScopeType)}>
-            {ROLE_ALLOWED_SCOPES[newRole].map((st) => (
-              <option key={st} value={st}>
-                {SCOPE_TYPE_LABELS[st]}
-              </option>
-            ))}
-          </select>
-          {newScopeType !== "plateforme" && (
-            <select className="input flex-1" value={newScopeId} onChange={(e) => setNewScopeId(e.target.value)}>
-              <option value="">— Choisir —</option>
-              {optionsFor(newScopeType).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-          )}
+        <div className="border border-line rounded-lg p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="label block mb-1">Rôle</label>
+              <select
+                className="input w-full"
+                value={newRole}
+                onChange={(e) => {
+                  const role = e.target.value as Role;
+                  setNewRole(role);
+                  setNewScopeType(ROLE_ALLOWED_SCOPES[role][0]);
+                  setNewScopeId("");
+                }}
+              >
+                {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label block mb-1">Portée</label>
+              <select className="input w-full" value={newScopeType} onChange={(e) => setNewScopeType(e.target.value as ScopeType)}>
+                {ROLE_ALLOWED_SCOPES[newRole].map((st) => (
+                  <option key={st} value={st}>
+                    {SCOPE_TYPE_LABELS[st]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {newScopeType !== "plateforme" && (
+              <div className="sm:col-span-2">
+                <label className="label block mb-1">{SCOPE_TYPE_LABELS[newScopeType]}</label>
+                <select className="input w-full" value={newScopeId} onChange={(e) => setNewScopeId(e.target.value)}>
+                  <option value="">— Choisir —</option>
+                  {optionsFor(newScopeType).map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
           <button className="btn-secondary text-sm" disabled={busy} onClick={addAssignment}>
             + Ajouter
           </button>
