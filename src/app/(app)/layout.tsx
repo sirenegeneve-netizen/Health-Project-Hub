@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { ScopeBar } from "@/components/ScopeBar";
 import { UserMenu } from "@/components/UserMenu";
+import { FlashMessage } from "@/components/FlashMessage";
 import { prisma } from "@/lib/db";
 import { getScope } from "@/lib/scope";
 import { getCurrentUser } from "@/lib/auth";
@@ -29,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
         <main className="max-w-6xl mx-auto px-8 py-10">{children}</main>
+        <FlashMessage />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { DeleteButton } from "@/components/DeleteButton";
 import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { KpiForm } from "@/components/EntityForms";
@@ -25,7 +26,10 @@ export default async function KpisPage({ params }: { params: { id: string } }) {
             const pctOfTarget = k.target ? Math.round((k.value / k.target) * 100) : null;
             return (
               <div key={k.id} className="card">
-                <div className="label mb-1">{k.name}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="label mb-1">{k.name}</div>
+                  <DeleteButton kind="kpi" id={k.id} />
+                </div>
                 <div className={`font-display text-3xl ${overThreshold ? "text-bad" : "text-ink"}`}>
                   {k.value}
                   {k.unit && <span className="text-lg text-ink/50 ml-1">{k.unit}</span>}

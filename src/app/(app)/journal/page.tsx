@@ -10,6 +10,8 @@ const ENTITY_LABELS: Record<string, string> = {
   risk: "Risque",
   action: "Action",
   decision: "Décision",
+  meeting: "Réunion",
+  kpi: "Indicateur",
   document: "Document",
   actor: "Acteur",
   establishment: "Établissement",

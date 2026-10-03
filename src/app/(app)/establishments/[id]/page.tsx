@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
@@ -46,7 +47,10 @@ export default async function EstablishmentDetailPage({
       </div>
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="font-display text-2xl text-ink">{establishment.name}</h1>
-        <div className="flex gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1.5">
+          <DeleteButton kind="establishment" id={establishment.id} redirectTo="/establishments" className="btn-secondary text-sm text-red-600 print:hidden">
+            Supprimer
+          </DeleteButton>
           {establishment.status === "inactif" && (
             <span className="text-xs bg-ink/10 text-ink/60 rounded px-2 py-0.5">Inactif</span>
           )}

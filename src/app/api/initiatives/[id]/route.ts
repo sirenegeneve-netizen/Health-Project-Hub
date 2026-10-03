@@ -1,3 +1,4 @@
+import { handleDelete } from "@/lib/deletion";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
@@ -89,4 +90,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
   await logAudit({ entityType: "initiative", entityId: initiative.id, entityLabel: initiative.name, action: "update", changes: diffRecords(current, initiative), user });
   return NextResponse.json(initiative);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  return handleDelete("initiative", params.id);
 }

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { DeleteButton } from "@/components/DeleteButton";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
@@ -45,7 +46,12 @@ export default async function MeetingDetailPage({ params }: { params: { id: stri
     <div>
       <InitiativeTabs initiativeId={params.id} />
       <div className="mb-4">
-        <div className="text-xs text-ink/50 capitalize">{meeting.type.replace(/_/g, " ")}</div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-xs text-ink/50 capitalize">{meeting.type.replace(/_/g, " ")}</div>
+          <DeleteButton kind="meeting" id={meeting.id} redirectTo={`/initiatives/${params.id}/meetings`}>
+            Supprimer
+          </DeleteButton>
+        </div>
         <h1 className="font-display text-2xl text-ink">{meeting.title}</h1>
         <div className="text-sm text-ink/60">{new Date(meeting.date).toLocaleString("fr-FR")} — {meeting.participants || "participants non renseignés"}</div>
       </div>

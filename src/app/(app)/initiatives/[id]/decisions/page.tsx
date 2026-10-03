@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { DeleteButton } from "@/components/DeleteButton";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
@@ -39,7 +40,10 @@ export default async function DecisionsPage({ params }: { params: { id: string }
                 {d.recommendation && <div className="text-sm mt-1">Recommandation : {d.recommendation}</div>}
                 {d.decideur && <div className="text-xs text-ink/50 mt-1">Décideur : {d.decideur}</div>}
               </div>
-              <InlineSelect endpoint={`/api/decisions/${d.id}`} field="status" value={d.status} options={STATUS_OPTIONS} />
+              <div className="flex flex-col items-end gap-1">
+                <InlineSelect endpoint={`/api/decisions/${d.id}`} field="status" value={d.status} options={STATUS_OPTIONS} />
+                <DeleteButton kind="decision" id={d.id} />
+              </div>
             </div>
             {d.actions.length > 0 && (
               <ul className="text-xs text-ink/70 mt-3 pt-3 border-t border-line space-y-1">

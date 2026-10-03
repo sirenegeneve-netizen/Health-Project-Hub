@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { DeleteButton } from "@/components/DeleteButton";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
@@ -75,6 +76,9 @@ export default async function RisksPage({ params }: { params: { id: string } }) 
                 </td>
                 <td>
                   <InlineSelect endpoint={`/api/risks/${r.id}`} field="status" value={r.status} options={STATUS_OPTIONS} />
+                  <div className="mt-1">
+                    <DeleteButton kind="risk" id={r.id} />
+                  </div>
                 </td>
               </tr>
             ))}

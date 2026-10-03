@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
@@ -63,7 +64,12 @@ export default async function GroupDetailPage({ params }: { params: { id: string
           ← Groupes
         </Link>
       </div>
-      <h1 className="font-display text-2xl text-ink mb-1">{group.name}</h1>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h1 className="font-display text-2xl text-ink">{group.name}</h1>
+        <DeleteButton kind="group" id={group.id} redirectTo="/groups" className="btn-secondary text-sm text-red-600 print:hidden">
+          Supprimer
+        </DeleteButton>
+      </div>
       <div className="text-sm text-muted mb-6">
         {group.establishments.length} établissement{group.establishments.length > 1 ? "s" : ""}
         {" "}({group.establishments.filter((e) => e.status !== "inactif").length} actif

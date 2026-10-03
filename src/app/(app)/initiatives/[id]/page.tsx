@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
@@ -77,6 +78,9 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
             Générer le COPIL
           </Link>
           <HealthBadge level={score.level} label={score.label} />
+          <DeleteButton kind="initiative" id={initiative.id} redirectTo="/initiatives" className="btn-secondary text-sm text-red-600 print:hidden">
+            Supprimer
+          </DeleteButton>
         </div>
       </div>
 

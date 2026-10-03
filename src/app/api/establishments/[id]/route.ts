@@ -1,3 +1,4 @@
+import { handleDelete } from "@/lib/deletion";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -36,4 +37,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await logAudit({ entityType: "establishment", entityId: establishment.id, entityLabel: establishment.name, action: "update", changes: diffRecords(before, establishment), user });
   }
   return NextResponse.json(establishment);
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  return handleDelete("establishment", params.id);
 }

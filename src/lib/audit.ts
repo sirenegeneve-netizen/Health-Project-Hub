@@ -27,6 +27,8 @@ export function truncateLabel(s: string, max = 80): string {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
+// `db` permet d'écrire l'entrée dans la même transaction que la suppression
+// (client de transaction Prisma) — par défaut, le client global.
 export async function logAudit(params: {
   entityType: string;
   entityId: string;
@@ -34,9 +36,9 @@ export async function logAudit(params: {
   action: "create" | "update" | "delete";
   changes?: Record<string, { from: unknown; to: unknown }>;
   user: AuditUser;
-}) {
+}, db: Prisma.TransactionClient | typeof prisma = prisma) {
   if (params.action === "update" && (!params.changes || Object.keys(params.changes).length === 0)) return;
-  await prisma.auditLog.create({
+  await db.auditLog.create({
     data: {
       entityType: params.entityType,
       entityId: params.entityId,

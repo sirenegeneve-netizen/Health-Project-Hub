@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { DeleteButton } from "@/components/DeleteButton";
 import { Pill } from "@/components/Pill";
 
 const COLUMNS: [string, string][] = [
@@ -25,6 +26,8 @@ export interface KanbanAction {
 export function ActionsKanban({ actions }: { actions: KanbanAction[] }) {
   const router = useRouter();
   const [items, setItems] = useState(actions);
+  // Resynchronise la liste locale quand le serveur renvoie de nouvelles données (ex. après une suppression).
+  useEffect(() => setItems(actions), [actions]);
   const [dragId, setDragId] = useState<string | null>(null);
   const now = new Date();
 
@@ -79,6 +82,9 @@ export function ActionsKanban({ actions }: { actions: KanbanAction[] }) {
                       )}
                     </div>
                     {a.priority === "critique" && <Pill text="critique" tone="bad" />}
+                    <div className="mt-1 text-right">
+                      <DeleteButton kind="action" id={a.id} />
+                    </div>
                   </div>
                 );
               })}
