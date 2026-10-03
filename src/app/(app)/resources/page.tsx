@@ -36,7 +36,15 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
   const scope = await getScope();
 
   const [actors, raciEntries, actions, risks, interfaces, deliverables] = await Promise.all([
-    prisma.actor.findMany({ where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined, include: { initiative: true }, orderBy: { name: "asc" } }),
+    // Seuls les acteurs rattachés à une initiative ont une charge à afficher ici.
+    // Un acteur "transverse" (initiativeId null : affilié à un groupe/établissement,
+    // lié à un compte, ou détaché lors de la suppression de son initiative) n'a
+    // pas d'initiative à lister — l'inclure faisait planter la page.
+    prisma.actor.findMany({
+      where: scope.establishmentId ? { initiativeId: { not: null }, initiative: initiativeScopeWhere(scope) } : { initiativeId: { not: null } },
+      include: { initiative: true },
+      orderBy: { name: "asc" },
+    }),
     prisma.raciEntry.findMany(),
     prisma.action.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
     prisma.risk.findMany({ select: { initiativeId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
@@ -95,7 +103,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
       totalOwned += w.totalOwned;
       if (rec.disponibiliteJh !== null) totalDispo = (totalDispo || 0) + rec.disponibiliteJh;
       if (rec.roleProjet) roles.add(rec.roleProjet);
-      return { initiativeId: rec.initiativeId, initiativeName: rec.initiative.name, owned: w.totalOwned };
+      return { initiativeId: rec.initiativeId, initiativeName: rec.initiative!.name, owned: w.totalOwned };
     });
     return { name: records[0].name, records, perInitiative, totalOwned, totalDispo, roles: Array.from(roles) };
   });
@@ -114,7 +122,7 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
     const deps = findSinglePointsOfFailure(initiativeRaci, actorsById);
     if (deps.length > 0) dependenciesByInitiative.set(pid, deps);
   }
-  const initiativeNameById = new Map(actors.map((a) => [a.initiativeId, a.initiative.name]));
+  const initiativeNameById = new Map(actors.map((a) => [a.initiativeId, a.initiative!.name]));
   const totalDependencies = Array.from(dependenciesByInitiative.values()).reduce((s, d) => s + d.length, 0);
 
   const TABS = [
