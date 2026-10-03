@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeProgress, computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { computeStages } from "@/lib/lifecycle";
-import { getWorkflowStages } from "@/lib/workflowStages";
+import { getInitiativeStages } from "@/lib/templateEngine";
 import { findSinglePointsOfFailure, computeActorWorkload } from "@/lib/resourceGovernance";
 import { HealthBadge } from "@/components/HealthBadge";
 import { PrintButton } from "@/components/PrintButton";
@@ -40,7 +40,7 @@ export default async function CopilPage({ params }: { params: { id: string } }) 
 
   const progress = computeProgress(initiative.actions);
   const budget = computeBudgetSummary(initiative.budgetInitialEur, initiative.budgetReviseEur, initiative.budgetLines);
-  const workflowStages = await getWorkflowStages(initiative.type);
+  const workflowStages = await getInitiativeStages(params.id, initiative.type);
   const stages = computeStages(initiative.phase, workflowStages);
   const currentStage = stages.find((s) => s.status === "current") || stages[0];
 

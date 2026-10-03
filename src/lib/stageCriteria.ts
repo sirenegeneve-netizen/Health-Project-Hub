@@ -51,6 +51,17 @@ export async function ensureDefaultTemplates() {
 // Idempotent grâce à la contrainte unique [initiativeId, stageKey, label] sur
 // StageCriterion : un critère déjà coché n'est jamais recréé/réinitialisé.
 export async function ensureStageCriteria(initiativeId: string, stageKey: CriteriaStageKey, initiativeType: string) {
+  // Initiative dont le parcours a été copié depuis un modèle de projet et qui contient cette étape :
+  // ses critères ont déjà été copiés (figés) à la création ou par la migration — on ne les complète
+  // jamais depuis les listes par type, sinon une modification ultérieure de ces listes changerait
+  // silencieusement une initiative en cours. Une étape absente de la copie (ex. la page Préparation
+  // d'une initiative de Déploiement migrée) garde le comportement historique ci-dessous.
+  const owner = await prisma.initiative.findUnique({ where: { id: initiativeId }, select: { templateId: true } });
+  if (owner?.templateId) {
+    const stage = await prisma.initiativeStage.findUnique({ where: { initiativeId_key: { initiativeId, key: stageKey } }, select: { id: true } });
+    if (stage) return;
+  }
+
   await ensureDefaultTemplates();
   let templates = await prisma.stageCriterionTemplate.findMany({
     where: { initiativeType, stageKey },

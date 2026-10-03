@@ -24,6 +24,7 @@ interface Criterion {
   id: string;
   label: string;
   status: string;
+  obligatoire?: boolean;
 }
 
 // Checklist cliquable : chaque clic fait cycler le statut, exactement comme la
@@ -50,7 +51,10 @@ export function StageCriteriaList({ criteria }: { criteria: Criterion[] }) {
     <ul className="divide-y divide-ink/5">
       {criteria.map((c) => (
         <li key={c.id} className="flex items-center justify-between gap-4 py-2.5">
-          <span className="text-sm text-body">{c.label}</span>
+          <span className="text-sm text-body">
+            {c.label}
+            {c.obligatoire === false && <span className="ml-2 text-xs text-ink/40">optionnel</span>}
+          </span>
           <button
             onClick={() => cycle(c.id, c.status)}
             disabled={pending === c.id}

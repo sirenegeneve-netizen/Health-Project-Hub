@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
-import { getWorkflowStages } from "@/lib/workflowStages";
+import { getInitiativeStages } from "@/lib/templateEngine";
+import { computeStageCompletion } from "@/lib/stageCriteria";
+import { evaluateStageExit } from "@/lib/templatePlan";
+import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { stageGuidance } from "@/lib/stageGuidance";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { ActionForm, DecisionForm, RiskForm } from "@/components/EntityForms";
@@ -32,10 +35,18 @@ export default async function StagePage({ params }: { params: { id: string; key:
   // cette page générique ne sert que les 9 autres types.
   if (initiative.type === "deploiement") notFound();
 
-  const stages = await getWorkflowStages(initiative.type);
+  const stages = await getInitiativeStages(params.id, initiative.type);
   const stageIndex = stages.findIndex((s) => s.key === params.key);
   const stage = stageIndex >= 0 ? stages[stageIndex] : null;
   if (!stage) notFound();
+
+  // Copie figée de l'étape (objectif, caractère obligatoire) et ses critères de passage.
+  const [stageRow, criteria] = await Promise.all([
+    prisma.initiativeStage.findUnique({ where: { initiativeId_key: { initiativeId: params.id, key: stage.key } } }),
+    prisma.stageCriterion.findMany({ where: { initiativeId: params.id, stageKey: stage.key }, orderBy: { order: "asc" } }),
+  ]);
+  const completion = computeStageCompletion(criteria);
+  const exit = evaluateStageExit(stageRow?.gateMode ?? null, criteria);
 
   const actors = await findInitiativeActors(params.id, { id: true, name: true });
   const establishments = initiative.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
@@ -62,9 +73,10 @@ export default async function StagePage({ params }: { params: { id: string; key:
               Étape {stageIndex + 1}/{stages.length}
             </span>
             {isCurrentStage && <Pill text="Étape en cours" tone="ok" />}
+            {stageRow && !stageRow.obligatoire && <Pill text="Étape optionnelle" tone="neutral" />}
           </div>
           <h1 className="font-display text-2xl text-ink">{stage.label}</h1>
-          <p className="text-sm text-muted mt-1">{stageGuidance(stage.key)}</p>
+          <p className="text-sm text-muted mt-1">{stageRow?.objectif || stageGuidance(stage.key)}</p>
         </div>
         <div className="flex gap-3 text-sm">
           {prev && (
@@ -79,6 +91,21 @@ export default async function StagePage({ params }: { params: { id: string; key:
           )}
         </div>
       </div>
+
+      {criteria.length > 0 && (
+        <section className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <SectionTitle>Critères de passage</SectionTitle>
+            <div className="flex items-center gap-2">
+              {exit.warning && <Pill text={`${exit.unmet} critère${exit.unmet > 1 ? "s" : ""} obligatoire${exit.unmet > 1 ? "s" : ""} non satisfait${exit.unmet > 1 ? "s" : ""}`} tone="warn" />}
+              <span className="text-sm text-ink/60">{completion.percent}%</span>
+            </div>
+          </div>
+          <div className="card">
+            <StageCriteriaList criteria={criteria.map((c) => ({ id: c.id, label: c.label, status: c.status, obligatoire: c.obligatoire }))} />
+          </div>
+        </section>
+      )}
 
       <p className="text-xs text-ink/45 mt-3 mb-6">
         Actions, risques, décisions et réunions ci-dessous concernent l'ensemble de l'initiative — le suivi n'est pas encore filtré étape

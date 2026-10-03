@@ -12,6 +12,7 @@
     "db:migrate-actors": "tsx prisma/migrate-actors.ts",
     "db:migrate-initiative-types": "tsx prisma/migrate-initiative-types.ts",
     "db:seed-workflow-stages": "tsx prisma/seed-workflow-stages.ts",
+    "db:seed-project-templates": "tsx prisma/seed-project-templates.ts",
     "postinstall": "prisma generate",
     "test": "tsx --test tests/*.test.ts"
   },

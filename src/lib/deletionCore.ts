@@ -8,8 +8,10 @@ import { Prisma, PrismaClient } from "@prisma/client";
 //  - les `UserAssignment` ne sont retirées que si l'utilisateur en garde au
 //    moins une autre (sinon il retomberait en "mode transitoire" = accès
 //    complet, cf. authz.ts) — dans ce cas elles restent, inertes ;
-//  - les référentiels (WorkflowStage, StageCriterionTemplate, Methodology*)
-//    ne sont jamais touchés ;
+//  - les référentiels (WorkflowStage, StageCriterionTemplate, Methodology*,
+//    ProjectType, StageDefinition, ProjectTemplate et ses étapes) ne sont
+//    jamais touchés — seule la copie figée `InitiativeStage` d'une initiative
+//    supprimée part avec elle (cascade) ;
 //  - un `Actor` n'est supprimé que s'il n'est ni lié à un compte, ni rattaché
 //    à un groupe/établissement, ni référencé hors de l'initiative supprimée.
 

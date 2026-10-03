@@ -9,7 +9,7 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { InitiativeEditForm } from "@/components/InitiativeEditForm";
 import { InitiativeJourney } from "@/components/InitiativeJourney";
 import { computeStages } from "@/lib/lifecycle";
-import { getWorkflowStages } from "@/lib/workflowStages";
+import { getInitiativeStages } from "@/lib/templateEngine";
 import { findInitiativeActors } from "@/lib/actorScope";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export default async function InitiativeDashboard({ params }: { params: { id: st
     fonction: true,
   } as any);
 
-  const workflowStages = await getWorkflowStages(initiative.type);
+  const workflowStages = await getInitiativeStages(initiative.id, initiative.type);
 
   const score = await computeHealthScore(initiative.id);
   const now = new Date();

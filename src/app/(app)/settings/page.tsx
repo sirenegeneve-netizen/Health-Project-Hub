@@ -24,8 +24,18 @@ export default async function SettingsPage() {
       <LinkActorSelector currentActorId={user?.actorId || null} actors={actors} />
 
       <div className="card max-w-md mt-6">
-        <div className="font-medium text-sm mb-1">Critères de passage</div>
-        <p className="text-sm text-muted mb-2">Checklists des étapes Kick-off, Préparation et Clôture, par type d'initiative.</p>
+        <div className="font-medium text-sm mb-1">Configuration des projets</div>
+        <p className="text-sm text-muted mb-2">Types de projet, modèles de pilotage (parcours, étapes, critères de passage) et bibliothèque d'étapes.</p>
+        <Link href="/settings/projects" className="text-sm text-blue hover:underline">
+          Configurer →
+        </Link>
+      </div>
+
+      <div className="card max-w-md mt-6">
+        <div className="font-medium text-sm mb-1">Critères de passage (ancien écran)</div>
+        <p className="text-sm text-muted mb-2">
+          Checklists des étapes Kick-off, Préparation et Clôture, par type d'initiative. Les initiatives rattachées à un modèle de projet utilisent désormais les critères de leur modèle.
+        </p>
         <Link href="/settings/criteria" className="text-sm text-blue hover:underline">
           Configurer →
         </Link>

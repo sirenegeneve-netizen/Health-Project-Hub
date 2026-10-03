@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
-import { getWorkflowStages } from "@/lib/workflowStages";
+import { getInitiativeStages } from "@/lib/templateEngine";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export default async function EstablishmentsComparisonPage({ params }: { params:
   });
   if (!initiative) notFound();
 
-  const workflowStages = await getWorkflowStages(initiative.type);
+  const workflowStages = await getInitiativeStages(params.id, initiative.type);
   const PHASE_OPTIONS = [{ value: "", label: "— (aligné sur l'initiative)" }, ...workflowStages.map((s) => ({ value: s.key, label: s.label }))];
 
   const [risks, trainings, actions] = await Promise.all([

@@ -1,27 +1,17 @@
+import { getTypeLabels } from "@/lib/projectTypeLabels";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { getScope, initiativeScopeWhere } from "@/lib/scope";
 import { computeStages } from "@/lib/lifecycle";
-import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
+import { getInitiativeStagesMap } from "@/lib/templateEngine";
 import { InitiativesExplorer, type ExplorerInitiative } from "@/components/InitiativesExplorer";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<string, string> = {
-  deploiement: "Déploiement",
-  evolution: "Évolution",
-  interoperabilite: "Interopérabilité",
-  migration: "Migration",
-  mise_a_niveau: "Mise à niveau",
-  cybersecurite: "Cybersécurité",
-  reglementaire: "Réglementaire",
-  formation: "Formation",
-  audit: "Audit",
-  autre: "Autre",
-};
 
 export default async function InitiativesPage({ searchParams }: { searchParams: { vue?: string } }) {
+  const TYPE_LABELS = await getTypeLabels();
   const scope = await getScope();
 
   const initiatives = await prisma.initiative.findMany({
@@ -31,11 +21,11 @@ export default async function InitiativesPage({ searchParams }: { searchParams: 
   });
 
   const scores = await Promise.all(initiatives.map((p) => computeHealthScore(p.id)));
-  const stagesByType = await getAllWorkflowStagesGrouped();
+  const stagesById = await getInitiativeStagesMap(initiatives.map((p) => ({ id: p.id, type: p.type })));
 
   const now = new Date();
   const items: ExplorerInitiative[] = initiatives.map((p, i) => {
-    const stages = computeStages(p.phase, stagesForType(stagesByType, p.type));
+    const stages = computeStages(p.phase, stagesById.get(p.id) ?? []);
     const currentIdx = stages.findIndex((s) => s.status === "current");
     return {
       id: p.id,

@@ -1,3 +1,4 @@
+import { getTypeLabels } from "@/lib/projectTypeLabels";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
@@ -6,7 +7,7 @@ import { findSinglePointsOfFailure } from "@/lib/resourceGovernance";
 import { computeDimensionColors } from "@/lib/portfolioHealth";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
 import { computeStages } from "@/lib/lifecycle";
-import { getAllWorkflowStagesGrouped, stagesForType } from "@/lib/workflowStages";
+import { getInitiativeStagesMap } from "@/lib/templateEngine";
 import { PortfolioList } from "@/components/PortfolioList";
 import { PortfolioHealthTable, type HealthRow } from "@/components/PortfolioHealthTable";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
@@ -19,18 +20,6 @@ import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "luci
 export const dynamic = "force-dynamic";
 
 const STATUS_LABELS: Record<string, string> = { actif: "Actif", en_pause: "En pause", cloture: "Clôturé" };
-const TYPE_LABELS: Record<string, string> = {
-  deploiement: "Déploiement",
-  evolution: "Évolution",
-  interoperabilite: "Interopérabilité",
-  migration: "Migration",
-  mise_a_niveau: "Mise à niveau",
-  cybersecurite: "Cybersécurité",
-  reglementaire: "Réglementaire",
-  formation: "Formation",
-  audit: "Audit",
-  autre: "Autre",
-};
 
 function bucketBy<T>(items: T[], keyFn: (item: T) => string, itemFn: (item: T) => { id: string; name: string; sub?: string }) {
   const map = new Map<string, { id: string; name: string; sub?: string }[]>();
@@ -45,6 +34,7 @@ function bucketBy<T>(items: T[], keyFn: (item: T) => string, itemFn: (item: T) =
 }
 
 export default async function HomePage() {
+  const TYPE_LABELS = await getTypeLabels();
   const scope = await getScope();
 
   const initiatives = await prisma.initiative.findMany({
@@ -138,10 +128,10 @@ export default async function HomePage() {
     )
     .slice(0, 6);
 
-  const stagesByType = await getAllWorkflowStagesGrouped();
+  const stagesById = await getInitiativeStagesMap(initiatives.map((p) => ({ id: p.id, type: p.type })));
 
   const portfolioInitiatives = initiatives.map((p, i) => {
-    const stages = computeStages(p.phase, stagesForType(stagesByType, p.type));
+    const stages = computeStages(p.phase, stagesById.get(p.id) ?? []);
     const currentStage = stages.find((s) => s.status === "current") || stages[0];
     return {
       id: p.id,

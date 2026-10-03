@@ -16,6 +16,9 @@ const ENTITY_LABELS: Record<string, string> = {
   actor: "Acteur",
   establishment: "Établissement",
   group: "Groupe",
+  project_type: "Type de projet",
+  project_template: "Modèle de projet",
+  stage_definition: "Étape (bibliothèque)",
 };
 
 const ACTION_LABELS: Record<string, string> = { create: "Création", update: "Modification", delete: "Suppression" };

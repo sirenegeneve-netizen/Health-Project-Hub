@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getWorkflowStages } from "@/lib/workflowStages";
+import { instantiateTemplate, resolveTemplateForCreation } from "@/lib/templateEngine";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 
@@ -37,33 +38,57 @@ export async function POST(req: NextRequest) {
   }
 
   const initiativeType = data.type || "autre";
+
+  // Un type désactivé ou archivé n'est plus proposé à la création (il reste valide pour les initiatives existantes).
+  const typeRow = await prisma.projectType.findUnique({ where: { key: initiativeType } });
+  if (typeRow && (!typeRow.actif || typeRow.archive)) {
+    return NextResponse.json({ error: "Ce type de projet n'est plus disponible pour de nouvelles initiatives." }, { status: 400 });
+  }
+
+  // Modèle : choix explicite, sinon sélection automatique (un seul modèle actif), sinon Modèle général.
+  // Sans aucun modèle en base, l'initiative garde le fonctionnement historique (WorkflowStage).
+  const templateId = await resolveTemplateForCreation(initiativeType, data.templateId);
+
   let initialPhase = data.phase;
-  if (!initialPhase) {
+  if (!initialPhase && !templateId) {
     const stages = await getWorkflowStages(initiativeType);
     initialPhase = stages[0]?.key || "cadrage";
   }
 
-  const initiative = await prisma.initiative.create({
-    data: {
-      reference: data.reference,
-      name: data.name,
-      description: data.description || null,
-      type: initiativeType,
-      groupId,
-      chefDeProjet: data.chefDeProjet || null,
-      sponsor: data.sponsor || null,
-      startDate: data.startDate ? new Date(data.startDate) : null,
-      targetDate: data.targetDate ? new Date(data.targetDate) : null,
-      status: data.status || "actif",
-      phase: initialPhase,
-      priority: data.priority || "normale",
-      budgetJh: data.budgetJh ? Number(data.budgetJh) : 0,
-      budgetInitialEur: data.budgetInitialEur ? Number(data.budgetInitialEur) : null,
-      establishments: establishmentIds
-        ? { create: (establishmentIds as string[]).map((id) => ({ establishmentId: id })) }
-        : undefined,
+  // Création + instanciation du parcours dans une seule transaction : le modèle est copié (figé)
+  // pour cette initiative ; les modifications ultérieures du modèle ne l'affecteront pas.
+  const initiative = await prisma.$transaction(
+    async (tx) => {
+      const created = await tx.initiative.create({
+        data: {
+          reference: data.reference,
+          name: data.name,
+          description: data.description || null,
+          type: initiativeType,
+          groupId,
+          chefDeProjet: data.chefDeProjet || null,
+          sponsor: data.sponsor || null,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          targetDate: data.targetDate ? new Date(data.targetDate) : null,
+          status: data.status || "actif",
+          phase: initialPhase || "cadrage",
+          priority: data.priority || "normale",
+          budgetJh: data.budgetJh ? Number(data.budgetJh) : 0,
+          budgetInitialEur: data.budgetInitialEur ? Number(data.budgetInitialEur) : null,
+          establishments: establishmentIds
+            ? { create: (establishmentIds as string[]).map((id) => ({ establishmentId: id })) }
+            : undefined,
+        },
+      });
+      if (!templateId) return created;
+      const instance = await instantiateTemplate(tx, created.id, templateId);
+      return tx.initiative.update({
+        where: { id: created.id },
+        data: { templateId, ...(initialPhase || !instance.firstPhase ? {} : { phase: instance.firstPhase }) },
+      });
     },
-  });
+    { maxWait: 10_000, timeout: 30_000 }
+  );
 
   if (initiative.targetDate) {
     await prisma.planningBaseline.create({

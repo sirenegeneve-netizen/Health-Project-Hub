@@ -1,3 +1,4 @@
+import { getTypeLabels } from "@/lib/projectTypeLabels";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -6,18 +7,6 @@ import { GroupTabs } from "@/components/GroupTabs";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<string, string> = {
-  deploiement: "Déploiement",
-  evolution: "Évolution",
-  interoperabilite: "Interopérabilité",
-  migration: "Migration",
-  mise_a_niveau: "Mise à niveau",
-  cybersecurite: "Cybersécurité",
-  reglementaire: "Réglementaire",
-  formation: "Formation",
-  audit: "Audit",
-  autre: "Autre",
-};
 
 export default async function GroupInitiativesPage({
   params,
@@ -26,6 +15,7 @@ export default async function GroupInitiativesPage({
   params: { id: string };
   searchParams: { etablissement?: string; type?: string; multi?: string };
 }) {
+  const TYPE_LABELS = await getTypeLabels();
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: {

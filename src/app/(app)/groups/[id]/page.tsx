@@ -1,3 +1,4 @@
+import { getTypeLabels } from "@/lib/projectTypeLabels";
 import Link from "next/link";
 import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
@@ -8,20 +9,9 @@ import { GroupTabs } from "@/components/GroupTabs";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<string, string> = {
-  deploiement: "Déploiement",
-  evolution: "Évolution",
-  interoperabilite: "Interopérabilité",
-  migration: "Migration",
-  mise_a_niveau: "Mise à niveau",
-  cybersecurite: "Cybersécurité",
-  reglementaire: "Réglementaire",
-  formation: "Formation",
-  audit: "Audit",
-  autre: "Autre",
-};
 
 export default async function GroupDetailPage({ params }: { params: { id: string } }) {
+  const TYPE_LABELS = await getTypeLabels();
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: {

@@ -254,6 +254,12 @@ model Initiative {
   goalContributions InitiativeGoalContribution[]
   requirementCoverages InitiativeRequirementCoverage[]
   stageCriteria    StageCriterion[]
+  // Moteur de modèles de projet : version du modèle appliquée à la création
+  // (null = initiative antérieure au moteur ou sans modèle → repli sur WorkflowStage).
+  templateId       String?
+  template         ProjectTemplate? @relation(fields: [templateId], references: [id])
+  profileFlags     String[] @default([])
+  stages           InitiativeStage[]
   relationsSource  InitiativeRelation[] @relation("RelationSource")
   relationsCible   InitiativeRelation[] @relation("RelationCible")
   incidents        Incident[]
@@ -379,6 +385,12 @@ model StageCriterion {
   label     String
   status    String   @default("non_commence") // non_commence | en_cours | bloque | pret
   order     Int      @default(0)
+  // Moteur de modèles : rattachement optionnel à l'étape instanciée + règles du critère.
+  initiativeStageId String?
+  initiativeStage   InitiativeStage? @relation(fields: [initiativeStageId], references: [id], onDelete: SetNull)
+  obligatoire Boolean @default(true)
+  mode        String  @default("manuel") // manuel | auto | hybride
+  autoSource  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1019,4 +1031,126 @@ model AuditFinding {
   createdAt            DateTime @default(now())
 
   @@index([ownerType, ownerId])
+}
+
+
+// ============================================================================
+// MOTEUR DE MODÈLES DE PROJET (Lot 1) — strictement additif.
+// Type de projet → Modèle versionné → Parcours → Étapes (Modèle × Étape).
+// Les anciens WorkflowStage / StageCriterionTemplate restent en place (repli).
+// ============================================================================
+
+model ProjectType {
+  id          String   @id @default(cuid())
+  key         String   @unique // = Initiative.type (clés historiques conservées)
+  label       String
+  family      String   @default("autres")
+  description String?
+  ordre       Int      @default(0)
+  actif       Boolean  @default(true)
+  archive     Boolean  @default(false)
+  system      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Bibliothèque d'étapes réutilisables.
+model StageDefinition {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  description String?
+  objectif    String?
+  actif       Boolean  @default(true)
+  system      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  typeKey     String
+  familyId    String // regroupe les versions d'un même modèle
+  name        String
+  description String?
+  version     Int      @default(1)
+  status      String   @default("brouillon") // brouillon | actif | archive
+  isGeneral   Boolean  @default(false) // Modèle général (repli de tout type sans modèle)
+  parentTemplateId String? // modèle dupliqué
+  stages      TemplateStage[]
+  initiatives Initiative[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([familyId, version])
+  @@index([typeKey, status])
+}
+
+// Configuration "Modèle + Étape".
+model TemplateStage {
+  id          String   @id @default(cuid())
+  templateId  String
+  template    ProjectTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  position    Int
+  key         String
+  label       String
+  stageDefKey String?
+  description String?
+  objectif    String?
+  obligatoire Boolean  @default(true)
+  active      Boolean  @default(true)
+  legacyPhases String[] @default([])
+  gateMode    String? // null | consultatif | bloquant (Gates : Lot 2)
+  config      Json? // réservé aux règles d'activation / Gate (Lot 2)
+  criteria    TemplateStageCriterion[]
+  items       TemplateStageItem[]
+
+  @@unique([templateId, key])
+  @@index([templateId, position])
+}
+
+model TemplateStageCriterion {
+  id              String  @id @default(cuid())
+  templateStageId String
+  templateStage   TemplateStage @relation(fields: [templateStageId], references: [id], onDelete: Cascade)
+  label           String
+  order           Int     @default(0)
+  obligatoire     Boolean @default(true)
+  mode            String  @default("manuel") // manuel | auto | hybride
+  autoSource      String?
+}
+
+// Structure générique : "dans cette étape, pour ce modèle, cet élément est attendu"
+// (kind = action | livrable | risque | decision | indicateur | role | information).
+// Posée au Lot 1, exposée au Lot 2.
+model TemplateStageItem {
+  id              String  @id @default(cuid())
+  templateStageId String
+  templateStage   TemplateStage @relation(fields: [templateStageId], references: [id], onDelete: Cascade)
+  kind            String
+  label           String
+  order           Int     @default(0)
+  obligatoire     Boolean @default(true)
+  config          Json?
+}
+
+// Copie figée du parcours pour une initiative (jamais modifiée par l'édition du modèle).
+model InitiativeStage {
+  id              String   @id @default(cuid())
+  initiativeId    String   @map("projectId")
+  initiative      Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  templateStageId String?
+  key             String
+  label           String
+  objectif        String?
+  position        Int
+  obligatoire     Boolean  @default(true)
+  active          Boolean  @default(true)
+  legacyPhases    String[] @default([])
+  gateMode        String?
+  criteria        StageCriterion[]
+  createdAt       DateTime @default(now())
+
+  @@unique([initiativeId, key])
+  @@index([initiativeId, position])
 }

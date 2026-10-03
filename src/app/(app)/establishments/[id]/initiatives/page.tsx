@@ -1,3 +1,4 @@
+import { getTypeLabels } from "@/lib/projectTypeLabels";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -5,20 +6,9 @@ import { EstablishmentTabs } from "@/components/EstablishmentTabs";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_LABELS: Record<string, string> = {
-  deploiement: "Déploiement",
-  evolution: "Évolution",
-  interoperabilite: "Interopérabilité",
-  migration: "Migration",
-  mise_a_niveau: "Mise à niveau",
-  cybersecurite: "Cybersécurité",
-  reglementaire: "Réglementaire",
-  formation: "Formation",
-  audit: "Audit",
-  autre: "Autre",
-};
 
 export default async function EstablishmentInitiativesPage({ params }: { params: { id: string } }) {
+  const TYPE_LABELS = await getTypeLabels();
   const establishment = await prisma.establishment.findUnique({
     where: { id: params.id },
     include: { initiatives: { include: { initiative: true }, orderBy: { initiative: { name: "asc" } } } },

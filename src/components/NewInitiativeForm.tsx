@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const TYPES = [
+// Repli si le référentiel de types n'est pas encore chargé en base (avant la migration des modèles).
+const FALLBACK_TYPES: ProjectTypeOption[] = [
   ["deploiement", "Déploiement"],
   ["evolution", "Évolution"],
   ["interoperabilite", "Interopérabilité"],
@@ -13,8 +14,20 @@ const TYPES = [
   ["reglementaire", "Réglementaire"],
   ["formation", "Formation"],
   ["audit", "Audit"],
-  ["autre", "Autre"],
-];
+  ["autre", "Personnalisé"],
+].map(([key, label]) => ({ key, label, family: "" }));
+
+interface ProjectTypeOption {
+  key: string;
+  label: string;
+  family: string;
+}
+
+interface TemplateOption {
+  id: string;
+  name: string;
+  version: number;
+}
 
 export function NewInitiativeForm({
   groups,
@@ -40,6 +53,42 @@ export function NewInitiativeForm({
     budgetInitialEur: "",
   });
   const [establishmentIds, setEstablishmentIds] = useState<string[]>([]);
+  const [types, setTypes] = useState<ProjectTypeOption[]>(FALLBACK_TYPES);
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [templateId, setTemplateId] = useState("");
+  const [fallbackGeneral, setFallbackGeneral] = useState(false);
+
+  // Types disponibles : référentiel en base (actifs, non archivés), sinon repli historique.
+  useEffect(() => {
+    fetch("/api/project-types")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: ProjectTypeOption[]) => {
+        if (Array.isArray(rows) && rows.length > 0) setTypes(rows);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Modèles du type choisi : un seul → sélectionné d'office ; plusieurs → choix de l'utilisateur.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/project-templates/options?type=${encodeURIComponent(form.type)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res: { options: TemplateOption[]; autoSelectedId: string | null; fallbackGeneralId: string | null } | null) => {
+        if (cancelled || !res) return;
+        setTemplates(res.options);
+        setTemplateId(res.autoSelectedId ?? res.options[0]?.id ?? "");
+        setFallbackGeneral(res.options.length === 0 && !!res.fallbackGeneralId);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTemplates([]);
+          setTemplateId("");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.type]);
 
   const establishmentsInGroup = establishments.filter((e) => e.groupId === groupId);
 
@@ -50,7 +99,7 @@ export function NewInitiativeForm({
     const res = await fetch("/api/initiatives", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, groupId, establishmentIds }),
+      body: JSON.stringify({ ...form, groupId, establishmentIds, templateId: templateId || undefined }),
     });
     const initiative = await res.json();
     setSaving(false);
@@ -101,11 +150,11 @@ export function NewInitiativeForm({
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Type">
+        <Field label="Type de projet">
           <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-            {TYPES.map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
+            {types.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
               </option>
             ))}
           </select>
@@ -119,6 +168,24 @@ export function NewInitiativeForm({
           </select>
         </Field>
       </div>
+
+      <Field label="Modèle de pilotage">
+        {templates.length > 1 ? (
+          <select className="input" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        ) : templates.length === 1 ? (
+          <div className="text-sm text-body">{templates[0].name}</div>
+        ) : (
+          <div className="text-sm text-ink/60">
+            {fallbackGeneral ? "Modèle général (aucun modèle dédié à ce type)." : "Parcours standard du type."}
+          </div>
+        )}
+      </Field>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Chef de projet">

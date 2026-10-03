@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getWorkflowStages } from "@/lib/workflowStages";
+import { getInitiativeStages } from "@/lib/templateEngine";
 import { InitiativeTabsClient, type SubTab } from "@/components/InitiativeTabsClient";
 
 // Pour le Déploiement, le groupe "Parcours" garde ses 8 pages dédiées
@@ -28,7 +28,7 @@ export async function InitiativeTabsServer({ initiativeId }: { initiativeId: str
   if (type === "deploiement") {
     parcoursChildren = DEPLOIEMENT_PARCOURS;
   } else {
-    const stages = await getWorkflowStages(type);
+    const stages = await getInitiativeStages(initiativeId, type);
     parcoursChildren = stages.map((s) => ({ href: `/etape/${s.key}`, label: s.label, match: [`/etape/${s.key}`] }));
   }
 
