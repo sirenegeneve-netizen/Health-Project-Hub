@@ -4,10 +4,11 @@ import { canEditInPlace } from "@/lib/templatePlan";
 
 // Un modèle utilisé par des initiatives (ou déjà archivé) n'est jamais modifié sur place :
 // l'API répond 409 et l'interface propose de créer une nouvelle version.
-export async function loadEditableTemplate(templateId: string): Promise<
-  | { ok: true; template: { id: string; name: string; status: string; familyId: string; typeKey: string } }
-  | { ok: false; response: NextResponse }
-> {
+export async function loadEditableTemplate(templateId: string): Promise<{
+  ok: boolean;
+  template?: { id: string; name: string; status: string; familyId: string; typeKey: string };
+  response?: NextResponse;
+}> {
   const template = await prisma.projectTemplate.findUnique({
     where: { id: templateId },
     select: { id: true, name: true, status: true, familyId: true, typeKey: true },

@@ -150,7 +150,7 @@ export async function createExpectedObject(
   kind: ItemKind,
   label: string,
   extra: { value?: number } = {}
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+): Promise<{ ok: boolean; id?: string; error?: string }> {
   const base = { initiativeId, initiativeStageId: stage.id };
   const owner = { ownerType: "initiative", ownerId: initiativeId };
   switch (kind) {
@@ -183,7 +183,7 @@ export async function recordGateDecision(opts: {
   outcome: GateOutcome;
   comment: string | null;
   user: { id: string; name: string };
-}): Promise<{ ok: true; advancedTo: string | null; evaluation: GateEvaluation } | { ok: false; status: number; error: string }> {
+}): Promise<{ ok: boolean; advancedTo?: string | null; evaluation?: GateEvaluation; status?: number; error?: string }> {
   const state = await getStageState(opts.initiativeId, opts.stageKey);
   if (!state) return { ok: false, status: 404, error: "Étape introuvable pour cette initiative." };
   if (state.stage.gateMode !== "consultatif" && state.stage.gateMode !== "bloquant") {
