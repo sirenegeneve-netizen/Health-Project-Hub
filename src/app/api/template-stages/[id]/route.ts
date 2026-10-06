@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: true, moved: true });
   }
 
-  const data: { label?: string; objectif?: string | null; description?: string | null; obligatoire?: boolean; active?: boolean } = {};
+  const data: { label?: string; objectif?: string | null; description?: string | null; obligatoire?: boolean; active?: boolean; gateMode?: string | null } = {};
   if (typeof body.label === "string") {
     if (!body.label.trim()) return NextResponse.json({ error: "Le nom de l'étape ne peut pas être vide." }, { status: 400 });
     data.label = body.label.trim();
@@ -38,6 +38,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.description !== undefined) data.description = body.description ? String(body.description) : null;
   if (typeof body.obligatoire === "boolean") data.obligatoire = body.obligatoire;
   if (typeof body.active === "boolean") data.active = body.active;
+  // Gate : "" / null = aucun ; "consultatif" ou "bloquant".
+  if (body.gateMode !== undefined) {
+    if (body.gateMode === "" || body.gateMode === null) data.gateMode = null;
+    else if (body.gateMode === "consultatif" || body.gateMode === "bloquant") data.gateMode = body.gateMode;
+    else return NextResponse.json({ error: "Mode de Gate invalide." }, { status: 400 });
+  }
 
   const updated = await prisma.templateStage.update({ where: { id: params.id }, data });
   const changes: Record<string, { from: unknown; to: unknown }> = {};

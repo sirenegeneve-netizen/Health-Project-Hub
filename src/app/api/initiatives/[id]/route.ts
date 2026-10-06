@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
+import { checkPhaseChange } from "@/lib/stageRuntime";
 import { logAudit, diffRecords } from "@/lib/audit";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -38,6 +39,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json();
   const current = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!current) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  // Gate bloquant : on ne peut pas faire avancer manuellement l'initiative au-delà d'une étape dont
+  // le Gate est bloquant tant que ses conditions de passage ne sont pas réunies (consultatif : jamais bloqué).
+  if (typeof body.phase === "string" && body.phase !== current.phase) {
+    const guard = await checkPhaseChange(params.id, current.phase, body.phase);
+    if (!guard.allowed) return NextResponse.json({ error: guard.message, code: "gate_blocked" }, { status: 409 });
+  }
 
   // Traçabilité §8 : un changement de date cible crée une nouvelle baseline
   // au lieu d'écraser silencieusement le planning.

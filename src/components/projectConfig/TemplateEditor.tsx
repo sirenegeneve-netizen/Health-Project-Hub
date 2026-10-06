@@ -3,10 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill } from "@/components/Pill";
+import { ITEM_KINDS, ITEM_KIND_LABELS, type ItemKind } from "@/lib/templatePlan";
 import { callApi } from "./api";
 
 export interface EditorCriterion {
   id: string;
+  label: string;
+  obligatoire: boolean;
+  mode: string;
+  autoSource: string | null;
+}
+
+export interface EditorItem {
+  id: string;
+  kind: string;
   label: string;
   obligatoire: boolean;
 }
@@ -18,7 +28,9 @@ export interface EditorStage {
   objectif: string | null;
   obligatoire: boolean;
   active: boolean;
+  gateMode: string | null;
   criteria: EditorCriterion[];
+  items: EditorItem[];
 }
 
 export interface EditorTemplate {
@@ -40,7 +52,7 @@ const STATUS: Record<string, { text: string; tone: "ok" | "warn" | "neutral" }> 
 
 // Éditeur de parcours : timeline verticale des étapes + configuration détaillée « Modèle × Étape ».
 // `locked` = modèle utilisé par des initiatives (ou archivé) : lecture seule, on crée une nouvelle version.
-export function TemplateEditor({ template, library, locked }: { template: EditorTemplate; library: { key: string; label: string }[]; locked: boolean }) {
+export function TemplateEditor({ template, library, locked, autoSources }: { template: EditorTemplate; library: { key: string; label: string }[]; locked: boolean; autoSources: { key: string; label: string }[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -135,9 +147,10 @@ export function TemplateEditor({ template, library, locked }: { template: Editor
                         {s.label}
                         {!s.obligatoire && <Pill text="Optionnelle" tone="neutral" />}
                         {!s.active && <Pill text="Inactive" tone="warn" />}
+                        {s.gateMode && <Pill text={s.gateMode === "bloquant" ? "Gate bloquant" : "Gate consultatif"} tone={s.gateMode === "bloquant" ? "bad" : "neutral"} />}
                       </div>
                       <div className="text-xs text-ink/45">
-                        {s.criteria.length} critère{s.criteria.length > 1 ? "s" : ""} de passage
+                        {s.criteria.length} critère{s.criteria.length > 1 ? "s" : ""} · {s.items.length} élément{s.items.length > 1 ? "s" : ""} attendu{s.items.length > 1 ? "s" : ""}
                       </div>
                     </div>
                   </div>
@@ -155,7 +168,7 @@ export function TemplateEditor({ template, library, locked }: { template: Editor
                 </div>
 
                 {open && (
-                  <StageConfig stage={s} locked={locked} busy={busy} run={run} onChanged={() => router.refresh()} />
+                  <StageConfig stage={s} locked={locked} busy={busy} run={run} onChanged={() => router.refresh()} autoSources={autoSources} />
                 )}
               </div>
               {i < template.stages.length - 1 && <div className="text-center text-ink/30 leading-none py-1.5">↓</div>}
@@ -205,16 +218,20 @@ function StageConfig({
   busy,
   run,
   onChanged,
+  autoSources,
 }: {
   stage: EditorStage;
   locked: boolean;
   busy: boolean;
   run: (fn: () => Promise<{ ok: boolean; error?: string; data?: any }>, after?: (data: any) => void) => Promise<void>;
   onChanged: () => void;
+  autoSources: { key: string; label: string }[];
 }) {
   const [label, setLabel] = useState(stage.label);
   const [objectif, setObjectif] = useState(stage.objectif || "");
   const [newCriterion, setNewCriterion] = useState("");
+  const [itemKind, setItemKind] = useState<ItemKind>("livrable");
+  const [itemLabel, setItemLabel] = useState("");
 
   const dirty = label !== stage.label || objectif !== (stage.objectif || "");
 
@@ -268,7 +285,7 @@ function StageConfig({
         <div className="label mb-2">Critères de passage</div>
         <ul className="divide-y divide-ink/5">
           {stage.criteria.map((c) => (
-            <CriterionRow key={c.id} criterion={c} locked={locked} busy={busy} run={run} />
+            <CriterionRow key={c.id} criterion={c} locked={locked} busy={busy} run={run} autoSources={autoSources} />
           ))}
           {stage.criteria.length === 0 && <li className="text-sm text-ink/45 py-2">Aucun critère : cette étape n'a pas de condition de passage.</li>}
         </ul>
@@ -292,7 +309,67 @@ function StageConfig({
         )}
       </div>
 
-      <p className="text-xs text-ink/40">Livrables, rôles, risques types, décisions, indicateurs et Gates : prochain lot.</p>
+      <div>
+        <div className="label mb-2">Éléments attendus</div>
+        {ITEM_KINDS.map((kind) => {
+          const rows = stage.items.filter((it) => it.kind === kind);
+          if (rows.length === 0) return null;
+          return (
+            <div key={kind} className="mb-3">
+              <div className="text-xs text-ink/50 mb-1">{ITEM_KIND_LABELS[kind]}s</div>
+              <ul className="divide-y divide-ink/5">
+                {rows.map((it) => (
+                  <ItemRow key={it.id} item={it} locked={locked} busy={busy} run={run} />
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+        {stage.items.length === 0 && <p className="text-sm text-ink/45 mb-2">Aucun élément attendu pour cette étape.</p>}
+        {!locked && (
+          <form
+            className="flex flex-wrap gap-2 mt-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!itemLabel.trim()) return;
+              run(() => callApi("POST", `/api/template-stages/${stage.id}/items`, { kind: itemKind, label: itemLabel }), () => {
+                setItemLabel("");
+                onChanged();
+              });
+            }}
+          >
+            <select className="input w-44" value={itemKind} onChange={(e) => setItemKind(e.target.value as ItemKind)}>
+              {ITEM_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {ITEM_KIND_LABELS[k]}
+                </option>
+              ))}
+            </select>
+            <input className="input flex-1 min-w-[200px]" placeholder="Ex. PV de recette" value={itemLabel} onChange={(e) => setItemLabel(e.target.value)} />
+            <button className="btn-secondary" disabled={busy || !itemLabel.trim()} type="submit">
+              Ajouter
+            </button>
+          </form>
+        )}
+        <p className="text-xs text-ink/40 mt-2">Les livrables, actions, décisions, risques types et indicateurs sont suivis via les objets HPH existants ; rôles et informations sont descriptifs.</p>
+      </div>
+
+      <div>
+        <div className="label mb-2">Gate de décision</div>
+        <select
+          className="input w-64"
+          disabled={locked || busy}
+          value={stage.gateMode || ""}
+          onChange={(e) => run(() => callApi("PATCH", `/api/template-stages/${stage.id}`, { gateMode: e.target.value }))}
+        >
+          <option value="">Pas de Gate</option>
+          <option value="consultatif">Consultatif — alerte, passage possible</option>
+          <option value="bloquant">Bloquant — passage impossible si conditions non réunies</option>
+        </select>
+        <p className="text-xs text-ink/40 mt-2">
+          Conditions évaluées : critères obligatoires satisfaits, aucun risque bloquant ouvert, livrables et décisions obligatoires disponibles. Décision : GO / GO avec réserves / NO GO, historisée.
+        </p>
+      </div>
     </div>
   );
 }
@@ -302,31 +379,95 @@ function CriterionRow({
   locked,
   busy,
   run,
+  autoSources,
 }: {
   criterion: EditorCriterion;
   locked: boolean;
   busy: boolean;
   run: (fn: () => Promise<{ ok: boolean; error?: string; data?: any }>) => Promise<void>;
+  autoSources: { key: string; label: string }[];
 }) {
   const [label, setLabel] = useState(criterion.label);
   return (
-    <li className="flex items-center gap-3 py-2">
-      <input
-        className="input"
-        disabled={locked}
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        onBlur={() => {
-          if (label.trim() && label !== criterion.label) run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, { label }));
-          else setLabel(criterion.label);
-        }}
-      />
-      <label className="flex items-center gap-1.5 text-xs text-ink/60 shrink-0">
-        <input type="checkbox" disabled={locked || busy} checked={criterion.obligatoire} onChange={(e) => run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, { obligatoire: e.target.checked }))} />
-        Obligatoire
-      </label>
+    <li className="py-2">
+      <div className="flex items-center gap-3">
+        <input
+          className="input"
+          disabled={locked}
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onBlur={() => {
+            if (label.trim() && label !== criterion.label) run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, { label }));
+            else setLabel(criterion.label);
+          }}
+        />
+        <label className="flex items-center gap-1.5 text-xs text-ink/60 shrink-0">
+          <input type="checkbox" disabled={locked || busy} checked={criterion.obligatoire} onChange={(e) => run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, { obligatoire: e.target.checked }))} />
+          Obligatoire
+        </label>
+        {!locked && (
+          <button className="text-bad text-sm hover:underline shrink-0" disabled={busy} onClick={() => run(() => callApi("DELETE", `/api/template-stage-criteria/${criterion.id}`))}>
+            Retirer
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-2 mt-1.5 text-xs text-ink/60">
+        <span>Évaluation :</span>
+        <select
+          className="input !py-1 w-32"
+          disabled={locked || busy}
+          value={criterion.mode}
+          onChange={(e) => {
+            const mode = e.target.value;
+            run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, mode === "manuel" ? { mode } : { mode, autoSource: criterion.autoSource || autoSources[0]?.key }));
+          }}
+        >
+          <option value="manuel">Manuelle</option>
+          <option value="auto">Automatique</option>
+          <option value="hybride">Hybride</option>
+        </select>
+        {criterion.mode !== "manuel" && (
+          <select
+            className="input !py-1 flex-1"
+            disabled={locked || busy}
+            value={criterion.autoSource || ""}
+            onChange={(e) => run(() => callApi("PATCH", `/api/template-stage-criteria/${criterion.id}`, { autoSource: e.target.value }))}
+          >
+            {autoSources.map((a) => (
+              <option key={a.key} value={a.key}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ItemRow({
+  item,
+  locked,
+  busy,
+  run,
+}: {
+  item: EditorItem;
+  locked: boolean;
+  busy: boolean;
+  run: (fn: () => Promise<{ ok: boolean; error?: string; data?: any }>) => Promise<void>;
+}) {
+  const tracked = ["livrable", "action", "decision"].includes(item.kind);
+  return (
+    <li className="flex items-center gap-3 py-1.5 text-sm">
+      <span className="flex-1 text-body">{item.label}</span>
+      {tracked && (
+        <label className="flex items-center gap-1.5 text-xs text-ink/60 shrink-0" title="Compte dans les conditions du Gate">
+          <input type="checkbox" disabled={locked || busy} checked={item.obligatoire} onChange={(e) => run(() => callApi("PATCH", `/api/template-stage-items/${item.id}`, { obligatoire: e.target.checked }))} />
+          Obligatoire
+        </label>
+      )}
       {!locked && (
-        <button className="text-bad text-sm hover:underline shrink-0" disabled={busy} onClick={() => run(() => callApi("DELETE", `/api/template-stage-criteria/${criterion.id}`))}>
+        <button className="text-bad hover:underline shrink-0" disabled={busy} onClick={() => run(() => callApi("DELETE", `/api/template-stage-items/${item.id}`))}>
           Retirer
         </button>
       )}

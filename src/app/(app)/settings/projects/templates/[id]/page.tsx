@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { canEditInPlace } from "@/lib/templatePlan";
+import { AUTO_SOURCES, canEditInPlace } from "@/lib/templatePlan";
 import { TemplateEditor } from "@/components/projectConfig/TemplateEditor";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export default async function TemplateEditorPage({ params }: { params: { id: str
   const template = await prisma.projectTemplate.findUnique({
     where: { id: params.id },
     include: {
-      stages: { include: { criteria: { orderBy: { order: "asc" } } }, orderBy: { position: "asc" } },
+      stages: { include: { criteria: { orderBy: { order: "asc" } }, items: { orderBy: { order: "asc" } } }, orderBy: { position: "asc" } },
       _count: { select: { initiatives: true } },
     },
   });
@@ -31,6 +31,7 @@ export default async function TemplateEditorPage({ params }: { params: { id: str
         <TemplateEditor
           locked={locked}
           library={library}
+          autoSources={Object.entries(AUTO_SOURCES).map(([key, v]) => ({ key, label: v.label }))}
           template={{
             id: template.id,
             name: template.name,
@@ -46,7 +47,9 @@ export default async function TemplateEditorPage({ params }: { params: { id: str
               objectif: s.objectif,
               obligatoire: s.obligatoire,
               active: s.active,
-              criteria: s.criteria.map((c) => ({ id: c.id, label: c.label, obligatoire: c.obligatoire })),
+              gateMode: s.gateMode,
+              criteria: s.criteria.map((c) => ({ id: c.id, label: c.label, obligatoire: c.obligatoire, mode: c.mode, autoSource: c.autoSource })),
+              items: s.items.map((it) => ({ id: it.id, kind: it.kind, label: it.label, obligatoire: it.obligatoire })),
             })),
           }}
         />

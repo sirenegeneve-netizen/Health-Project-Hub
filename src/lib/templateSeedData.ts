@@ -233,6 +233,71 @@ export const STAGE_OVERRIDES: Record<string, { objectif?: string; criteria?: str
   "cloture:audit": { objectif: "Clôturer l'audit et vérifier que toutes les actions ont été traitées ou reportées formellement." },
 };
 
+// ----------------------------------------------------------------------------
+// Lot 2 — éléments attendus (livrables, rôles, risques types, décisions, indicateurs…),
+// Gates et critères automatiques. Clé `${étape}:${type}` ; `${étape}:*` = tous les types
+// dont le parcours contient l'étape. Une entrée spécifique au type REMPLACE la générique.
+// ----------------------------------------------------------------------------
+export interface SeedItem {
+  kind: "livrable" | "action" | "decision" | "risque" | "indicateur" | "role" | "information";
+  label: string;
+  obligatoire?: boolean;
+}
+
+const L = (label: string, obligatoire = true): SeedItem => ({ kind: "livrable", label, obligatoire });
+const D = (label: string, obligatoire = true): SeedItem => ({ kind: "decision", label, obligatoire });
+const R = (label: string): SeedItem => ({ kind: "risque", label, obligatoire: false });
+const K = (label: string): SeedItem => ({ kind: "indicateur", label, obligatoire: false });
+const A = (label: string, obligatoire = true): SeedItem => ({ kind: "action", label, obligatoire });
+const ROLE = (label: string): SeedItem => ({ kind: "role", label, obligatoire: false });
+const INFO = (label: string, obligatoire = false): SeedItem => ({ kind: "information", label, obligatoire });
+
+export const STAGE_ITEMS: Record<string, SeedItem[]> = {
+  "kickoff:*": [L("Support de Kick-off"), L("Compte rendu de Kick-off"), ROLE("Chef de projet"), ROLE("Sponsor"), ROLE("Référent métier")],
+  "cadrage:*": [L("Note de cadrage"), D("Validation du cadrage"), R("Périmètre insuffisamment défini"), ROLE("Sponsor"), ROLE("Chef de projet"), INFO("Périmètre", true), INFO("Contraintes")],
+  "cadrage:migration": [L("Note de cadrage"), D("Validation du cadrage"), INFO("Système source", true), INFO("Système cible", true), INFO("Volumétrie des données"), R("Fenêtre de bascule incompatible avec l'activité")],
+  "cadrage:interoperabilite": [L("Note de cadrage"), D("Validation du cadrage"), INFO("Systèmes à interconnecter", true), INFO("Standards d'échange envisagés"), INFO("Population concernée")],
+  "cadrage:deploiement": [L("Note de cadrage"), D("Validation du cadrage"), INFO("Périmètre (établissements, services)", true), INFO("Version à déployer"), R("Établissement non prêt à la date prévue"), ROLE("Sponsor"), ROLE("Chef de projet")],
+  "preparation:*": [L("Plan de déploiement détaillé", false), R("Prérequis techniques non réunis à temps"), ROLE("Référent technique"), ROLE("Référent métier")],
+  "preparation:migration": [L("Plan de bascule et de retour arrière"), L("Règles de mapping source/cible"), R("Qualité des données source insuffisante"), ROLE("Responsable des données")],
+  "validation:deploiement": [L("Rapport de tests"), L("Cahier de recette"), L("PV de recette"), D("Validation de la recette"), R("Anomalie bloquante non corrigée à l'ouverture de la recette"), K("Taux de scénarios de recette passés"), ROLE("Responsable de la recette métier"), ROLE("Chef de projet")],
+  "validation:migration": [L("Rapport de rapprochement source/cible"), L("PV de validation des utilisateurs clés"), D("Validation de la migration"), R("Perte ou altération de données"), K("Taux d'écarts de rapprochement"), ROLE("Utilisateur clé"), ROLE("Responsable des données")],
+  "validation:interoperabilite": [L("Rapport de tests bout-en-bout"), L("Matrice de conformité des flux", false), D("Validation de l'interopérabilité"), R("Flux non conforme aux standards"), K("Taux d'erreurs d'échange"), ROLE("Référent éditeur / tiers")],
+  "validation:cybersecurite": [L("Rapport de vérification des mesures de sécurité"), D("Acceptation du risque résiduel"), R("Vulnérabilité critique non corrigée"), ROLE("RSSI")],
+  "validation:reglementaire": [L("Dossier de preuves de conformité"), D("Validation de la conformité"), R("Écart de conformité non planifié"), ROLE("Responsable conformité / DPO")],
+  "validation:*": [L("Compte rendu de validation"), D("Décision de validation"), ROLE("Valideur métier")],
+  "formation_accompagnement:*": [L("Supports de formation"), A("Planifier les sessions de formation"), K("Taux d'utilisateurs formés"), ROLE("Formateur référent")],
+  "mise_en_production:*": [L("Plan de bascule et de retour arrière"), D("Go / No Go mise en production"), R("Risque bloquant encore ouvert à la bascule"), A("Informer les utilisateurs de la mise en production", false), ROLE("Responsable de la mise en production"), ROLE("Sponsor")],
+  "stabilisation:*": [K("Incidents ouverts après mise en production"), K("Taux de disponibilité"), A("Transférer au support / à l'exploitation"), ROLE("Responsable du support")],
+  "plan_actions:*": [L("Plan d'actions validé"), D("Validation du plan d'actions", false), ROLE("Pilote du plan d'actions")],
+  "restitution:*": [L("Support de restitution"), D("Prise en compte de la restitution", false), ROLE("Sponsor")],
+  "cloture:*": [L("Bilan de projet"), D("Validation de la clôture"), K("Écart au budget final"), ROLE("Sponsor"), ROLE("Chef de projet")],
+};
+
+// Gate par étape : consultatif par défaut (alerte mais passage possible) ; bloquant pour les
+// vérifications de sécurité et de conformité. Absent = pas de Gate (les Gates ne sont pas obligatoires).
+export const STAGE_GATES: Record<string, "consultatif" | "bloquant"> = {
+  "mise_en_production:*": "consultatif",
+  "validation:cybersecurite": "bloquant",
+  "validation:reglementaire": "bloquant",
+  "validation:protection_donnees": "bloquant",
+  "verification:cybersecurite": "consultatif",
+};
+
+// Critères évalués automatiquement à partir des données de l'initiative (clé `${étape}:${libellé}`, tous types).
+// « hybride » : la source propose « prêt », la personne garde la main. « auto » : suit la source.
+export const AUTO_CRITERIA: Record<string, { mode: "auto" | "hybride"; source: string }> = {
+  "mise_en_production:Aucun risque bloquant ouvert": { mode: "auto", source: "risks.noBlockingOpen" },
+  "mise_en_production:Livrables obligatoires disponibles": { mode: "auto", source: "stage.deliverablesReady" },
+  "validation:Anomalies bloquantes résolues": { mode: "auto", source: "anomalies.noBlockingOpen" },
+  "stabilisation:Incidents post-mise en production traités": { mode: "hybride", source: "actions.noneOverdue" },
+  "cloture:Livrables terminés": { mode: "hybride", source: "stage.deliverablesReady" },
+};
+
+function lookup<T>(table: Record<string, T>, stageKey: string, typeKey: string): T | undefined {
+  return table[`${stageKey}:${typeKey}`] ?? table[`${stageKey}:*`];
+}
+
 export const OPTIONAL_SUFFIX = "?";
 
 export function parseStageToken(token: string): { key: string; obligatoire: boolean } {
@@ -245,7 +310,9 @@ export interface StageSpec {
   objectif: string;
   obligatoire: boolean;
   legacyPhases: string[];
-  criteria: { label: string; obligatoire: boolean; mode: "manuel"; autoSource: null }[];
+  criteria: { label: string; obligatoire: boolean; mode: string; autoSource: string | null }[];
+  gateMode: string | null;
+  items: { kind: string; label: string; obligatoire: boolean }[];
 }
 
 export interface TemplateSpec {
@@ -272,13 +339,19 @@ export function buildStageSpec(typeKey: string, token: string, legacy: LegacyCri
     const fromLegacy = legacy[typeKey]?.[key] ?? legacy["defaut"]?.[key];
     if (fromLegacy && fromLegacy.length > 0) labels = fromLegacy;
   }
+  const items = lookup(STAGE_ITEMS, key, typeKey) ?? [];
   return {
     key,
     label: lib.label,
     objectif: override?.objectif ?? lib.objectif,
     obligatoire,
     legacyPhases: lib.legacyPhases ?? [],
-    criteria: labels.map((label) => ({ label, obligatoire: true, mode: "manuel" as const, autoSource: null })),
+    gateMode: lookup(STAGE_GATES, key, typeKey) ?? null,
+    items: items.map((it) => ({ kind: it.kind, label: it.label, obligatoire: it.obligatoire ?? true })),
+    criteria: labels.map((label) => {
+      const auto = AUTO_CRITERIA[`${key}:${label}`];
+      return { label, obligatoire: true, mode: auto?.mode ?? "manuel", autoSource: auto?.source ?? null };
+    }),
   };
 }
 

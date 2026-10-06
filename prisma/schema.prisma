@@ -260,6 +260,7 @@ model Initiative {
   template         ProjectTemplate? @relation(fields: [templateId], references: [id])
   profileFlags     String[] @default([])
   stages           InitiativeStage[]
+  gateDecisions    StageGateDecision[]
   relationsSource  InitiativeRelation[] @relation("RelationSource")
   relationsCible   InitiativeRelation[] @relation("RelationCible")
   incidents        Incident[]
@@ -468,6 +469,8 @@ model Action {
   status         String    @default("a_faire") // a_faire | en_cours | en_attente | termine | abandonne
   comments       String?
   postponedCount Int       @default(0)
+  // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
+  initiativeStageId String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -496,6 +499,8 @@ model Risk {
   planAction   String?
   echeance     DateTime?
   status       String @default("ouvert") // ouvert | en_traitement | maitrise | cloture
+  // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
+  initiativeStageId String?
   createdAt    DateTime @default(now())
   actions      Action[]
 }
@@ -519,6 +524,8 @@ model Decision {
   date           DateTime?
   impact         String?
   status         String @default("en_attente") // decision_prise | en_attente | arbitrage_necessaire
+  // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
+  initiativeStageId String?
   createdAt      DateTime @default(now())
   actions        Action[]
 }
@@ -685,6 +692,8 @@ model Deliverable {
   dateReelle  DateTime?
   version     String?
   status      String    @default("a_venir") // a_venir | en_cours | valide | rejete
+  // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
+  initiativeStageId String?
   createdAt   DateTime  @default(now())
 }
 
@@ -713,6 +722,8 @@ model Kpi {
   period         String?
   categorie      String? // adoption | avancement | qualite | autre
   alertThreshold Float?
+  // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
+  initiativeStageId String?
   createdAt      DateTime @default(now())
 }
 
@@ -1148,9 +1159,31 @@ model InitiativeStage {
   active          Boolean  @default(true)
   legacyPhases    String[] @default([])
   gateMode        String?
+  // Éléments attendus (copie figée du modèle) : [{ kind, label, obligatoire }] — Lot 2.
+  expected        Json?
   criteria        StageCriterion[]
   createdAt       DateTime @default(now())
 
   @@unique([initiativeId, key])
   @@index([initiativeId, position])
+}
+
+// Décisions de Gate : append-only (jamais modifiées ni supprimées), traçables (date, utilisateur,
+// décision, commentaire). Une décision HPH (`Decision`) est aussi créée et reliée via decisionId.
+model StageGateDecision {
+  id           String   @id @default(cuid())
+  initiativeId String   @map("projectId")
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  stageKey     String
+  stageLabel   String
+  outcome      String // go | go_reserves | no_go
+  comment      String?
+  unmetCount   Int      @default(0)
+  gateMode     String?
+  userId       String?
+  userName     String?
+  decisionId   String?
+  createdAt    DateTime @default(now())
+
+  @@index([initiativeId, stageKey])
 }

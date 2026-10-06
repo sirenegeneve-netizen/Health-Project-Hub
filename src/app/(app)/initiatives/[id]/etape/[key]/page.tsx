@@ -4,7 +4,9 @@ import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { getInitiativeStages } from "@/lib/templateEngine";
 import { computeStageCompletion } from "@/lib/stageCriteria";
-import { evaluateStageExit } from "@/lib/templatePlan";
+import { getStageState } from "@/lib/stageRuntime";
+import { StageExpectedPanel } from "@/components/StageExpectedPanel";
+import { StageGatePanel } from "@/components/StageGatePanel";
 import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { stageGuidance } from "@/lib/stageGuidance";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
@@ -40,13 +42,13 @@ export default async function StagePage({ params }: { params: { id: string; key:
   const stage = stageIndex >= 0 ? stages[stageIndex] : null;
   if (!stage) notFound();
 
-  // Copie figée de l'étape (objectif, caractère obligatoire) et ses critères de passage.
-  const [stageRow, criteria] = await Promise.all([
-    prisma.initiativeStage.findUnique({ where: { initiativeId_key: { initiativeId: params.id, key: stage.key } } }),
-    prisma.stageCriterion.findMany({ where: { initiativeId: params.id, stageKey: stage.key }, orderBy: { order: "asc" } }),
-  ]);
+  // Copie figée de l'étape (objectif, éléments attendus, Gate) + critères — les critères automatiques
+  // sont recalculés ici. `state` est null pour une initiative antérieure au moteur de modèles.
+  const state = await getStageState(params.id, stage.key);
+  const stageRow = state?.stage ?? null;
+  const criteria = state?.criteria ?? (await prisma.stageCriterion.findMany({ where: { initiativeId: params.id, stageKey: stage.key }, orderBy: { order: "asc" } }));
   const completion = computeStageCompletion(criteria);
-  const exit = evaluateStageExit(stageRow?.gateMode ?? null, criteria);
+  const unmetCriteria = criteria.filter((c) => (c as { obligatoire?: boolean }).obligatoire !== false && c.status !== "pret").length;
 
   const actors = await findInitiativeActors(params.id, { id: true, name: true });
   const establishments = initiative.establishments.map((e) => ({ id: e.establishmentId, name: e.establishment.name }));
@@ -97,13 +99,35 @@ export default async function StagePage({ params }: { params: { id: string; key:
           <div className="flex items-center justify-between mb-3">
             <SectionTitle>Critères de passage</SectionTitle>
             <div className="flex items-center gap-2">
-              {exit.warning && <Pill text={`${exit.unmet} critère${exit.unmet > 1 ? "s" : ""} obligatoire${exit.unmet > 1 ? "s" : ""} non satisfait${exit.unmet > 1 ? "s" : ""}`} tone="warn" />}
+              {unmetCriteria > 0 && <Pill text={`${unmetCriteria} critère${unmetCriteria > 1 ? "s" : ""} obligatoire${unmetCriteria > 1 ? "s" : ""} non satisfait${unmetCriteria > 1 ? "s" : ""}`} tone="warn" />}
               <span className="text-sm text-ink/60">{completion.percent}%</span>
             </div>
           </div>
           <div className="card">
-            <StageCriteriaList criteria={criteria.map((c) => ({ id: c.id, label: c.label, status: c.status, obligatoire: c.obligatoire }))} />
+            <StageCriteriaList criteria={criteria.map((c) => ({ id: c.id, label: c.label, status: c.status, obligatoire: c.obligatoire, mode: c.mode }))} />
           </div>
+        </section>
+      )}
+
+      {state && state.expected.length > 0 && (
+        <section className="mt-6">
+          <SectionTitle>Attendus de l'étape</SectionTitle>
+          <StageExpectedPanel initiativeId={params.id} stageKey={stage.key} items={state.expected.map((e) => ({ kind: e.kind, label: e.label, obligatoire: e.obligatoire, state: e.state }))} />
+        </section>
+      )}
+
+      {state && (state.stage.gateMode === "consultatif" || state.stage.gateMode === "bloquant") && (
+        <section className="mt-6">
+          <SectionTitle>Gate — {stage.label}</SectionTitle>
+          <StageGatePanel
+            initiativeId={params.id}
+            stageKey={stage.key}
+            mode={state.stage.gateMode}
+            conditions={state.evaluation.conditions}
+            allowed={state.evaluation.allowed}
+            hasNext={!!state.nextKey}
+            history={state.history.map((h) => ({ id: h.id, outcome: h.outcome, comment: h.comment, userName: h.userName, unmetCount: h.unmetCount, createdAt: h.createdAt.toISOString() }))}
+          />
         </section>
       )}
 

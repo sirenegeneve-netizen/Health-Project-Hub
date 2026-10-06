@@ -25,6 +25,7 @@ interface Criterion {
   label: string;
   status: string;
   obligatoire?: boolean;
+  mode?: string;
 }
 
 // Checklist cliquable : chaque clic fait cycler le statut, exactement comme la
@@ -54,6 +55,8 @@ export function StageCriteriaList({ criteria }: { criteria: Criterion[] }) {
           <span className="text-sm text-body">
             {c.label}
             {c.obligatoire === false && <span className="ml-2 text-xs text-ink/40">optionnel</span>}
+            {c.mode === "auto" && <span className="ml-2 text-xs text-ink/40">calcul automatique</span>}
+            {c.mode === "hybride" && <span className="ml-2 text-xs text-ink/40">proposé automatiquement</span>}
           </span>
           <button
             onClick={() => cycle(c.id, c.status)}

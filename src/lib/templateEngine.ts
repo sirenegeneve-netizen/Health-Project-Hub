@@ -84,7 +84,7 @@ export async function resolveTemplateForCreation(typeKey: string, requestedId?: 
 export async function instantiateTemplate(tx: Db, initiativeId: string, templateId: string): Promise<{ firstPhase: string | null; stages: number }> {
   const stages = await tx.templateStage.findMany({
     where: { templateId },
-    include: { criteria: true },
+    include: { criteria: true, items: true },
     orderBy: { position: "asc" },
   });
   const input: PlanStageIn[] = stages.map((s) => ({
@@ -98,6 +98,7 @@ export async function instantiateTemplate(tx: Db, initiativeId: string, template
     legacyPhases: s.legacyPhases,
     gateMode: s.gateMode,
     criteria: s.criteria.map((c) => ({ label: c.label, order: c.order, obligatoire: c.obligatoire, mode: c.mode, autoSource: c.autoSource })),
+    items: s.items.map((it) => ({ kind: it.kind, label: it.label, order: it.order, obligatoire: it.obligatoire })),
   }));
   const plan = planInstance(input);
   for (const s of plan.stages) {
@@ -113,6 +114,7 @@ export async function instantiateTemplate(tx: Db, initiativeId: string, template
         active: true,
         legacyPhases: s.legacyPhases,
         gateMode: s.gateMode,
+        expected: s.expected.length > 0 ? s.expected : undefined,
       },
     });
     if (s.criteria.length > 0) {
@@ -164,13 +166,45 @@ async function createTemplateFromSpec(db: Db, spec: TemplateSpec, status: string
           obligatoire: s.obligatoire,
           active: true,
           legacyPhases: s.legacyPhases,
+          gateMode: s.gateMode,
           criteria: {
             create: s.criteria.map((c, order) => ({ label: c.label, order, obligatoire: c.obligatoire, mode: c.mode, autoSource: c.autoSource })),
           },
+          items: { create: s.items.map((it, order) => ({ kind: it.kind, label: it.label, order, obligatoire: it.obligatoire })) },
         })),
       },
     },
   });
+}
+
+// Lot 2 : un modèle standard déjà semé au Lot 1 reçoit ses éléments attendus, Gates et critères
+// automatiques — uniquement s'il n'a encore aucun élément et qu'aucune initiative n'y est rattachée
+// (jamais de modification rétroactive d'un modèle utilisé ou déjà enrichi/édité).
+async function enrichExistingTemplate(db: Db, spec: TemplateSpec) {
+  const templates = await db.projectTemplate.findMany({
+    where: { familyId: spec.familyId },
+    include: { stages: { include: { criteria: true, items: true } }, _count: { select: { initiatives: true } } },
+  });
+  for (const t of templates) {
+    if (t._count.initiatives > 0) continue;
+    if (t.stages.some((st) => st.items.length > 0 || st.gateMode)) continue;
+    for (const st of t.stages) {
+      const ss = spec.stages.find((x) => x.key === st.key);
+      if (!ss) continue;
+      if (ss.items.length > 0) {
+        await db.templateStageItem.createMany({
+          data: ss.items.map((it, order) => ({ templateStageId: st.id, kind: it.kind, label: it.label, order, obligatoire: it.obligatoire })),
+        });
+      }
+      if (ss.gateMode) await db.templateStage.update({ where: { id: st.id }, data: { gateMode: ss.gateMode } });
+      for (const c of st.criteria) {
+        const sc = ss.criteria.find((x) => x.label === c.label);
+        if (sc && sc.mode !== "manuel" && c.mode === "manuel") {
+          await db.templateStageCriterion.update({ where: { id: c.id }, data: { mode: sc.mode, autoSource: sc.autoSource } });
+        }
+      }
+    }
+  }
 }
 
 export interface SeedSummary {
@@ -198,6 +232,7 @@ export async function seedTemplateEngine(db: Db = prisma): Promise<SeedSummary> 
     const exists = await db.projectTemplate.count({ where: { familyId: spec.familyId } });
     if (exists > 0) {
       present++;
+      await enrichExistingTemplate(db, spec);
       continue;
     }
     await createTemplateFromSpec(db, spec, "actif");
