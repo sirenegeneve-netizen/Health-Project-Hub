@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { cycleIsDiffused } from "@/lib/diffusion";
+import { syncGroupDiffusion } from "@/lib/diffusionDb";
 
 // Décline un Objectif stratégique existant dans un Plan donné. Le Goal et le
 // Plan doivent porter la même portée (même ownerType/ownerId) — on ne peut
@@ -35,6 +37,8 @@ export async function POST(req: NextRequest) {
         indicateurs: body.indicateurs || null,
       },
     });
+    // Cycle d'un groupe dont l'objectif ET le plan sont diffusés : on le décline dans chaque établissement.
+    if (goal.ownerType === "groupe" && cycleIsDiffused(goal, plan)) await syncGroupDiffusion(goal.ownerId);
     return NextResponse.json(cycle, { status: 201 });
   } catch (e: any) {
     if (e.code === "P2002") {

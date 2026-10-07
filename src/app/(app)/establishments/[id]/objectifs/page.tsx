@@ -12,6 +12,9 @@ import {
   FINDING_TYPES as FINDING_TYPE_LABELS,
 } from "@/components/GovernanceForms";
 import { ActionForm } from "@/components/EntityForms";
+import { ActionPlanSection } from "@/components/ActionPlanSection";
+import { CycleTargetCell, DiffuseButton, InheritedPill, ResyncButton } from "@/components/ObjectifsDiffusion";
+import { diffusionProgress } from "@/lib/diffusion";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +23,7 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
   if (!establishment) notFound();
 
   const ownerType = "etablissement" as const;
-  const [plans, goals, cycles, requirements, findings, actors] = await Promise.all([
+  const [plans, goals, cycles, requirements, findings, actors, planActions] = await Promise.all([
     prisma.strategicPlan.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { startDate: "desc" } }),
     prisma.strategicGoal.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.strategicGoalCycle.findMany({
@@ -43,6 +46,11 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
       orderBy: { dateConstat: "desc" },
     }),
     prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
+    prisma.action.findMany({
+      where: { ownerType, ownerId: params.id },
+      include: { strategicGoalCycle: { include: { strategicGoal: true, strategicPlan: true } } },
+      orderBy: [{ echeance: "asc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   const applicableRequirements = requirements.filter((r) => r.applicable);
@@ -60,6 +68,30 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
     cyclesByPlan.set(cy.strategicPlanId, list);
   }
 
+  const planObjectives = cycles.map((cy) => ({
+    id: cy.id,
+    label: `${cy.strategicGoal.libelle}${cy.libelle ? " — " + cy.libelle : ""} · ${cy.strategicPlan.libelle}`,
+  }));
+  const planActionRows = planActions.map((a) => ({
+    id: a.id,
+    title: a.title,
+    livrable: a.livrable,
+    priority: a.priority,
+    status: a.status,
+    responsable: a.responsable,
+    echeance: a.echeance,
+    initiativeId: a.initiativeId,
+    cycle: a.strategicGoalCycle
+      ? {
+          id: a.strategicGoalCycle.id,
+          goalLabel: a.strategicGoalCycle.strategicGoal.libelle,
+          planLabel: a.strategicGoalCycle.strategicPlan.libelle,
+          cible: a.strategicGoalCycle.cible,
+          indicateurs: a.strategicGoalCycle.indicateurs,
+        }
+      : null,
+  }));
+
   return (
     <div>
       <div className="mb-4">
@@ -72,7 +104,8 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
 
       <p className="text-sm text-muted mb-6">
         Objectifs stratégiques de l'établissement, versionnés par cycle de plan. Une initiative sans objectif rattaché apparaît comme orpheline sur
-        sa page Cadrage ; un objectif sans initiative apparaît sans contribution ci-dessous.
+        sa page Cadrage ; un objectif sans initiative apparaît sans contribution ci-dessous. Les plans et objectifs « hérités du groupe » ont un
+        libellé verrouillé : l'établissement saisit sa propre cible, ses indicateurs et son plan d'action.
       </p>
 
       <section className="mb-8">
@@ -88,7 +121,8 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
                 <span className="text-muted">
                   ({p.startDate.toLocaleDateString("fr-FR")} – {p.endDate.toLocaleDateString("fr-FR")})
                 </span>{" "}
-                <Pill text={p.statut} tone={p.statut === "actif" ? "ok" : "neutral"} />
+                <Pill text={p.statut} tone={p.statut === "actif" ? "ok" : "neutral"} />{" "}
+                {p.parentPlanId && <InheritedPill />}
               </span>
             ))}
           </div>
@@ -105,7 +139,8 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
             {goals.map((g) => (
               <li key={g.id} className="text-sm">
                 <span className="font-medium text-ink">{g.libelle}</span>
-                {g.description && <span className="text-muted"> — {g.description}</span>}
+                {g.description && <span className="text-muted"> — {g.description}</span>}{" "}
+                {g.parentGoalId && <InheritedPill />}
               </li>
             ))}
           </ul>
@@ -135,7 +170,7 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
                         <tr className="bg-teal-50/50">
                           <th className="pl-4">Objectif</th>
                           <th>Statut</th>
-                          <th>Cible</th>
+                          <th>Cible & indicateurs</th>
                           <th>Initiatives contributrices</th>
                         </tr>
                       </thead>
@@ -143,13 +178,15 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
                         {planCycles.map((cy) => (
                           <tr key={cy.id}>
                             <td className="pl-4 text-sm">
-                              {cy.strategicGoal.libelle}
+                              {cy.strategicGoal.libelle}{cy.strategicGoal.parentGoalId && <> <InheritedPill /></>}
                               {cy.libelle && <span className="text-muted"> — {cy.libelle}</span>}
                             </td>
                             <td>
                               <Pill text={cy.statut} tone={cy.statut === "actif" ? "ok" : "neutral"} />
                             </td>
-                            <td className="text-sm text-muted">{cy.cible || "—"}</td>
+                            <td>
+                              <CycleTargetCell cycleId={cy.id} cible={cy.cible} indicateurs={cy.indicateurs} />
+                            </td>
                             <td className="text-sm">
                               {cy.contributions.length === 0 ? (
                                 <span className="text-muted">Aucune — objectif non pris en charge</span>
@@ -174,6 +211,8 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
           })
         )}
       </section>
+
+      <ActionPlanSection ownerType={ownerType} ownerId={establishment.id} actions={planActionRows} objectives={planObjectives} actors={actors} />
 
       <section className="mt-10">
         <h2 className="font-display text-lg text-ink mb-3">Exigences qualité & conformité</h2>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { syncGroupDiffusion } from "@/lib/diffusionDb";
 
 // Crée un Objectif stratégique (identité stable, sans période — la période
 // vient du Plan auquel un Cycle de cet objectif sera rattaché).
@@ -18,7 +19,9 @@ export async function POST(req: NextRequest) {
   }
 
   const goal = await prisma.strategicGoal.create({
-    data: { ownerType, ownerId, libelle, description: body.description || null },
+    data: { ownerType, ownerId, libelle, description: body.description || null, diffuse: ownerType === "groupe" && body.diffuse === true },
   });
-  return NextResponse.json(goal, { status: 201 });
+  let diffusion = null;
+  if (goal.diffuse) diffusion = await syncGroupDiffusion(ownerId);
+  return NextResponse.json({ ...goal, diffusion }, { status: 201 });
 }

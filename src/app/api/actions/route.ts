@@ -21,8 +21,21 @@ export async function POST(req: NextRequest) {
   const initiativeId = ownerType === "initiative" ? body.initiativeId : null;
   if (!ownerId) return NextResponse.json({ error: "Portée (ownerId) requise." }, { status: 400 });
 
+  // Plan d'action : l'objectif lié doit appartenir au même groupe / établissement que l'action.
+  let strategicGoalCycleId: string | null = null;
+  if (body.strategicGoalCycleId) {
+    const cycle = await prisma.strategicGoalCycle.findUnique({ where: { id: body.strategicGoalCycleId }, include: { strategicGoal: true } });
+    if (!cycle) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });
+    if (cycle.strategicGoal.ownerType !== ownerType || cycle.strategicGoal.ownerId !== ownerId) {
+      return NextResponse.json({ error: "L'objectif doit appartenir au même groupe ou établissement que l'action." }, { status: 400 });
+    }
+    strategicGoalCycleId = cycle.id;
+  }
+
   const action = await prisma.action.create({
     data: {
+      strategicGoalCycleId,
+      livrable: body.livrable ? String(body.livrable) : null,
       initiativeId,
       ownerType,
       ownerId,

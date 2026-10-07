@@ -471,6 +471,10 @@ model Action {
   postponedCount Int       @default(0)
   // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
   initiativeStageId String?
+  // Plan d'action : objectif (cycle de plan) servi par l'action, et livrable / preuve attendu.
+  strategicGoalCycleId String?
+  strategicGoalCycle   StrategicGoalCycle? @relation(fields: [strategicGoalCycleId], references: [id], onDelete: SetNull)
+  livrable             String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -927,8 +931,13 @@ model StrategicPlan {
   endDate   DateTime
   statut    String   @default("actif") // brouillon | actif | clos
   cycles    StrategicGoalCycle[]
+  // Diffusion groupe → établissements : `diffuse` sur le plan du groupe ; `parentPlanId` sur la copie
+  // de l'établissement (libellé, dates et statut suivent le plan du groupe et sont verrouillés).
+  diffuse      Boolean @default(false)
+  parentPlanId String?
   createdAt DateTime @default(now())
 
+  @@unique([ownerId, parentPlanId])
   @@index([ownerType, ownerId])
 }
 
@@ -939,8 +948,13 @@ model StrategicGoal {
   libelle     String
   description String?
   cycles      StrategicGoalCycle[]
+  // Diffusion groupe → établissements (voir StrategicPlan) : libellé et description verrouillés
+  // sur la copie ; cible, indicateurs et statut se saisissent sur le cycle de chaque établissement.
+  diffuse      Boolean @default(false)
+  parentGoalId String?
   createdAt   DateTime @default(now())
 
+  @@unique([ownerId, parentGoalId])
   @@index([ownerType, ownerId])
 }
 
@@ -955,6 +969,7 @@ model StrategicGoalCycle {
   cible             String?
   indicateurs       String?
   contributions     InitiativeGoalContribution[]
+  actions           Action[]
   createdAt         DateTime      @default(now())
 
   @@unique([strategicGoalId, strategicPlanId])

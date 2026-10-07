@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { syncGroupDiffusion } from "@/lib/diffusionDb";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
@@ -33,6 +34,12 @@ export async function POST(req: NextRequest) {
     },
   });
   await logAudit({ entityType: "establishment", entityId: establishment.id, entityLabel: establishment.name, action: "create", user });
+  // Le nouvel établissement reçoit les plans et objectifs que son groupe diffuse (sans bloquer la création).
+  try {
+    await syncGroupDiffusion(groupId);
+  } catch (e) {
+    console.error("Diffusion groupe → établissement impossible :", e);
+  }
   return NextResponse.json(establishment, { status: 201 });
 }
 

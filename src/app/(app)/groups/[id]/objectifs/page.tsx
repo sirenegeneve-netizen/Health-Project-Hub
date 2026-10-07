@@ -12,6 +12,9 @@ import {
   FINDING_TYPES as FINDING_TYPE_LABELS,
 } from "@/components/GovernanceForms";
 import { ActionForm } from "@/components/EntityForms";
+import { ActionPlanSection } from "@/components/ActionPlanSection";
+import { CycleTargetCell, DiffuseButton, InheritedPill, ResyncButton } from "@/components/ObjectifsDiffusion";
+import { diffusionProgress } from "@/lib/diffusion";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +23,7 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
   if (!group) notFound();
 
   const ownerType = "groupe" as const;
-  const [plans, goals, cycles, requirements, findings, actors] = await Promise.all([
+  const [plans, goals, cycles, requirements, findings, actors, planActions, estCount, childCycles] = await Promise.all([
     prisma.strategicPlan.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { startDate: "desc" } }),
     prisma.strategicGoal.findMany({ where: { ownerType, ownerId: params.id }, orderBy: { createdAt: "asc" } }),
     prisma.strategicGoalCycle.findMany({
@@ -43,6 +46,17 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
       orderBy: { dateConstat: "desc" },
     }),
     prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
+    prisma.action.findMany({
+      where: { ownerType, ownerId: params.id },
+      include: { strategicGoalCycle: { include: { strategicGoal: true, strategicPlan: true } } },
+      orderBy: [{ echeance: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.establishment.count({ where: { groupId: params.id } }),
+    // Déclinaisons des établissements issues des objectifs et plans diffusés par ce groupe (avancement des cibles).
+    prisma.strategicGoalCycle.findMany({
+      where: { strategicGoal: { parentGoalId: { not: null } }, strategicPlan: { parentPlanId: { not: null } } },
+      select: { cible: true, indicateurs: true, strategicGoal: { select: { parentGoalId: true } }, strategicPlan: { select: { parentPlanId: true } } },
+    }),
   ]);
 
   const applicableRequirements = requirements.filter((r) => r.applicable);
@@ -60,6 +74,37 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
     cyclesByPlan.set(cy.strategicPlanId, list);
   }
 
+  const planObjectives = cycles.map((cy) => ({
+    id: cy.id,
+    label: `${cy.strategicGoal.libelle}${cy.libelle ? " — " + cy.libelle : ""} · ${cy.strategicPlan.libelle}`,
+  }));
+  const planActionRows = planActions.map((a) => ({
+    id: a.id,
+    title: a.title,
+    livrable: a.livrable,
+    priority: a.priority,
+    status: a.status,
+    responsable: a.responsable,
+    echeance: a.echeance,
+    initiativeId: a.initiativeId,
+    cycle: a.strategicGoalCycle
+      ? {
+          id: a.strategicGoalCycle.id,
+          goalLabel: a.strategicGoalCycle.strategicGoal.libelle,
+          planLabel: a.strategicGoalCycle.strategicPlan.libelle,
+          cible: a.strategicGoalCycle.cible,
+          indicateurs: a.strategicGoalCycle.indicateurs,
+        }
+      : null,
+  }));
+  const childByParent = new Map<string, { cible: string | null; indicateurs: string | null }[]>();
+  for (const c of childCycles) {
+    const key = `${c.strategicGoal.parentGoalId}::${c.strategicPlan.parentPlanId}`;
+    const list = childByParent.get(key) || [];
+    list.push({ cible: c.cible, indicateurs: c.indicateurs });
+    childByParent.set(key, list);
+  }
+
   return (
     <div>
       <div className="mb-4">
@@ -72,12 +117,18 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
 
       <p className="text-sm text-muted mb-6">
         Objectifs stratégiques du groupe, versionnés par cycle de plan. Une initiative sans objectif rattaché apparaît comme orpheline sur sa page
-        Cadrage ; un objectif sans initiative apparaît sans contribution ci-dessous.
+        Cadrage ; un objectif sans initiative apparaît sans contribution ci-dessous. Un plan ou un objectif peut être diffusé aux établissements
+        rattachés : ils le reçoivent avec un libellé verrouillé et saisissent leur propre cible, leurs indicateurs et leur plan d'action.
       </p>
+      {estCount > 0 && (
+        <div className="mb-6">
+          <ResyncButton groupId={group.id} />
+        </div>
+      )}
 
       <section className="mb-8">
         <h2 className="font-display text-lg text-ink mb-3">Plans stratégiques</h2>
-        <StrategicPlanForm ownerType={ownerType} ownerId={group.id} />
+        <StrategicPlanForm ownerType={ownerType} ownerId={group.id} establishmentCount={estCount} />
         {plans.length === 0 ? (
           <div className="card text-center text-muted py-8">Aucun plan stratégique déclaré.</div>
         ) : (
@@ -88,7 +139,8 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
                 <span className="text-muted">
                   ({p.startDate.toLocaleDateString("fr-FR")} – {p.endDate.toLocaleDateString("fr-FR")})
                 </span>{" "}
-                <Pill text={p.statut} tone={p.statut === "actif" ? "ok" : "neutral"} />
+                <Pill text={p.statut} tone={p.statut === "actif" ? "ok" : "neutral"} />{" "}
+                {p.diffuse ? <Pill text="Diffusé aux établissements" tone="ok" /> : <DiffuseButton kind="plan" id={p.id} establishmentCount={estCount} />}
               </span>
             ))}
           </div>
@@ -97,7 +149,7 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
 
       <section className="mb-8">
         <h2 className="font-display text-lg text-ink mb-3">Objectifs stratégiques</h2>
-        <StrategicGoalForm ownerType={ownerType} ownerId={group.id} />
+        <StrategicGoalForm ownerType={ownerType} ownerId={group.id} establishmentCount={estCount} />
         {goals.length === 0 ? (
           <div className="card text-center text-muted py-8">Aucun objectif stratégique déclaré.</div>
         ) : (
@@ -105,7 +157,8 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
             {goals.map((g) => (
               <li key={g.id} className="text-sm">
                 <span className="font-medium text-ink">{g.libelle}</span>
-                {g.description && <span className="text-muted"> — {g.description}</span>}
+                {g.description && <span className="text-muted"> — {g.description}</span>}{" "}
+                {g.diffuse ? <Pill text="Diffusé aux établissements" tone="ok" /> : <DiffuseButton kind="objectif" id={g.id} establishmentCount={estCount} />}
               </li>
             ))}
           </ul>
@@ -135,7 +188,8 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
                         <tr className="bg-teal-50/50">
                           <th className="pl-4">Objectif</th>
                           <th>Statut</th>
-                          <th>Cible</th>
+                          <th>Cible & indicateurs</th>
+                          <th>Établissements</th>
                           <th>Initiatives contributrices</th>
                         </tr>
                       </thead>
@@ -149,7 +203,17 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
                             <td>
                               <Pill text={cy.statut} tone={cy.statut === "actif" ? "ok" : "neutral"} />
                             </td>
-                            <td className="text-sm text-muted">{cy.cible || "—"}</td>
+                            <td>
+                              <CycleTargetCell cycleId={cy.id} cible={cy.cible} indicateurs={cy.indicateurs} />
+                            </td>
+                            <td className="text-sm text-muted">
+                              {(() => {
+                                const kids = childByParent.get(`${cy.strategicGoalId}::${cy.strategicPlanId}`);
+                                if (!kids) return "—";
+                                const pr = diffusionProgress(kids);
+                                return `${pr.withTarget}/${pr.total} cibles renseignées`;
+                              })()}
+                            </td>
                             <td className="text-sm">
                               {cy.contributions.length === 0 ? (
                                 <span className="text-muted">Aucune — objectif non pris en charge</span>
@@ -174,6 +238,8 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
           })
         )}
       </section>
+
+      <ActionPlanSection ownerType={ownerType} ownerId={group.id} actions={planActionRows} objectives={planObjectives} actors={actors} />
 
       <section className="mt-10">
         <h2 className="font-display text-lg text-ink mb-3">Exigences qualité & conformité</h2>

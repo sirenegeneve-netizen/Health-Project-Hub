@@ -4,9 +4,30 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toggle, Field, inputCls, post } from "@/components/EntityForms";
 
-export function StrategicPlanForm({ ownerType, ownerId }: { ownerType: "groupe" | "etablissement"; ownerId: string }) {
+// Portée d'un plan / objectif du groupe : « Groupe seul » ou « Groupe + établissements rattachés ».
+function DiffuseChoice({ count, value, onChange }: { count: number; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Field label="Portée">
+      <div className="space-y-1 text-sm">
+        <label className="flex items-start gap-2">
+          <input type="radio" checked={value} onChange={() => onChange(true)} className="mt-1" />
+          <span>
+            Groupe <strong>et</strong> établissements rattachés ({count}) — chaque établissement reçoit l'élément (libellé verrouillé) et saisit sa propre cible, ses indicateurs et son plan d'action
+          </span>
+        </label>
+        <label className="flex items-start gap-2">
+          <input type="radio" checked={!value} onChange={() => onChange(false)} className="mt-1" />
+          <span>Groupe seulement</span>
+        </label>
+      </div>
+    </Field>
+  );
+}
+
+export function StrategicPlanForm({ ownerType, ownerId, establishmentCount = 0 }: { ownerType: "groupe" | "etablissement"; ownerId: string; establishmentCount?: number }) {
   const router = useRouter();
   const [f, setF] = useState({ libelle: "", startDate: "", endDate: "" });
+  const [diffuse, setDiffuse] = useState(establishmentCount > 0);
   return (
     <Toggle label="+ Nouveau plan stratégique">
       {(close) => (
@@ -27,12 +48,13 @@ export function StrategicPlanForm({ ownerType, ownerId }: { ownerType: "groupe" 
               <input type="date" className={inputCls} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />
             </Field>
           </div>
+          {ownerType === "groupe" && establishmentCount > 0 && <DiffuseChoice count={establishmentCount} value={diffuse} onChange={setDiffuse} />}
           <div className="flex gap-2">
             <button
               className="btn"
               onClick={async () => {
                 if (!f.libelle || !f.startDate || !f.endDate) return;
-                await post("/api/strategic-plans", { ownerType, ownerId, ...f });
+                await post("/api/strategic-plans", { ownerType, ownerId, ...f, diffuse: ownerType === "groupe" && diffuse });
                 setF({ libelle: "", startDate: "", endDate: "" });
                 close();
                 router.refresh();
@@ -50,9 +72,10 @@ export function StrategicPlanForm({ ownerType, ownerId }: { ownerType: "groupe" 
   );
 }
 
-export function StrategicGoalForm({ ownerType, ownerId }: { ownerType: "groupe" | "etablissement"; ownerId: string }) {
+export function StrategicGoalForm({ ownerType, ownerId, establishmentCount = 0 }: { ownerType: "groupe" | "etablissement"; ownerId: string; establishmentCount?: number }) {
   const router = useRouter();
   const [f, setF] = useState({ libelle: "", description: "" });
+  const [diffuse, setDiffuse] = useState(establishmentCount > 0);
   return (
     <Toggle label="+ Nouvel objectif stratégique">
       {(close) => (
@@ -68,12 +91,13 @@ export function StrategicGoalForm({ ownerType, ownerId }: { ownerType: "groupe" 
           <Field label="Description (optionnel)">
             <input className={inputCls} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
           </Field>
+          {ownerType === "groupe" && establishmentCount > 0 && <DiffuseChoice count={establishmentCount} value={diffuse} onChange={setDiffuse} />}
           <div className="flex gap-2">
             <button
               className="btn"
               onClick={async () => {
                 if (!f.libelle) return;
-                await post("/api/strategic-goals", { ownerType, ownerId, ...f });
+                await post("/api/strategic-goals", { ownerType, ownerId, ...f, diffuse: ownerType === "groupe" && diffuse });
                 setF({ libelle: "", description: "" });
                 close();
                 router.refresh();

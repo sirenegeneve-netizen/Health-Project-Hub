@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.priority !== undefined) data.priority = body.priority;
   if (body.status !== undefined) data.status = body.status;
   if (body.comments !== undefined) data.comments = body.comments;
+  if (body.livrable !== undefined) data.livrable = body.livrable ? String(body.livrable) : null;
 
   const action = await prisma.action.update({ where: { id: params.id }, data });
 
