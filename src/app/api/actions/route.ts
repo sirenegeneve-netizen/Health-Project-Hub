@@ -32,8 +32,27 @@ export async function POST(req: NextRequest) {
     strategicGoalCycleId = cycle.id;
   }
 
+  // Indicateur associé : il doit appartenir à l'objectif de l'action. Exigence traitée : même périmètre.
+  let indicatorId: string | null = null;
+  if (body.indicatorId) {
+    const ind = await prisma.goalIndicator.findUnique({ where: { id: body.indicatorId }, select: { id: true, strategicGoalCycleId: true } });
+    if (!ind) return NextResponse.json({ error: "Indicateur introuvable." }, { status: 404 });
+    if (!strategicGoalCycleId || ind.strategicGoalCycleId !== strategicGoalCycleId) {
+      return NextResponse.json({ error: "L'indicateur associé doit appartenir à l'objectif de l'action." }, { status: 400 });
+    }
+    indicatorId = ind.id;
+  }
+  let qualityRequirementId: string | null = null;
+  if (body.qualityRequirementId) {
+    const req = await prisma.qualityRequirement.findUnique({ where: { id: body.qualityRequirementId }, select: { id: true } });
+    if (!req) return NextResponse.json({ error: "Exigence introuvable." }, { status: 404 });
+    qualityRequirementId = req.id;
+  }
+
   const action = await prisma.action.create({
     data: {
+      indicatorId,
+      qualityRequirementId,
       strategicGoalCycleId,
       livrable: body.livrable ? String(body.livrable) : null,
       initiativeId,

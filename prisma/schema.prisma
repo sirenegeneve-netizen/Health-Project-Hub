@@ -59,6 +59,7 @@ model Establishment {
   trainings    TrainingRecord[]
   risks        Risk[]
   actions      Action[]
+  requirementApplicabilities RequirementApplicability[]
   createdAt    DateTime               @default(now())
 }
 
@@ -475,6 +476,11 @@ model Action {
   strategicGoalCycleId String?
   strategicGoalCycle   StrategicGoalCycle? @relation(fields: [strategicGoalCycleId], references: [id], onDelete: SetNull)
   livrable             String?
+  // Indicateur que l'action vise à faire progresser, et exigence qu'elle traite (liens facultatifs).
+  indicatorId          String?
+  indicator            GoalIndicator? @relation(fields: [indicatorId], references: [id], onDelete: SetNull)
+  qualityRequirementId String?
+  qualityRequirement   QualityRequirement? @relation(fields: [qualityRequirementId], references: [id], onDelete: SetNull)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -505,6 +511,7 @@ model Risk {
   status       String @default("ouvert") // ouvert | en_traitement | maitrise | cloture
   // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
   initiativeStageId String?
+  goalLinks StrategicGoalLink[]
   createdAt    DateTime @default(now())
   actions      Action[]
 }
@@ -530,6 +537,7 @@ model Decision {
   status         String @default("en_attente") // decision_prise | en_attente | arbitrage_necessaire
   // Moteur de modèles (Lot 2) : étape de l'initiative à laquelle cet élément est rattaché (optionnel).
   initiativeStageId String?
+  goalLinks StrategicGoalLink[]
   createdAt      DateTime @default(now())
   actions        Action[]
 }
@@ -970,9 +978,24 @@ model StrategicGoalCycle {
   indicateurs       String?
   contributions     InitiativeGoalContribution[]
   actions           Action[]
+  // Objectif = unité de pilotage (refonte Objectifs & conformité).
+  priorite           String    @default("normale") // basse | normale | haute | critique
+  responsableActorId String?
+  responsable        String?
+  axe                String?
+  resultatAttendu    String?
+  perimetre          String? // population / périmètre concerné — distinct de l'indicateur et des valeurs
+  echeance           DateTime?
+  // Déclinaison établissement : cycle du groupe dont celui-ci est la copie (lien explicite).
+  parentCycleId      String?
+  diffusion          String    @default("aucune") // aucune | tous | selection
+  indicators         GoalIndicator[]
+  links              StrategicGoalLink[]
+  updatedAt          DateTime  @default(now()) @updatedAt
   createdAt         DateTime      @default(now())
 
   @@unique([strategicGoalId, strategicPlanId])
+  @@index([parentCycleId])
 }
 
 // Relation facultative des deux côtés (ni l'Initiative ni le Cycle n'imposent
@@ -1014,6 +1037,11 @@ model QualityRequirement {
   applicable  Boolean  @default(true)
   coverages   InitiativeRequirementCoverage[]
   auditFindings AuditFinding[]
+  // Applicabilité : « tous » = tout le groupe sauf exclusions ; « selection » = seulement les établissements retenus.
+  portee      String   @default("tous")
+  applicabilities RequirementApplicability[]
+  goalLinks   StrategicGoalLink[]
+  actions     Action[]
   createdAt   DateTime @default(now())
 
   @@index([ownerType, ownerId])
@@ -1054,6 +1082,7 @@ model AuditFinding {
   dateConstat          DateTime @default(now())
   statut               String   @default("ouvert") // ouvert | en_traitement | cloture
   actions              Action[]
+  goalLinks StrategicGoalLink[]
   createdAt            DateTime @default(now())
 
   @@index([ownerType, ownerId])
@@ -1201,4 +1230,100 @@ model StageGateDecision {
   createdAt    DateTime @default(now())
 
   @@index([initiativeId, stageKey])
+}
+
+
+// ============================================================================
+// REFONTE OBJECTIFS & CONFORMITÉ (Lot 1) — strictement additif.
+// Objectif → Indicateur → Mesure ; liens transversaux ; applicabilité des exigences.
+// ============================================================================
+
+// Définition d'un indicateur : maîtrisée au niveau Groupe. La copie d'un établissement (parentIndicatorId)
+// hérite de la définition (nom, description, unité, sens, fréquence — verrouillés) et renseigne sa valeur
+// initiale, ses mesures et, si elle diffère, sa cible locale (valeurCible vide = cible du Groupe).
+model GoalIndicator {
+  id                  String   @id @default(cuid())
+  strategicGoalCycleId String
+  strategicGoalCycle  StrategicGoalCycle @relation(fields: [strategicGoalCycleId], references: [id], onDelete: Cascade)
+  nom                 String
+  description         String?
+  unite               String?
+  sens                String   @default("hausse") // hausse (≥ cible) | baisse (≤ cible)
+  valeurInitiale      Float?
+  valeurCible         Float?
+  frequence           String   @default("trimestrielle") // mensuelle | trimestrielle | semestrielle | annuelle | ponctuelle
+  echeance            DateTime?
+  responsableActorId  String?
+  responsable         String?
+  statut              String   @default("actif") // actif | atteint | abandonne
+  principal           Boolean  @default(false)
+  seuilAlerte         Float?
+  parentIndicatorId   String?
+  kpiId               String? // lien facultatif vers un Kpi d'initiative
+  measures            GoalIndicatorMeasure[]
+  actions             Action[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
+
+  @@unique([strategicGoalCycleId, parentIndicatorId])
+  @@index([strategicGoalCycleId])
+  @@index([parentIndicatorId])
+}
+
+// Valeur réellement constatée à une date donnée. « Valeur actuelle » = dernière mesure.
+model GoalIndicatorMeasure {
+  id              String   @id @default(cuid())
+  goalIndicatorId String
+  goalIndicator   GoalIndicator @relation(fields: [goalIndicatorId], references: [id], onDelete: Cascade)
+  valeur          Float
+  dateMesure      DateTime
+  commentaire     String?
+  source          String?
+  auteur          String?
+  createdAt       DateTime @default(now())
+
+  @@index([goalIndicatorId, dateMesure])
+}
+
+// Lien d'un objectif avec un risque, une décision, un constat d'audit ou une exigence existants
+// (aucun doublon). Une seule cible renseignée par ligne. Initiatives : InitiativeGoalContribution.
+model StrategicGoalLink {
+  id                   String   @id @default(cuid())
+  strategicGoalCycleId String
+  strategicGoalCycle   StrategicGoalCycle @relation(fields: [strategicGoalCycleId], references: [id], onDelete: Cascade)
+  nature               String   @default("associe") // associe | justifie | contraint
+  riskId               String?
+  risk                 Risk?    @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  decisionId           String?
+  decision             Decision? @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  auditFindingId       String?
+  auditFinding         AuditFinding? @relation(fields: [auditFindingId], references: [id], onDelete: Cascade)
+  qualityRequirementId String?
+  qualityRequirement   QualityRequirement? @relation(fields: [qualityRequirementId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+
+  @@unique([strategicGoalCycleId, riskId])
+  @@unique([strategicGoalCycleId, decisionId])
+  @@unique([strategicGoalCycleId, auditFindingId])
+  @@unique([strategicGoalCycleId, qualityRequirementId])
+}
+
+// Applicabilité d'une exigence de référence (groupe) à un établissement + suivi local de conformité.
+// L'exigence n'est jamais dupliquée. Actions, preuves, constats de l'établissement pointent vers l'exigence.
+model RequirementApplicability {
+  id                   String   @id @default(cuid())
+  qualityRequirementId String
+  qualityRequirement   QualityRequirement @relation(fields: [qualityRequirementId], references: [id], onDelete: Cascade)
+  establishmentId      String
+  establishment        Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  applicable           Boolean  @default(true)
+  statutConformite     String   @default("non_evalue") // non_evalue | conforme | partiellement_conforme | non_conforme
+  evaluation           String?
+  evaluatedAt          DateTime?
+  evaluatedBy          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  @@unique([qualityRequirementId, establishmentId])
+  @@index([establishmentId])
 }

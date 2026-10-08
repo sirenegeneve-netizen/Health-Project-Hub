@@ -16,6 +16,8 @@ const ENTITY_LABELS: Record<string, string> = {
   actor: "Acteur",
   establishment: "Établissement",
   group: "Groupe",
+  objectif: "Objectif",
+  exigence: "Exigence",
   project_type: "Type de projet",
   project_template: "Modèle de projet",
   stage_definition: "Étape (bibliothèque)",
