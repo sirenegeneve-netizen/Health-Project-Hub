@@ -94,6 +94,11 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
 
   return (
     <div>
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+        <Link href={`/establishments/${establishment.id}/objectifs/nouveau`} className="btn">
+          + Nouvel objectif stratégique
+        </Link>
+      </div>
       <div className="mb-4">
         <Link href="/establishments" className="text-sm text-blue hover:underline">
           ← Établissements
@@ -178,7 +183,7 @@ export default async function EstablishmentObjectifsPage({ params }: { params: {
                         {planCycles.map((cy) => (
                           <tr key={cy.id}>
                             <td className="pl-4 text-sm">
-                              {cy.strategicGoal.libelle}{cy.strategicGoal.parentGoalId && <> <InheritedPill /></>}
+                              <Link href={`/establishments/${establishment.id}/objectifs/${cy.id}`} className="text-blue hover:underline">{cy.strategicGoal.libelle}</Link>{cy.strategicGoal.parentGoalId && <> <InheritedPill /></>}
                               {cy.libelle && <span className="text-muted"> — {cy.libelle}</span>}
                             </td>
                             <td>

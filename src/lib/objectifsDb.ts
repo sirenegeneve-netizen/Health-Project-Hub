@@ -445,3 +445,73 @@ export async function migrateObjectifs(opts: { dryRun?: boolean } = {}): Promise
   }
   return summary;
 }
+
+// --- Lot 2 : candidats à l'association, documents, historique ---------------------------------------------------------
+
+export interface Candidate {
+  id: string;
+  label: string;
+  sub?: string;
+}
+
+// Éléments existants que l'on peut relier à un objectif (même périmètre, pas déjà reliés) : aucun doublon.
+export async function loadLinkCandidates(
+  scope: { ownerType: string; ownerId: string },
+  already: { risks: string[]; decisions: string[]; findings: string[]; requirements: string[] }
+) {
+  let groupId: string | null = null;
+  let establishmentIds: string[] = [];
+  if (scope.ownerType === "groupe") {
+    groupId = scope.ownerId;
+    establishmentIds = (await prisma.establishment.findMany({ where: { groupId }, select: { id: true } })).map((e) => e.id);
+  }
+  const ownerOr = (extra: any[] = []) =>
+    scope.ownerType === "groupe"
+      ? [{ ownerType: "groupe", ownerId: scope.ownerId }, { ownerType: "etablissement", ownerId: { in: establishmentIds } }, ...extra]
+      : [{ ownerType: scope.ownerType, ownerId: scope.ownerId }];
+  const initiativeOr = scope.ownerType === "groupe" ? [{ initiative: { groupId } }] : [];
+
+  const [risks, decisions, findings, requirements] = await Promise.all([
+    prisma.risk.findMany({ where: { id: { notIn: already.risks }, OR: ownerOr(initiativeOr) }, select: { id: true, description: true, criticite: true }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.decision.findMany({ where: { id: { notIn: already.decisions }, OR: ownerOr(initiativeOr) }, select: { id: true, subject: true, status: true }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.auditFinding.findMany({ where: { id: { notIn: already.findings }, OR: ownerOr() }, select: { id: true, libelle: true, type: true }, orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma.qualityRequirement.findMany({ where: { id: { notIn: already.requirements }, OR: ownerOr() }, select: { id: true, code: true, libelle: true, referentiel: true }, orderBy: { createdAt: "desc" }, take: 100 }),
+  ]);
+  return {
+    risques: risks.map((r): Candidate => ({ id: r.id, label: r.description, sub: r.criticite })),
+    decisions: decisions.map((d): Candidate => ({ id: d.id, label: d.subject, sub: d.status })),
+    constats: findings.map((f): Candidate => ({ id: f.id, label: f.libelle, sub: f.type })),
+    exigences: requirements.map((q): Candidate => ({ id: q.id, label: `${q.code ? q.code + " · " : ""}${q.libelle}`, sub: q.referentiel || undefined })),
+  };
+}
+
+// Documents du même périmètre, non encore rattachés à un élément : candidats « preuve de l'objectif ».
+export async function loadDocumentCandidates(scope: { ownerType: string; ownerId: string }): Promise<Candidate[]> {
+  const docs = await prisma.documentRef.findMany({
+    where: { ownerType: scope.ownerType, ownerId: scope.ownerId, linkedType: null },
+    select: { id: true, title: true, type: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+  return docs.map((d) => ({ id: d.id, label: d.title, sub: d.type || undefined }));
+}
+
+// Initiatives du groupe qui ne contribuent pas encore à l'objectif.
+export async function loadInitiativeCandidates(groupId: string, contributingIds: string[]): Promise<Candidate[]> {
+  const rows = await prisma.initiative.findMany({
+    where: { groupId, id: { notIn: contributingIds } },
+    select: { id: true, name: true, reference: true },
+    orderBy: { name: "asc" },
+    take: 200,
+  });
+  return rows.map((i) => ({ id: i.id, label: i.name, sub: i.reference || undefined }));
+}
+
+// Historique : événements de l'objectif lui-même et de ses actions.
+export async function loadObjectiveHistory(cycleId: string, actionIds: string[]) {
+  return prisma.auditLog.findMany({
+    where: { OR: [{ entityType: "objectif", entityId: cycleId }, ...(actionIds.length ? [{ entityType: "action", entityId: { in: actionIds } }] : [])] },
+    orderBy: { createdAt: "desc" },
+    take: 60,
+  });
+}

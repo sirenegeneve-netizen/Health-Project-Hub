@@ -107,6 +107,11 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
 
   return (
     <div>
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+        <Link href={`/groups/${group.id}/objectifs/nouveau`} className="btn">
+          + Nouvel objectif stratégique
+        </Link>
+      </div>
       <div className="mb-4">
         <Link href="/groups" className="text-sm text-blue hover:underline">
           ← Groupes
@@ -197,7 +202,7 @@ export default async function GroupObjectifsPage({ params }: { params: { id: str
                         {planCycles.map((cy) => (
                           <tr key={cy.id}>
                             <td className="pl-4 text-sm">
-                              {cy.strategicGoal.libelle}
+                              <Link href={`/groups/${group.id}/objectifs/${cy.id}`} className="text-blue hover:underline">{cy.strategicGoal.libelle}</Link>
                               {cy.libelle && <span className="text-muted"> — {cy.libelle}</span>}
                             </td>
                             <td>
