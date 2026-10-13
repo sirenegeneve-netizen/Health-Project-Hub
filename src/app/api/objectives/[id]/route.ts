@@ -39,9 +39,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Établissements précisés : uniquement des établissements existants du groupe propriétaire.
   let scopeIds: string[] | undefined;
   if (body.scopeEstablishmentIds !== undefined) {
-    const wanted = Array.from(new Set((Array.isArray(body.scopeEstablishmentIds) ? body.scopeEstablishmentIds : []).map(String)));
+    const rawIds: unknown[] = Array.isArray(body.scopeEstablishmentIds) ? body.scopeEstablishmentIds : [];
+    const wanted: string[] = Array.from(new Set<string>(rawIds.map((v) => String(v))));
     if (cycle.strategicGoal.ownerType !== "groupe" && wanted.length > 0) return NextResponse.json({ error: "La sélection d'établissements est réservée aux objectifs de groupe." }, { status: 400 });
-    const found = wanted.length ? await prisma.establishment.findMany({ where: { id: { in: wanted }, groupId: cycle.strategicGoal.ownerId }, select: { id: true } }) : [];
+    const found: { id: string }[] = wanted.length ? await prisma.establishment.findMany({ where: { id: { in: wanted }, groupId: cycle.strategicGoal.ownerId }, select: { id: true } }) : [];
     if (found.length !== wanted.length) return NextResponse.json({ error: "Établissement hors du groupe ou introuvable." }, { status: 400 });
     scopeIds = found.map((e) => e.id);
   }

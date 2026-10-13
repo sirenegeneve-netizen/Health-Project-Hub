@@ -59,8 +59,9 @@ export async function createObjective(body: any): Promise<Result> {
   // Périmètre structuré : établissements précisés = établissements existants du groupe (jamais de texte en doublon).
   let scopeEstablishmentIds: string[] = [];
   if (ownerType === "groupe" && Array.isArray(body.scopeEstablishmentIds) && body.scopeEstablishmentIds.length > 0) {
-    const found = await prisma.establishment.findMany({ where: { id: { in: body.scopeEstablishmentIds.map(String) }, groupId: ownerId }, select: { id: true } });
-    if (found.length !== new Set(body.scopeEstablishmentIds.map(String)).size) return { ok: false, status: 400, error: "Établissement hors du groupe ou introuvable dans le périmètre." };
+    const wantedScope: string[] = Array.from(new Set<string>((body.scopeEstablishmentIds as unknown[]).map((v) => String(v))));
+    const found = await prisma.establishment.findMany({ where: { id: { in: wantedScope }, groupId: ownerId }, select: { id: true } });
+    if (found.length !== wantedScope.length) return { ok: false, status: 400, error: "Établissement hors du groupe ou introuvable dans le périmètre." };
     scopeEstablishmentIds = found.map((e) => e.id);
   }
   // État des lieux initial : une seule action pour tous les indicateurs sans valeur initiale.
