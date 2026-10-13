@@ -8,8 +8,16 @@ import {
 } from "@/lib/baselineAudit";
 
 type User = { id: string; name: string };
-export type Result<T> = { ok: true; data: T } | { ok: false; status: number; error: string; errors?: string[] };
-const fail = (status: number, error: string, errors?: string[]): { ok: false; status: number; error: string; errors?: string[] } => ({ ok: false, status, error, errors });
+// Résultat simple (volontairement pas une union discriminée : le projet est en `strict: false`, où `if (!res.ok)` ne
+// rétrécirait pas le type et ferait échouer le build).
+export interface Result<T> {
+  ok: boolean;
+  data?: T;
+  status?: number;
+  error?: string;
+  errors?: string[];
+}
+const fail = <T = never>(status: number, error: string, errors?: string[]): Result<T> => ({ ok: false, status, error, errors });
 
 const asContenu = (raw: unknown): AuditContenu => ({ ...emptyContenu(), ...sanitizeContenu(raw, raw as Partial<AuditContenu>) });
 
@@ -71,6 +79,8 @@ export function expectedScopeKeys(ctx: { establishments: { id: string }[] }): st
 }
 
 // --- Lecture pour la page ----------------------------------------------------------------------------------------------
+
+export type AuditPageData = Extract<Awaited<ReturnType<typeof loadAuditPageData>>, { kind: "ok" }>;
 
 export async function loadAuditPageData(actionId: string, scopeKeyWanted?: string) {
   const ctx = await loadContext(actionId);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadAuditPageData } from "@/lib/baselineAuditDb";
+import { loadAuditPageData, type AuditPageData } from "@/lib/baselineAuditDb";
 import { BaselineAuditForm } from "@/components/audit/BaselineAuditForm";
 import { PERIMETRES_ORGANISATIONNELS, POPULATIONS, labelOf } from "@/lib/referentiels";
 
@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 const STATUS: Record<string, string> = { a_faire: "À faire", en_cours: "En cours", en_attente: "En attente", termine: "Terminé", abandonne: "Abandonné" };
 
 export default async function BaselineAuditPage({ params, searchParams }: { params: { id: string }; searchParams: { perimetre?: string } }) {
-  const data = await loadAuditPageData(params.id, searchParams.perimetre);
-  if (data.kind === "missing") return notFound();
-  if (data.kind === "not_baseline") {
+  const loaded = await loadAuditPageData(params.id, searchParams.perimetre);
+  if (loaded.kind === "missing") return notFound();
+  if (loaded.kind === "not_baseline") {
+    const notBaseline = loaded as { action?: { title: string } };
     return (
       <div>
-        <h1 className="font-display text-2xl text-ink mb-3">{data.action.title}</h1>
+        <h1 className="font-display text-2xl text-ink mb-3">{notBaseline.action?.title}</h1>
         <div className="card text-sm">
           Cette action n'est pas une action d'audit de départ rattachée à un objectif : aucun formulaire d'audit n'est disponible.
           <div className="mt-3">
@@ -26,6 +27,7 @@ export default async function BaselineAuditPage({ params, searchParams }: { para
       </div>
     );
   }
+  const data = loaded as AuditPageData;
   const { action, objective, indicators } = data;
   const objectivePath = objective.ownerType === "groupe" ? `/groups/${objective.ownerId}/objectifs/${objective.cycleId}` : `/establishments/${objective.ownerId}/objectifs/${objective.cycleId}`;
 

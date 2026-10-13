@@ -9,5 +9,5 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json().catch(() => ({}));
   const res = await saveAuditDraft(params.id, body, { id: user.id, name: user.name });
   if (!res.ok) return NextResponse.json({ error: res.error, errors: res.errors }, { status: res.status });
-  return NextResponse.json(res.data);
+  return NextResponse.json(res.data!);
 }
