@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Pill } from "@/components/Pill";
 import { callApi } from "@/components/projectConfig/api";
@@ -66,6 +66,11 @@ export function IndicatorsSection({ cycleId, indicators, legacyText }: { cycleId
   const [adding, setAdding] = useState(false);
   const [prefill, setPrefill] = useState("");
   const showLegacy = indicators.length === 0 && legacyText && legacyText.trim().length > 0;
+  const formRef = useRef<HTMLDivElement>(null);
+  // Le formulaire s'ouvre sous la carte « Saisie antérieure » : on y amène l'écran pour que l'ouverture soit visible.
+  useEffect(() => {
+    if (adding) formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [adding]);
 
   return (
     <div>
@@ -73,15 +78,19 @@ export function IndicatorsSection({ cycleId, indicators, legacyText }: { cycleId
         <div className="card mb-3 bg-amber-50/50 border-amber-200/60 text-sm">
           <div className="label mb-1">Saisie antérieure (texte libre)</div>
           <p className="text-body mb-2">{legacyText}</p>
-          <button
-            className="text-blue hover:underline"
-            onClick={() => {
-              setPrefill(legacyText as string);
-              setAdding(true);
-            }}
-          >
-            Convertir en indicateur chiffré
-          </button>
+          {adding ? (
+            <span className="text-teal-700">Le formulaire du nouvel indicateur est ouvert ci-dessous ↓</span>
+          ) : (
+            <button
+              className="text-blue hover:underline"
+              onClick={() => {
+                setPrefill(legacyText as string);
+                setAdding(true);
+              }}
+            >
+              Convertir en indicateur chiffré
+            </button>
+          )}
         </div>
       )}
 
@@ -93,7 +102,7 @@ export function IndicatorsSection({ cycleId, indicators, legacyText }: { cycleId
         ))}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 scroll-mt-24" ref={formRef}>
         {adding ? (
           <IndicatorForm
             title="Nouvel indicateur"
@@ -244,12 +253,12 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
           </div>
           {ind.baselineAction ? (
             <div className="text-xs">
-              Action d'état des lieux : <Link className="text-blue hover:underline" href={`/actions/${ind.baselineAction.id}/audit`}>{ind.baselineAction.title} — réaliser l'audit</Link> · statut {ind.baselineAction.status.replace("_", " ")}
+              Action d'audit de départ : <Link className="text-blue hover:underline" href={`/actions/${ind.baselineAction.id}/audit`}>{ind.baselineAction.title} — réaliser l'audit</Link> · statut {ind.baselineAction.status.replace("_", " ")}
               {ind.baselineAction.status === "termine" && <span className="text-teal-700"> — terminée : renseignez puis validez la valeur initiale.</span>}
             </div>
           ) : (
             <button className="text-blue hover:underline text-xs" disabled={busy} onClick={proposeAction}>
-              Proposer l'action « État des lieux initial »
+              Proposer l'action « Audit de départ »
             </button>
           )}
           {ind.baselines.filter((b) => b.statut === "propose").map((b) => (
@@ -559,7 +568,7 @@ function IndicatorForm({ title, cycleId, initialName, onDone, onCancel }: { titl
         <label className="flex items-start gap-2 text-sm rounded-md bg-amber-50/50 border border-amber-200/70 p-3">
           <input type="checkbox" className="mt-1" checked={proposeAction} onChange={(e) => setProposeAction(e.target.checked)} />
           <span>
-            <strong>Valeur initiale inconnue</strong> — proposer l'action « État des lieux initial ». Si une action d'état des lieux existe déjà pour cet objectif, l'indicateur y sera rattaché (pas de doublon). Décochez si une mesure fiable existe déjà.
+            <strong>Valeur initiale inconnue</strong> — proposer l'action « Audit de départ ». Si une action d'audit de départ existe déjà pour cet objectif, l'indicateur y sera rattaché (pas de doublon). Décochez si une mesure fiable existe déjà.
           </span>
         </label>
       )}

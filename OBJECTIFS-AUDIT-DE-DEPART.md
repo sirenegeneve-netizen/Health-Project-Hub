@@ -1,4 +1,4 @@
-# Audit de départ — rendre l'action « État des lieux initial » opérationnelle
+# Audit de départ — rendre l'action « Audit de départ » opérationnelle
 
 ## Audit de l'existant
 - L'action est reconnue par `Action.origine = "etat_des_lieux"` (créée par `ensureBaselineAction` / création d'objectif) ; les indicateurs concernés pointent vers elle via `GoalIndicator.baselineActionId`.

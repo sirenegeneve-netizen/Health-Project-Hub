@@ -311,7 +311,7 @@ export function ObjectiveCreateForm({ ownerType, ownerId, plans, actors, establi
             <input id="bl-create" type="checkbox" className="mt-1" checked={baseline.create} onChange={(e) => setBaseline({ ...baseline, create: e.target.checked })} />
             <label htmlFor="bl-create">
               <strong>Valeur initiale non renseignée</strong> pour {unknownBaseline.length === 1 ? "l'indicateur" : `${unknownBaseline.length} indicateurs`} ({unknownBaseline.map((i) => i.nom).join(", ")}). La situation de départ est <em>inconnue</em> — pas égale à zéro — et aucune progression ne sera calculée tant qu'elle n'est pas établie.
-              <span className="block text-muted">Une action « État des lieux initial » est proposée. Décochez si un audit ou une mesure fiable existe déjà (renseignez alors la valeur initiale).</span>
+              <span className="block text-muted">Une action « Audit de départ » est proposée. Décochez si un audit ou une mesure fiable existe déjà (renseignez alors la valeur initiale).</span>
             </label>
           </div>
           {baseline.create && (

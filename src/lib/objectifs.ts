@@ -260,18 +260,18 @@ export interface BaselineActionDraft {
   livrable: string;
 }
 
-// Texte de l'action « État des lieux initial » préremplie (modifiable par l'utilisateur). Une seule action par
+// Texte de l'action « Audit de départ » préremplie (modifiable par l'utilisateur). Une seule action par
 // objectif, quel que soit le nombre d'indicateurs sans situation initiale.
 export function buildBaselineAction(input: { objectif: string; indicators: { nom: string; unite?: string | null }[]; ownerType: string }): BaselineActionDraft {
   const names = input.indicators.map((i) => i.nom.trim()).filter(Boolean);
   const single = names.length === 1;
   const perEtab = input.ownerType === "groupe" ? " pour chaque établissement concerné" : "";
-  const title = single ? `Réaliser l'état des lieux initial — ${names[0]}` : `Réaliser l'état des lieux initial — ${input.objectif.trim()}`;
+  const title = single ? `Réaliser l'audit de départ — ${names[0]}` : `Réaliser l'audit de départ — ${input.objectif.trim()}`;
   const target = single ? `l'indicateur « ${names[0]} »` : `les indicateurs suivants : ${names.map((n) => `« ${n} »`).join(", ")}`;
   const description =
     `Évaluer la situation de départ${perEtab} pour ${target} : documenter la méthode de mesure et la source, ` +
     `identifier les écarts avec la cible et établir la situation de référence permettant de fixer les priorités d'amélioration.`;
-  const livrable = "État des lieux documenté ; écarts et risques identifiés ; valeur initiale consolidée et justifiée (date, source) ; priorités d'amélioration définies.";
+  const livrable = "Audit de départ documenté ; écarts et risques identifiés ; valeur initiale consolidée et justifiée (date, source) ; priorités d'amélioration définies.";
   return { title, description, livrable };
 }
 

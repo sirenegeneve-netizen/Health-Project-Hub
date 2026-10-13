@@ -77,7 +77,7 @@ test("action d'état des lieux : une seule par objectif, au bon niveau", () => {
 
 test("texte prérempli de l'action d'état des lieux", () => {
   const one = buildBaselineAction({ objectif: "Améliorer la sécurité informatique", indicators: [{ nom: "Pourcentage d'établissements conformes" }], ownerType: "groupe" });
-  assert.match(one.title, /état des lieux initial — Pourcentage d'établissements conformes/);
+  assert.match(one.title, /audit de départ — Pourcentage d'établissements conformes/);
   assert.match(one.description, /pour chaque établissement concerné/);
   assert.match(one.livrable, /valeur initiale consolidée et justifiée/);
   const many = buildBaselineAction({ objectif: "Obj", indicators: [{ nom: "A" }, { nom: "B" }], ownerType: "etablissement" });
