@@ -21,6 +21,7 @@ export interface KanbanAction {
   status: string;
   initiativeName?: string;
   establishmentName?: string | null;
+  origine?: string | null;
 }
 
 export function ActionsKanban({ actions }: { actions: KanbanAction[] }) {
@@ -71,6 +72,11 @@ export function ActionsKanban({ actions }: { actions: KanbanAction[] }) {
                     className="card cursor-grab active:cursor-grabbing p-3"
                   >
                     <div className="text-sm font-medium text-ink">{a.title}</div>
+                    {a.origine === "etat_des_lieux" && (
+                      <a href={`/actions/${a.id}/audit`} className="inline-block mt-1 text-xs rounded bg-primary text-white px-2 py-0.5" onClick={(e) => e.stopPropagation()}>
+                        Réaliser l'audit
+                      </a>
+                    )}
                     {a.initiativeName && <div className="text-xs text-muted mt-0.5">{a.initiativeName}</div>}
                     {a.establishmentName && <div className="text-xs text-teal-700 mt-0.5">{a.establishmentName}</div>}
                     <div className="flex items-center justify-between mt-2">

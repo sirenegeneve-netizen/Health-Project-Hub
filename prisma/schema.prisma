@@ -482,6 +482,7 @@ model Action {
   indicator            GoalIndicator? @relation(fields: [indicatorId], references: [id], onDelete: SetNull)
   qualityRequirementId String?
   qualityRequirement   QualityRequirement? @relation(fields: [qualityRequirementId], references: [id], onDelete: SetNull)
+  baselineAudits       BaselineAudit[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -1089,9 +1090,12 @@ model AuditFinding {
   statut               String   @default("ouvert") // ouvert | en_traitement | cloture
   actions              Action[]
   goalLinks StrategicGoalLink[]
+  // Constat issu d'un audit de départ (identifiant simple) : permet de remonter du constat à l'audit d'origine.
+  baselineAuditId      String?
   createdAt            DateTime @default(now())
 
   @@index([ownerType, ownerId])
+  @@index([baselineAuditId])
 }
 
 
@@ -1372,4 +1376,45 @@ model GoalCycleScopeEstablishment {
 
   @@unique([strategicGoalCycleId, establishmentId])
   @@index([establishmentId])
+}
+
+// Audit de départ réalisé depuis l'action « État des lieux initial » : un enregistrement par action et par périmètre
+// (« global » ou un établissement). Brouillon repris à volonté, puis validé ; verrouillé une fois validé.
+// Les constats sont de vrais AuditFinding (baselineAuditId), les actions correctives de vraies Action.
+model BaselineAudit {
+  id              String   @id @default(cuid())
+  actionId        String
+  action          Action   @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  scopeKey        String   @default("global") // « global » ou identifiant d'établissement
+  establishmentId String?
+  statut          String   @default("brouillon") // brouillon | valide
+  dateRealisation DateTime?
+  auditeur        String?
+  contenu         Json     @default("{}") // sections identification / méthode / constats / conclusion (voir src/lib/baselineAudit.ts)
+  measures        BaselineAuditMeasure[]
+  valideLe        DateTime?
+  validePar       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@unique([actionId, scopeKey])
+  @@index([establishmentId])
+}
+
+// Mesure de la situation initiale d'un indicateur dans un audit : valeur mesurée, évaluation sans valeur exploitable,
+// ou audit non réalisé. Une valeur inconnue (null) n'est jamais assimilée à zéro.
+model BaselineAuditMeasure {
+  id              String   @id @default(cuid())
+  auditId         String
+  audit           BaselineAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  goalIndicatorId String
+  resultat        String   @default("non_realisee") // mesuree | indeterminee | non_realisee
+  valeur          Float?
+  dateReference   DateTime?
+  methodeCalcul   String?
+  source          String?
+  commentaire     String?
+
+  @@unique([auditId, goalIndicatorId])
+  @@index([goalIndicatorId])
 }

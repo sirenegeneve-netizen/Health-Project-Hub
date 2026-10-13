@@ -78,6 +78,7 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
             echeance: a.echeance ? a.echeance.toISOString() : null,
             priority: a.priority,
             status: a.status,
+            origine: a.origine,
             initiativeName: a.initiative?.name || (a.ownerType === "groupe" ? "Groupe" : a.ownerType === "etablissement" ? "Établissement" : "—"),
           }))}
         />
@@ -99,7 +100,14 @@ export default async function GlobalActionsPage({ searchParams }: { searchParams
                 const isLate = a.echeance && a.echeance < now && !["termine", "abandonne"].includes(a.status);
                 return (
                   <tr key={a.id} className={isLate ? "bg-bad/5" : ""}>
-                    <td className="pl-4">{a.title}</td>
+                    <td className="pl-4">
+                      {a.title}
+                      {a.origine === "etat_des_lieux" && (
+                        <Link href={`/actions/${a.id}/audit`} className="ml-2 text-xs rounded bg-primary text-white px-2 py-0.5 hover:opacity-90 whitespace-nowrap">
+                          Réaliser l'audit
+                        </Link>
+                      )}
+                    </td>
                     <td>
                       {a.initiative ? (
                         <Link href={`/initiatives/${a.initiativeId}`} className="text-blue hover:underline">

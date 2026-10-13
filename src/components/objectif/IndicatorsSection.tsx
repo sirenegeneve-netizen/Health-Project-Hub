@@ -244,7 +244,7 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
           </div>
           {ind.baselineAction ? (
             <div className="text-xs">
-              Action d'état des lieux : <Link className="text-blue hover:underline" href="/actions">{ind.baselineAction.title}</Link> · statut {ind.baselineAction.status.replace("_", " ")}
+              Action d'état des lieux : <Link className="text-blue hover:underline" href={`/actions/${ind.baselineAction.id}/audit`}>{ind.baselineAction.title} — réaliser l'audit</Link> · statut {ind.baselineAction.status.replace("_", " ")}
               {ind.baselineAction.status === "termine" && <span className="text-teal-700"> — terminée : renseignez puis validez la valeur initiale.</span>}
             </div>
           ) : (

@@ -100,6 +100,11 @@ export function ObjectiveActionsSection({
                 <div className="min-w-0 text-sm">
                   <div className={a.status === "termine" ? "text-muted line-through" : "text-ink"}>
                     <StatusMark status={a.status} /> {a.title}
+                    {a.origine === "etat_des_lieux" && (
+                      <a href={`/actions/${a.id}/audit`} className="ml-2 text-xs text-blue hover:underline">
+                        Réaliser l'audit
+                      </a>
+                    )}
                   </div>
                   <div className="text-xs text-muted mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 pl-4">
                     {a.responsable && <span>{a.responsable}</span>}

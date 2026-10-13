@@ -18,7 +18,7 @@ export async function ObjectiveNew({ ownerType, ownerId, basePath, backHref }: {
       </Link>
       <h1 className="font-display text-2xl text-ink mt-2 mb-5">Nouvel objectif stratégique</h1>
       {plans.length === 0 ? (
-        <div className="card max-w-xl space-y-3">
+        <div className="card max-w-3xl space-y-3">
           <p className="text-sm text-body">Un objectif s'inscrit dans un plan stratégique. Créez d'abord le plan, puis revenez ici.</p>
           <StrategicPlanForm ownerType={ownerType} ownerId={ownerId} establishmentCount={establishmentCount} />
         </div>
