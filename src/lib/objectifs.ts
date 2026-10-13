@@ -1,3 +1,4 @@
+import { isTheme, unknownCodes, PERIMETRES_ORGANISATIONNELS, POPULATIONS } from "./referentiels";
 // Objectif = unité de pilotage — logique pure (aucune dépendance Prisma/Next), testée unitairement.
 // Philosophie HPH : pas de donnée = pas de faux indicateur. Une progression n'est JAMAIS inventée.
 
@@ -42,7 +43,7 @@ export function currentValue(measures: MeasureLite[]): number | null {
 
 // --- Indicateur : héritage de la définition Groupe -------------------------------------------------------------
 
-export const INDICATOR_DEFINITION_FIELDS = ["nom", "description", "unite", "sens", "frequence"] as const;
+export const INDICATOR_DEFINITION_FIELDS = ["nom", "description", "unite", "sens", "frequence", "theme"] as const;
 
 export interface IndicatorLite {
   nom: string;
@@ -50,6 +51,7 @@ export interface IndicatorLite {
   unite: string | null;
   sens: string;
   frequence: string;
+  theme?: string | null;
   valeurInitiale: number | null;
   valeurCible: number | null;
   statut?: string;
@@ -67,6 +69,7 @@ export function effectiveIndicator<T extends IndicatorLite>(ind: T, parent: Indi
     unite: parent.unite,
     sens: parent.sens,
     frequence: parent.frequence,
+    theme: parent.theme ?? null,
     valeurCible: local ? ind.valeurCible : parent.valeurCible,
     cibleHeritee: !local,
     cibleLocale: local && ind.valeurCible !== parent.valeurCible,
@@ -190,6 +193,9 @@ export interface IndicatorInput {
   echeance?: string | null;
   responsable?: string | null;
   statut?: string;
+  theme?: string | null;
+  baselineSource?: string | null;
+  baselineDate?: string | null;
 }
 
 export function toNumberOrNull(v: unknown): number | null {
@@ -206,9 +212,12 @@ export function validateObjectiveInput(body: any): string[] {
   if (!body.strategicPlanId) errors.push("Le plan stratégique est requis.");
   if (body.priorite !== undefined && !isPriorite(body.priorite)) errors.push("Priorité invalide.");
   if (body.statut !== undefined && !isObjectiveStatut(body.statut)) errors.push("Statut invalide.");
+  if (unknownCodes(PERIMETRES_ORGANISATIONNELS, body.perimetreOrg ?? []).length > 0) errors.push("Périmètre organisationnel invalide.");
+  if (unknownCodes(POPULATIONS, body.populations ?? []).length > 0) errors.push("Population concernée invalide.");
   const indicators: IndicatorInput[] = Array.isArray(body.indicators) ? body.indicators : [];
   indicators.forEach((ind, i) => {
     const n = `Indicateur ${i + 1}`;
+    if (ind?.theme !== undefined && ind.theme !== null && ind.theme !== "" && !isTheme(ind.theme)) errors.push(`${n} : thème invalide.`);
     if (!String(ind?.nom || "").trim()) errors.push(`${n} : le nom est requis.`);
     if (ind?.sens !== undefined && !isSens(ind.sens)) errors.push(`${n} : sens invalide.`);
     if (ind?.frequence !== undefined && !isFrequence(ind.frequence)) errors.push(`${n} : fréquence invalide.`);
@@ -225,4 +234,52 @@ export function validateObjectiveInput(body: any): string[] {
     }
   });
   return errors;
+}
+
+
+// --- Valeur initiale : inconnue ≠ zéro, audit / état des lieux préalable -------------------------------------------
+
+// États d'une valeur initiale (dérivés, jamais stockés — une seule source de vérité) :
+//  - a_etablir : valeur inconnue (null). 0 est une valeur réelle, pas une valeur inconnue ;
+//  - a_valider : une valeur a été proposée (ex. résultats d'audit) mais pas encore validée ;
+//  - etablie   : valeur de référence en vigueur.
+export type BaselineState = "a_etablir" | "a_valider" | "etablie";
+
+export function baselineState(input: { valeurInitiale: number | null | undefined; baselines?: { statut: string }[] }): BaselineState {
+  if (input.valeurInitiale !== null && input.valeurInitiale !== undefined) return "etablie";
+  return (input.baselines || []).some((b) => b.statut === "propose") ? "a_valider" : "a_etablir";
+}
+
+export const needsBaseline = (valeurInitiale: unknown): boolean => toNumberOrNull(valeurInitiale) === null;
+
+export const BASELINE_STATUTS = ["propose", "valide", "remplace"] as const;
+
+export interface BaselineActionDraft {
+  title: string;
+  description: string;
+  livrable: string;
+}
+
+// Texte de l'action « État des lieux initial » préremplie (modifiable par l'utilisateur). Une seule action par
+// objectif, quel que soit le nombre d'indicateurs sans situation initiale.
+export function buildBaselineAction(input: { objectif: string; indicators: { nom: string; unite?: string | null }[]; ownerType: string }): BaselineActionDraft {
+  const names = input.indicators.map((i) => i.nom.trim()).filter(Boolean);
+  const single = names.length === 1;
+  const perEtab = input.ownerType === "groupe" ? " pour chaque établissement concerné" : "";
+  const title = single ? `Réaliser l'état des lieux initial — ${names[0]}` : `Réaliser l'état des lieux initial — ${input.objectif.trim()}`;
+  const target = single ? `l'indicateur « ${names[0]} »` : `les indicateurs suivants : ${names.map((n) => `« ${n} »`).join(", ")}`;
+  const description =
+    `Évaluer la situation de départ${perEtab} pour ${target} : documenter la méthode de mesure et la source, ` +
+    `identifier les écarts avec la cible et établir la situation de référence permettant de fixer les priorités d'amélioration.`;
+  const livrable = "État des lieux documenté ; écarts et risques identifiés ; valeur initiale consolidée et justifiée (date, source) ; priorités d'amélioration définies.";
+  return { title, description, livrable };
+}
+
+// Quels indicateurs ont besoin d'un état des lieux, et faut-il créer une action ? Évite les doublons :
+// pas d'action si tout est déjà renseigné, si l'utilisateur renonce, ou si une action existante couvre déjà le cycle.
+export function planBaselineAction(input: { indicators: { valeurInitiale: unknown; nom: string }[]; wanted: boolean; existingActionId?: string | null }): { indexes: number[]; create: boolean; reuseActionId: string | null } {
+  const indexes = input.indicators.map((ind, i) => (needsBaseline(ind.valeurInitiale) && String(ind.nom || "").trim() ? i : -1)).filter((i) => i >= 0);
+  if (indexes.length === 0 || !input.wanted) return { indexes: [], create: false, reuseActionId: null };
+  if (input.existingActionId) return { indexes, create: false, reuseActionId: input.existingActionId };
+  return { indexes, create: true, reuseActionId: null };
 }

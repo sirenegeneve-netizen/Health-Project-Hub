@@ -145,6 +145,7 @@ export async function syncIndicatorsToChildren(groupCycleId: string): Promise<nu
         unite: ind.unite,
         sens: ind.sens,
         frequence: ind.frequence,
+        theme: ind.theme,
         principal: ind.principal,
         statut: "actif",
         // valeurInitiale / valeurCible volontairement vides : valeur propre à l'établissement, cible = celle du groupe

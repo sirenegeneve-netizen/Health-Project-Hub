@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { sanitizeCodes, isTheme, PERIMETRES_ORGANISATIONNELS, POPULATIONS, normalizePopulations } from "@/lib/referentiels";
 import { syncGroupDiffusion, syncIndicatorsToChildren } from "@/lib/diffusionDb";
 import {
   currentValue,
@@ -8,6 +9,9 @@ import {
   objectiveProgress,
   rollupProgress,
   resolveParentCycleId,
+  baselineState,
+  buildBaselineAction,
+  planBaselineAction,
   toNumberOrNull,
   type IndicatorInput,
   type LinkKind,
@@ -52,6 +56,16 @@ export async function createObjective(body: any): Promise<Result> {
   const principalIdx = Math.max(0, indicators.findIndex((i: any) => i.principal === true));
   const diffuse = ownerType === "groupe" && body.diffuse === true;
 
+  // Périmètre structuré : établissements précisés = établissements existants du groupe (jamais de texte en doublon).
+  let scopeEstablishmentIds: string[] = [];
+  if (ownerType === "groupe" && Array.isArray(body.scopeEstablishmentIds) && body.scopeEstablishmentIds.length > 0) {
+    const found = await prisma.establishment.findMany({ where: { id: { in: body.scopeEstablishmentIds.map(String) }, groupId: ownerId }, select: { id: true } });
+    if (found.length !== new Set(body.scopeEstablishmentIds.map(String)).size) return { ok: false, status: 400, error: "Établissement hors du groupe ou introuvable dans le périmètre." };
+    scopeEstablishmentIds = found.map((e) => e.id);
+  }
+  // État des lieux initial : une seule action pour tous les indicateurs sans valeur initiale.
+  const baselinePlan = planBaselineAction({ indicators: indicators.map((i) => ({ nom: i.nom, valeurInitiale: i.valeurInitiale })), wanted: !!body.baselineAction && body.baselineAction.create !== false });
+
   const cycleId = await prisma.$transaction(
     async (tx) => {
       const goal = await tx.strategicGoal.create({
@@ -67,11 +81,16 @@ export async function createObjective(body: any): Promise<Result> {
           responsable,
           axe: body.axe ? String(body.axe) : null,
           resultatAttendu: body.resultatAttendu ? String(body.resultatAttendu) : null,
-          perimetre: body.perimetre ? String(body.perimetre) : null,
+          perimetre: body.perimetre ? String(body.perimetre) : null, // précision facultative (ex-texte libre)
+          perimetreOrg: sanitizeCodes(PERIMETRES_ORGANISATIONNELS, body.perimetreOrg),
+          populations: normalizePopulations(sanitizeCodes(POPULATIONS, body.populations)),
           echeance: toDate(body.echeance),
           diffusion: diffuse ? "tous" : "aucune",
         },
       });
+      if (scopeEstablishmentIds.length > 0) {
+        await tx.goalCycleScopeEstablishment.createMany({ data: scopeEstablishmentIds.map((establishmentId) => ({ strategicGoalCycleId: cycle.id, establishmentId })), skipDuplicates: true });
+      }
 
       const createdIndicators: { id: string }[] = [];
       for (let i = 0; i < indicators.length; i++) {
@@ -92,13 +111,46 @@ export async function createObjective(body: any): Promise<Result> {
             responsable: indResponsable || ind.responsable || null,
             statut: ind.statut || "actif",
             principal: i === principalIdx,
+            theme: ind.theme && isTheme(ind.theme) ? ind.theme : null,
           },
         });
         createdIndicators.push(created);
+        // Valeur initiale réellement connue (zéro compris) : on trace sa source et sa date dès la création.
+        const initiale = toNumberOrNull(ind.valeurInitiale);
+        if (initiale !== null) {
+          await tx.goalIndicatorBaseline.create({
+            data: { goalIndicatorId: created.id, valeur: initiale, dateMesure: toDate(ind.baselineDate) || new Date(), source: ind.baselineSource ? String(ind.baselineSource) : "saisie à la création", statut: "valide", auteur: body.__userName || null, valideLe: new Date(), validePar: body.__userName || null },
+          });
+        }
         const actuelle = toNumberOrNull(ind.valeurActuelle);
         if (actuelle !== null) {
           await tx.goalIndicatorMeasure.create({ data: { goalIndicatorId: created.id, valeur: actuelle, dateMesure: new Date(), source: "création de l'objectif" } });
         }
+      }
+
+      if (baselinePlan.create) {
+        const draft = buildBaselineAction({ objectif: String(body.libelle), indicators: baselinePlan.indexes.map((i) => ({ nom: indicators[i].nom, unite: indicators[i].unite })), ownerType });
+        const ba = body.baselineAction || {};
+        const baResponsable = await actorName(ba.responsableActorId);
+        const action = await tx.action.create({
+          data: {
+            ownerType,
+            ownerId,
+            establishmentId: ownerType === "etablissement" ? ownerId : null,
+            strategicGoalCycleId: cycle.id,
+            indicatorId: baselinePlan.indexes.length === 1 ? createdIndicators[baselinePlan.indexes[0]].id : null,
+            title: ba.title && String(ba.title).trim() ? String(ba.title).trim() : draft.title,
+            comments: ba.description && String(ba.description).trim() ? String(ba.description) : draft.description,
+            livrable: ba.livrable && String(ba.livrable).trim() ? String(ba.livrable) : draft.livrable,
+            responsableActorId: ba.responsableActorId || null,
+            responsable: baResponsable,
+            priority: ba.priority || "haute",
+            echeance: toDate(ba.echeance),
+            status: ba.status || "a_faire",
+            origine: "etat_des_lieux",
+          },
+        });
+        await tx.goalIndicator.updateMany({ where: { id: { in: baselinePlan.indexes.map((i) => createdIndicators[i].id) } }, data: { baselineActionId: action.id } });
       }
 
       for (const a of actions) {
@@ -144,7 +196,7 @@ export async function propagateIndicatorDefinition(indicatorId: string): Promise
   if (!parent) return 0;
   const res = await prisma.goalIndicator.updateMany({
     where: { parentIndicatorId: indicatorId },
-    data: { nom: parent.nom, description: parent.description, unite: parent.unite, sens: parent.sens, frequence: parent.frequence },
+    data: { nom: parent.nom, description: parent.description, unite: parent.unite, sens: parent.sens, frequence: parent.frequence, theme: parent.theme },
   });
   return res.count;
 }
@@ -154,7 +206,10 @@ export async function propagateIndicatorDefinition(indicatorId: string): Promise
 async function indicatorViews(cycleIds: string[]) {
   const indicators = await prisma.goalIndicator.findMany({
     where: { strategicGoalCycleId: { in: cycleIds } },
-    include: { measures: { select: { id: true, valeur: true, dateMesure: true, createdAt: true, commentaire: true }, orderBy: { dateMesure: "desc" } } },
+    include: {
+      measures: { select: { id: true, valeur: true, dateMesure: true, createdAt: true, commentaire: true }, orderBy: { dateMesure: "desc" } },
+      baselines: { select: { id: true, valeur: true, dateMesure: true, source: true, justificatif: true, statut: true, auteur: true, validePar: true, valideLe: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+    },
     orderBy: [{ principal: "desc" }, { createdAt: "asc" }],
   });
   const parentIds = Array.from(new Set(indicators.map((i) => i.parentIndicatorId).filter(Boolean))) as string[];
@@ -170,6 +225,9 @@ async function indicatorViews(cycleIds: string[]) {
       strategicGoalCycleId: i.strategicGoalCycleId,
       parentIndicatorId: i.parentIndicatorId,
       measures: i.measures,
+      baselines: i.baselines,
+      baselineActionId: i.baselineActionId,
+      baselineState: baselineState({ valeurInitiale: eff.valeurInitiale, baselines: i.baselines }),
       actuelle,
       progress: indicatorProgress({ valeurInitiale: eff.valeurInitiale, valeurCible: eff.valeurCible, actuelle }),
     };
@@ -252,6 +310,7 @@ export async function loadObjectiveDetail(cycleId: string) {
       strategicGoal: true,
       strategicPlan: true,
       actions: { orderBy: [{ echeance: "asc" }, { createdAt: "asc" }] },
+      scopeEstablishments: { include: { establishment: { select: { id: true, name: true } } } },
       contributions: { include: { initiative: { select: { id: true, name: true, reference: true, phase: true, status: true } } } },
       links: true,
     },

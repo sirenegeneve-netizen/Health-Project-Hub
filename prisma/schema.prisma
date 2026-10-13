@@ -56,6 +56,7 @@ model Establishment {
   actorAffiliations    ActorAffiliation[]
 
   initiatives  InitiativeEstablishment[]
+  goalCycleScopes GoalCycleScopeEstablishment[]
   trainings    TrainingRecord[]
   risks        Risk[]
   actions      Action[]
@@ -989,6 +990,11 @@ model StrategicGoalCycle {
   // Déclinaison établissement : cycle du groupe dont celui-ci est la copie (lien explicite).
   parentCycleId      String?
   diffusion          String    @default("aucune") // aucune | tous | selection
+  // Périmètre structuré (listes de référence, voir src/lib/referentiels.ts). `perimetre` (texte libre, historique)
+  // devient la « précision » facultative : aucune valeur existante n'est modifiée.
+  perimetreOrg       String[]  @default([]) // codes : groupe, siege, service_unite, ...
+  populations        String[]  @default([]) // codes : patients_hospitalises, personnel_soignant, ...
+  scopeEstablishments GoalCycleScopeEstablishment[]
   indicators         GoalIndicator[]
   links              StrategicGoalLink[]
   updatedAt          DateTime  @default(now()) @updatedAt
@@ -1260,6 +1266,12 @@ model GoalIndicator {
   seuilAlerte         Float?
   parentIndicatorId   String?
   kpiId               String? // lien facultatif vers un Kpi d'initiative
+  // Nomenclature commune du thème (sélection unique, voir src/lib/referentiels.ts) — distinct de l'axe, du domaine et du niveau.
+  theme               String?
+  // Action « État des lieux initial » qui doit établir la valeur initiale (identifiant simple, sans relation :
+  // plusieurs indicateurs d'un même objectif peuvent partager la même action).
+  baselineActionId    String?
+  baselines           GoalIndicatorBaseline[]
   measures            GoalIndicatorMeasure[]
   actions             Action[]
   createdAt           DateTime @default(now())
@@ -1268,6 +1280,7 @@ model GoalIndicator {
   @@unique([strategicGoalCycleId, parentIndicatorId])
   @@index([strategicGoalCycleId])
   @@index([parentIndicatorId])
+  @@index([baselineActionId])
 }
 
 // Valeur réellement constatée à une date donnée. « Valeur actuelle » = dernière mesure.
@@ -1325,5 +1338,38 @@ model RequirementApplicability {
   updatedAt            DateTime @default(now()) @updatedAt
 
   @@unique([qualityRequirementId, establishmentId])
+  @@index([establishmentId])
+}
+
+// Historique de la valeur initiale d'un indicateur : chaque valeur de référence proposée ou validée, avec sa date de
+// mesure, sa source et son justificatif. `GoalIndicator.valeurInitiale` reste la valeur de référence en vigueur
+// (dernière valeur validée) ; une valeur inconnue n'est jamais assimilée à zéro (valeurInitiale = null).
+model GoalIndicatorBaseline {
+  id              String   @id @default(cuid())
+  goalIndicatorId String
+  goalIndicator   GoalIndicator @relation(fields: [goalIndicatorId], references: [id], onDelete: Cascade)
+  valeur          Float
+  dateMesure      DateTime
+  source          String?
+  justificatif    String? // référence du rapport d'audit / document (les fichiers se rattachent via Documents)
+  statut          String   @default("propose") // propose | valide | remplace
+  auteur          String?
+  validePar       String?
+  valideLe        DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([goalIndicatorId, createdAt])
+}
+
+// Établissements précisés dans le périmètre d'un objectif (sélection parmi les établissements existants).
+model GoalCycleScopeEstablishment {
+  id                   String   @id @default(cuid())
+  strategicGoalCycleId String
+  strategicGoalCycle   StrategicGoalCycle @relation(fields: [strategicGoalCycleId], references: [id], onDelete: Cascade)
+  establishmentId      String
+  establishment        Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+
+  @@unique([strategicGoalCycleId, establishmentId])
   @@index([establishmentId])
 }

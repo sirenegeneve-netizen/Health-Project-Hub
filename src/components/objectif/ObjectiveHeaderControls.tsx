@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { callApi } from "@/components/projectConfig/api";
+import { ScopeFields, type ScopeValue } from "@/components/objectif/ScopeFields";
 
 export interface ObjectiveEditable {
   libelle: string;
@@ -12,13 +13,16 @@ export interface ObjectiveEditable {
   axe: string | null;
   resultatAttendu: string | null;
   perimetre: string | null;
+  perimetreOrg: string[];
+  populations: string[];
+  scopeEstablishmentIds: string[];
   echeance: string | null;
   responsableActorId: string | null;
 }
 
 // Modification des informations de l'objectif. Intitulé et description sont verrouillés sur une déclinaison
 // d'établissement (ils suivent le groupe).
-export function ObjectiveHeaderControls({ cycleId, value, inherited, actors }: { cycleId: string; value: ObjectiveEditable; inherited: boolean; actors: { id: string; name: string }[] }) {
+export function ObjectiveHeaderControls({ cycleId, value, inherited, actors, establishments }: { cycleId: string; value: ObjectiveEditable; inherited: boolean; actors: { id: string; name: string }[]; establishments?: { id: string; name: string }[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({
@@ -28,10 +32,10 @@ export function ObjectiveHeaderControls({ cycleId, value, inherited, actors }: {
     priorite: value.priorite,
     axe: value.axe || "",
     resultatAttendu: value.resultatAttendu || "",
-    perimetre: value.perimetre || "",
     echeance: value.echeance ? value.echeance.slice(0, 10) : "",
     responsableActorId: value.responsableActorId || "",
   });
+  const [scope, setScope] = useState<ScopeValue>({ perimetreOrg: value.perimetreOrg, populations: value.populations, scopeEstablishmentIds: value.scopeEstablishmentIds, perimetre: value.perimetre || "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,7 +47,7 @@ export function ObjectiveHeaderControls({ cycleId, value, inherited, actors }: {
     );
   }
   return (
-    <div className="card space-y-2 w-full">
+    <div className="card space-y-4 w-full">
       {inherited && <p className="text-xs text-muted">L'intitulé et la description sont hérités du groupe : ils se modifient depuis le groupe.</p>}
       <label className="block">
         <div className="label mb-1">Intitulé</div>
@@ -57,11 +61,8 @@ export function ObjectiveHeaderControls({ cycleId, value, inherited, actors }: {
         <div className="label mb-1">Résultat attendu</div>
         <textarea className="input" rows={2} value={f.resultatAttendu} onChange={(e) => setF({ ...f, resultatAttendu: e.target.value })} />
       </label>
-      <div className="grid sm:grid-cols-3 gap-2">
-        <label className="block">
-          <div className="label mb-1">Périmètre / population</div>
-          <input className="input" value={f.perimetre} onChange={(e) => setF({ ...f, perimetre: e.target.value })} />
-        </label>
+      <ScopeFields value={scope} onChange={setScope} establishments={establishments} />
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-3">
         <label className="block">
           <div className="label mb-1">Axe stratégique</div>
           <input className="input" value={f.axe} onChange={(e) => setF({ ...f, axe: e.target.value })} />
@@ -113,7 +114,10 @@ export function ObjectiveHeaderControls({ cycleId, value, inherited, actors }: {
               priorite: f.priorite,
               axe: f.axe || null,
               resultatAttendu: f.resultatAttendu || null,
-              perimetre: f.perimetre || null,
+              perimetre: scope.perimetre || null,
+              perimetreOrg: scope.perimetreOrg,
+              populations: scope.populations,
+              ...(establishments ? { scopeEstablishmentIds: scope.scopeEstablishmentIds } : {}),
               echeance: f.echeance || null,
               responsableActorId: f.responsableActorId || null,
             };

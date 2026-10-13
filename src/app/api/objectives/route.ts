@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const errors = validateObjectiveInput(body);
   if (errors.length > 0) return NextResponse.json({ error: errors[0], errors }, { status: 400 });
 
-  const res = await createObjective(body);
+  const res = await createObjective({ ...body, __userName: user.name });
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status || 400 });
 
   await logAudit({

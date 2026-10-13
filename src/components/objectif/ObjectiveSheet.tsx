@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Pill } from "@/components/Pill";
 import { formatProgress, formatTarget } from "@/lib/objectifs";
+import { PERIMETRES_ORGANISATIONNELS, POPULATIONS, labelOf } from "@/lib/referentiels";
 import { loadDocumentCandidates, loadInitiativeCandidates, loadLinkCandidates, loadObjectiveDetail, loadObjectiveHistory } from "@/lib/objectifsDb";
 import { ObjectiveActionsSection } from "@/components/objectif/ObjectiveActionsSection";
 import { AssociationSection } from "@/components/objectif/AssociationSection";
@@ -19,6 +20,18 @@ function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: stri
     <div className="mb-3">
       <h2 className="font-display text-lg text-ink">{children}</h2>
       {sub && <p className="text-xs text-muted">{sub}</p>}
+    </div>
+  );
+}
+
+function ChipList({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {items.map((t) => (
+        <span key={t} className="rounded-full bg-teal-50 text-teal-800 text-xs px-2 py-1">
+          {t}
+        </span>
+      ))}
     </div>
   );
 }
@@ -63,6 +76,7 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
     ? await prisma.strategicGoalCycle.findUnique({ where: { id: cycle.parentCycleId as string }, include: { strategicGoal: { select: { ownerId: true } } } })
     : null;
 
+  const groupEstablishments = ownerType === "groupe" ? await prisma.establishment.findMany({ where: { groupId: ownerId }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : [];
   const scope = { ownerType, ownerId };
   const [actors, candidates, docCandidates, initCandidates, history] = await Promise.all([
     prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
@@ -96,6 +110,13 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
     cibleHeritee: i.cibleHeritee,
     cibleLocale: i.cibleLocale,
     measures: i.measures.map((m) => ({ id: m.id, valeur: m.valeur, dateMesure: new Date(m.dateMesure).toISOString(), commentaire: m.commentaire })),
+    theme: i.theme ?? null,
+    baselineState: i.baselineState,
+    baselines: i.baselines.map((b) => ({ id: b.id, valeur: b.valeur, dateMesure: new Date(b.dateMesure).toISOString(), source: b.source, justificatif: b.justificatif, statut: b.statut, auteur: b.auteur, valideLe: b.valideLe ? new Date(b.valideLe).toISOString() : null })),
+    baselineAction: (() => {
+      const a = i.baselineActionId ? cycle.actions.find((x) => x.id === i.baselineActionId) : null;
+      return a ? { id: a.id, title: a.title, status: a.status } : null;
+    })(),
   }));
   const principal = indicators.find((i) => i.principal) || indicators[0] || null;
   const cibleLabel = formatTarget(principal);
@@ -117,7 +138,7 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
   const reqLink = linkOf((l) => l.qualityRequirementId);
 
   return (
-    <div className="max-w-4xl">
+    <div data-wide-page className="w-full">
       <Link href={backHref} className="text-sm text-blue hover:underline">
         ← Objectifs & conformité
       </Link>
@@ -156,6 +177,7 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
             cycleId={cycle.id}
             inherited={inherited}
             actors={actors}
+            establishments={ownerType === "groupe" ? groupEstablishments : undefined}
             value={{
               libelle: cycle.strategicGoal.libelle,
               description: cycle.strategicGoal.description,
@@ -164,6 +186,9 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
               axe: cycle.axe,
               resultatAttendu: cycle.resultatAttendu,
               perimetre: cycle.perimetre,
+              perimetreOrg: cycle.perimetreOrg,
+              populations: cycle.populations,
+              scopeEstablishmentIds: cycle.scopeEstablishments.map((s) => s.establishmentId),
               echeance: cycle.echeance ? cycle.echeance.toISOString() : null,
               responsableActorId: cycle.responsableActorId,
             }}
@@ -180,11 +205,29 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
         <SectionTitle>Résultat attendu</SectionTitle>
         <div className="card text-sm space-y-2">
           <div className="text-body whitespace-pre-line">{cycle.resultatAttendu || <span className="text-muted">Non renseigné.</span>}</div>
-          <div className="grid sm:grid-cols-3 gap-3 pt-2 border-t border-ink/5">
+          <div className="grid lg:grid-cols-2 gap-4 pt-2 border-t border-ink/5">
             <div>
-              <div className="label">Périmètre / population</div>
-              {cycle.perimetre || <span className="text-muted">—</span>}
+              <div className="label">Périmètre organisationnel</div>
+              {cycle.perimetreOrg.length ? <ChipList items={cycle.perimetreOrg.map((c) => labelOf(PERIMETRES_ORGANISATIONNELS, c))} /> : <span className="text-muted">—</span>}
             </div>
+            <div>
+              <div className="label">Population concernée</div>
+              {cycle.populations.length ? <ChipList items={cycle.populations.map((c) => labelOf(POPULATIONS, c))} /> : <span className="text-muted">—</span>}
+            </div>
+            {cycle.scopeEstablishments.length > 0 && (
+              <div className="lg:col-span-2">
+                <div className="label">Établissements concernés</div>
+                <ChipList items={cycle.scopeEstablishments.map((s) => s.establishment.name)} />
+              </div>
+            )}
+            {cycle.perimetre && (
+              <div className="lg:col-span-2">
+                <div className="label">Précision</div>
+                {cycle.perimetre}
+              </div>
+            )}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <div className="label">Échéance</div>
               {cycle.echeance ? cycle.echeance.toLocaleDateString("fr-FR") : <span className="text-muted">—</span>}

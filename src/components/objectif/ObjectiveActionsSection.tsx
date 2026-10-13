@@ -19,6 +19,7 @@ export interface ObjectiveActionView {
 }
 
 const ORIGINES: Record<string, string> = {
+  etat_des_lieux: "État des lieux initial",
   manuel: "Saisie directe",
   audit: "Audit / constat",
   risque: "Risque",

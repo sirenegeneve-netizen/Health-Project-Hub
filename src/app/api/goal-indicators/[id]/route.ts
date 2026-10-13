@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isFrequence, isIndicatorStatut, isSens, lockedIndicatorFields, toNumberOrNull } from "@/lib/objectifs";
 import { propagateIndicatorDefinition } from "@/lib/objectifsDb";
+import { isTheme } from "@/lib/referentiels";
 
 async function load(id: string) {
   return prisma.goalIndicator.findUnique({ where: { id }, include: { strategicGoalCycle: { select: { id: true, strategicGoal: { select: { libelle: true } } } } } });
@@ -27,6 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.sens !== undefined && !isSens(body.sens)) return NextResponse.json({ error: "Sens invalide." }, { status: 400 });
   if (body.frequence !== undefined && !isFrequence(body.frequence)) return NextResponse.json({ error: "Fréquence invalide." }, { status: 400 });
   if (body.statut !== undefined && !isIndicatorStatut(body.statut)) return NextResponse.json({ error: "Statut invalide." }, { status: 400 });
+  if (body.theme !== undefined && body.theme !== null && body.theme !== "" && !isTheme(body.theme)) return NextResponse.json({ error: "Thème invalide." }, { status: 400 });
   const num = (v: unknown) => (v === undefined ? undefined : toNumberOrNull(v));
   const initiale = num(body.valeurInitiale);
   const cible = num(body.valeurCible);
@@ -48,6 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       unite: text(body.unite),
       sens: body.sens,
       frequence: body.frequence,
+      theme: body.theme === undefined ? undefined : body.theme || null,
       valeurInitiale: initiale as number | null | undefined,
       valeurCible: cible as number | null | undefined,
       seuilAlerte: seuil as number | null | undefined,
@@ -58,13 +61,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       principal: typeof body.principal === "boolean" ? body.principal : undefined,
     },
   });
+  // Valeur initiale saisie directement (mesure fiable déjà disponible) : on garde la trace, l'historique reste.
+  if (initiale !== undefined && initiale !== null && initiale !== current.valeurInitiale) {
+    await prisma.$transaction([
+      prisma.goalIndicatorBaseline.updateMany({ where: { goalIndicatorId: params.id, statut: "valide" }, data: { statut: "remplace" } }),
+      prisma.goalIndicatorBaseline.create({
+        data: { goalIndicatorId: params.id, valeur: initiale, dateMesure: body.baselineDate ? new Date(body.baselineDate) : new Date(), source: body.baselineSource ? String(body.baselineSource) : "saisie directe", statut: "valide", auteur: user.name, validePar: user.name, valideLe: new Date() },
+      }),
+    ]);
+  }
   if (body.principal === true) {
     await prisma.goalIndicator.updateMany({ where: { strategicGoalCycleId: updated.strategicGoalCycleId, id: { not: updated.id } }, data: { principal: false } });
   }
   if (!current.parentIndicatorId) await propagateIndicatorDefinition(updated.id);
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
-  for (const k of ["nom", "unite", "sens", "frequence", "valeurInitiale", "valeurCible", "statut"] as const) {
+  for (const k of ["nom", "unite", "sens", "frequence", "theme", "valeurInitiale", "valeurCible", "statut"] as const) {
     if (body[k] !== undefined && (updated as any)[k] !== (current as any)[k]) changes[`${current.nom}.${k}`] = { from: (current as any)[k], to: (updated as any)[k] };
   }
   if (Object.keys(changes).length > 0) {

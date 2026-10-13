@@ -4,12 +4,25 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill } from "@/components/Pill";
 import { callApi } from "@/components/projectConfig/api";
+import Link from "next/link";
+import { THEMES_INDICATEUR, labelOf } from "@/lib/referentiels";
 
 export interface IndicatorMeasureView {
   id: string;
   valeur: number;
   dateMesure: string;
   commentaire: string | null;
+}
+
+export interface BaselineView {
+  id: string;
+  valeur: number;
+  dateMesure: string;
+  source: string | null;
+  justificatif: string | null;
+  statut: string; // propose | valide | remplace
+  auteur: string | null;
+  valideLe: string | null;
 }
 
 export interface IndicatorView {
@@ -31,6 +44,10 @@ export interface IndicatorView {
   cibleHeritee: boolean;
   cibleLocale: boolean;
   measures: IndicatorMeasureView[];
+  theme: string | null;
+  baselineState: "a_etablir" | "a_valider" | "etablie";
+  baselines: BaselineView[];
+  baselineAction: { id: string; title: string; status: string } | null;
 }
 
 const FREQ: Record<string, string> = { mensuelle: "Mensuelle", trimestrielle: "Trimestrielle", semestrielle: "Semestrielle", annuelle: "Annuelle", ponctuelle: "Ponctuelle" };
@@ -103,7 +120,8 @@ export function IndicatorsSection({ cycleId, indicators, legacyText }: { cycleId
 }
 
 function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () => void }) {
-  const [mode, setMode] = useState<"" | "measure" | "edit" | "history">("");
+  const [mode, setMode] = useState<"" | "measure" | "edit" | "history" | "baseline">("");
+  const [bl, setBl] = useState({ valeur: "", dateMesure: today(), source: "", justificatif: "", valider: true });
   const [m, setM] = useState({ valeur: "", dateMesure: today(), commentaire: "" });
   const [e, setE] = useState({
     nom: ind.nom,
@@ -116,6 +134,7 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
     valeurInitiale: ind.valeurInitiale === null ? "" : String(ind.valeurInitiale),
     echeance: ind.echeance ? ind.echeance.slice(0, 10) : "",
     statut: ind.statut,
+    theme: ind.theme || "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -134,16 +153,44 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
     onChanged();
   }
 
+  async function saveBaseline() {
+    setError("");
+    setBusy(true);
+    const res = await callApi("POST", `/api/goal-indicators/${ind.id}/baseline`, { ...bl, source: bl.source || null, justificatif: bl.justificatif || null });
+    setBusy(false);
+    if (!res.ok) return setError(res.error || "Erreur.");
+    setBl({ valeur: "", dateMesure: today(), source: "", justificatif: "", valider: true });
+    setMode("");
+    onChanged();
+  }
+
+  async function proposeAction() {
+    setError("");
+    setBusy(true);
+    const res = await callApi("POST", `/api/goal-indicators/${ind.id}/baseline-action`, {});
+    setBusy(false);
+    if (!res.ok) return setError(res.error || "Erreur.");
+    onChanged();
+  }
+
+  async function validateProposed(id: string) {
+    setBusy(true);
+    const res = await callApi("PATCH", `/api/goal-indicator-baselines/${id}`, {});
+    setBusy(false);
+    if (!res.ok) return setError(res.error || "Erreur.");
+    onChanged();
+  }
+
   async function saveEdit() {
     setError("");
     setBusy(true);
     const body: Record<string, unknown> = {
-      valeurInitiale: e.valeurInitiale || null,
+      valeurInitiale: e.valeurInitiale.trim() === "" ? null : e.valeurInitiale,
       valeurCible: e.valeurCible || null,
       echeance: e.echeance || null,
       statut: e.statut,
     };
-    if (!ind.inherited) Object.assign(body, { nom: e.nom, description: e.description || null, unite: e.unite || null, sens: e.sens, frequence: e.frequence });
+    if (!ind.inherited) Object.assign(body, { nom: e.nom, description: e.description || null, unite: e.unite || null, sens: e.sens, frequence: e.frequence, theme: e.theme || null });
     const res = await callApi("PATCH", `/api/goal-indicators/${ind.id}`, body);
     setBusy(false);
     if (!res.ok) return setError(res.error || "Erreur.");
@@ -161,6 +208,7 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
             {ind.inherited && <Pill text="Défini par le groupe" tone="neutral" />}
             {ind.statut !== "actif" && <Pill text={STATUT[ind.statut] || ind.statut} tone={ind.statut === "atteint" ? "ok" : "neutral"} />}
           </div>
+          {ind.theme && <div className="text-xs text-teal-700 mt-0.5">Thème : {labelOf(THEMES_INDICATEUR, ind.theme)}</div>}
           {ind.description && <div className="text-sm text-muted mt-0.5">{ind.description}</div>}
         </div>
         <div className="text-right shrink-0">
@@ -172,7 +220,7 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
       <div className="mt-3 flex items-center gap-2 flex-wrap text-sm">
         <span className="rounded bg-ink/5 px-2 py-1">
           <span className="text-xs text-muted">Initiale </span>
-          {fmt(ind.valeurInitiale, ind.unite)}
+          {ind.valeurInitiale === null ? <span className="text-amber-700">Non renseignée</span> : fmt(ind.valeurInitiale, ind.unite)}
         </span>
         <span className="text-muted">→</span>
         <span className="rounded bg-teal-50 px-2 py-1">
@@ -188,10 +236,37 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
         </span>
       </div>
 
+      {ind.baselineState !== "etablie" && (
+        <div className="mt-3 rounded-md border border-amber-200/70 bg-amber-50/50 p-3 text-sm space-y-2">
+          <div>
+            <strong>{ind.baselineState === "a_valider" ? "Valeur initiale proposée, en attente de validation." : "Valeur initiale à établir."}</strong>{" "}
+            <span className="text-muted">Une valeur inconnue n'est pas égale à zéro : aucune progression n'est calculée tant que la situation de départ n'est pas établie.</span>
+          </div>
+          {ind.baselineAction ? (
+            <div className="text-xs">
+              Action d'état des lieux : <Link className="text-blue hover:underline" href="/actions">{ind.baselineAction.title}</Link> · statut {ind.baselineAction.status.replace("_", " ")}
+              {ind.baselineAction.status === "termine" && <span className="text-teal-700"> — terminée : renseignez puis validez la valeur initiale.</span>}
+            </div>
+          ) : (
+            <button className="text-blue hover:underline text-xs" disabled={busy} onClick={proposeAction}>
+              Proposer l'action « État des lieux initial »
+            </button>
+          )}
+          {ind.baselines.filter((b) => b.statut === "propose").map((b) => (
+            <div key={b.id} className="flex items-center gap-3 text-xs">
+              <span>Proposée : <strong>{fmt(b.valeur, ind.unite)}</strong> ({new Date(b.dateMesure).toLocaleDateString("fr-FR")}{b.source ? ` · ${b.source}` : ""})</span>
+              <button className="text-blue hover:underline" disabled={busy} onClick={() => validateProposed(b.id)}>
+                Valider comme valeur initiale
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mt-2 h-1.5 rounded bg-ink/10 overflow-hidden" aria-hidden>
         <div className="h-full bg-teal-600" style={{ width: `${pct ?? 0}%` }} />
       </div>
-      {pct === null && <p className="text-xs text-muted mt-1">Progression non calculable : il faut une valeur initiale, une cible et au moins une mesure.</p>}
+      {pct === null && <p className="text-xs text-muted mt-1">Progression non calculable : il faut une valeur initiale établie, une cible et au moins une mesure.</p>}
 
       <div className="mt-2 text-xs text-muted">
         {FREQ[ind.frequence] || ind.frequence}
@@ -202,6 +277,9 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
       <div className="mt-3 flex gap-4 text-sm">
         <button className="text-blue hover:underline" onClick={() => setMode(mode === "measure" ? "" : "measure")}>
           Saisir une mesure
+        </button>
+        <button className="text-blue hover:underline" onClick={() => setMode(mode === "baseline" ? "" : "baseline")}>
+          {ind.baselineState === "etablie" ? "Valeur initiale" : "Établir la valeur initiale"}
         </button>
         <button className="text-blue hover:underline" onClick={() => setMode(mode === "edit" ? "" : "edit")}>
           Modifier
@@ -236,12 +314,59 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
         </div>
       )}
 
+      {mode === "baseline" && (
+        <div className="mt-3 space-y-3">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-2 items-end">
+            <label className="block">
+              <div className="label mb-1">Valeur initiale{ind.unite ? ` (${ind.unite})` : ""} — 0 est une valeur valide</div>
+              <input className="input" inputMode="decimal" value={bl.valeur} onChange={(ev) => setBl({ ...bl, valeur: ev.target.value })} />
+            </label>
+            <label className="block">
+              <div className="label mb-1">Date de la mesure</div>
+              <input type="date" className="input" value={bl.dateMesure} onChange={(ev) => setBl({ ...bl, dateMesure: ev.target.value })} />
+            </label>
+            <label className="block">
+              <div className="label mb-1">Source</div>
+              <input className="input" value={bl.source} onChange={(ev) => setBl({ ...bl, source: ev.target.value })} placeholder="Ex. audit interne" />
+            </label>
+            <label className="block">
+              <div className="label mb-1">Justificatif (référence)</div>
+              <input className="input" value={bl.justificatif} onChange={(ev) => setBl({ ...bl, justificatif: ev.target.value })} placeholder="Rapport, document…" />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={bl.valider} onChange={(ev) => setBl({ ...bl, valider: ev.target.checked })} />
+            Valider comme valeur initiale de référence (sinon : proposée, en attente de validation des résultats)
+          </label>
+          <p className="text-xs text-muted">Les justificatifs (fichiers) se rattachent via les documents de l'objectif. Les valeurs précédentes sont conservées dans l'historique.</p>
+          <div className="flex gap-2">
+            <button className="btn" disabled={busy || !bl.valeur.trim()} onClick={saveBaseline}>
+              Enregistrer
+            </button>
+            <button className="btn-secondary" onClick={() => setMode("")}>
+              Annuler
+            </button>
+          </div>
+          {ind.baselines.length > 0 && (
+            <ul className="divide-y divide-ink/5 text-sm">
+              {ind.baselines.map((b) => (
+                <li key={b.id} className="py-1.5">
+                  <strong>{fmt(b.valeur, ind.unite)}</strong> <span className="text-muted">· {new Date(b.dateMesure).toLocaleDateString("fr-FR")}{b.source ? ` · ${b.source}` : ""}{b.justificatif ? ` · ${b.justificatif}` : ""}</span>{" "}
+                  <span className="text-xs rounded bg-ink/5 px-1.5 py-0.5">{b.statut === "valide" ? "En vigueur" : b.statut === "propose" ? "Proposée" : "Remplacée"}</span>
+                  {b.auteur && <span className="text-xs text-muted"> · {b.auteur}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {mode === "edit" && (
         <div className="mt-3 space-y-2">
           {ind.inherited ? (
             <p className="text-xs text-muted">La définition (nom, unité, sens, fréquence) est maîtrisée par le groupe pour garantir la comparabilité entre établissements. Vous renseignez votre valeur initiale, votre cible locale (facultative) et vos mesures.</p>
           ) : (
-            <div className="grid sm:grid-cols-3 gap-2">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-2">
               <label className="block sm:col-span-2">
                 <div className="label mb-1">Nom</div>
                 <input className="input" value={e.nom} onChange={(ev) => setE({ ...e, nom: ev.target.value })} />
@@ -250,9 +375,20 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
                 <div className="label mb-1">Unité</div>
                 <input className="input" value={e.unite} onChange={(ev) => setE({ ...e, unite: ev.target.value })} />
               </label>
-              <label className="block sm:col-span-3">
+              <label className="block sm:col-span-2 xl:col-span-4">
                 <div className="label mb-1">Description</div>
                 <input className="input" value={e.description} onChange={(ev) => setE({ ...e, description: ev.target.value })} />
+              </label>
+              <label className="block">
+                <div className="label mb-1">Thème</div>
+                <select className="input" value={e.theme} onChange={(ev) => setE({ ...e, theme: ev.target.value })}>
+                  <option value="">— Non défini —</option>
+                  {THEMES_INDICATEUR.map((t) => (
+                    <option key={t.code} value={t.code}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="block">
                 <div className="label mb-1">Sens</div>
@@ -343,13 +479,14 @@ function IndicatorCard({ ind, onChanged }: { ind: IndicatorView; onChanged: () =
 }
 
 function IndicatorForm({ title, cycleId, initialName, onDone, onCancel }: { title: string; cycleId: string; initialName: string; onDone: () => void; onCancel: () => void }) {
-  const [f, setF] = useState({ nom: initialName, unite: "", sens: "hausse", valeurInitiale: "", valeurActuelle: "", valeurCible: "", frequence: "trimestrielle", echeance: "", description: "" });
+  const [f, setF] = useState({ nom: initialName, unite: "", sens: "hausse", valeurInitiale: "", valeurActuelle: "", valeurCible: "", frequence: "trimestrielle", echeance: "", description: "", theme: "", baselineSource: "", baselineDate: "" });
+  const [proposeAction, setProposeAction] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
     <div className="card space-y-2">
       <div className="label">{title}</div>
-      <div className="grid sm:grid-cols-3 gap-2">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-2">
         <label className="block sm:col-span-2">
           <div className="label mb-1">Nom *</div>
           <input className="input" value={f.nom} onChange={(e) => setF({ ...f, nom: e.target.value })} />
@@ -358,7 +495,18 @@ function IndicatorForm({ title, cycleId, initialName, onDone, onCancel }: { titl
           <div className="label mb-1">Unité</div>
           <input className="input" value={f.unite} onChange={(e) => setF({ ...f, unite: e.target.value })} placeholder="%" />
         </label>
-        <label className="block sm:col-span-3">
+        <label className="block">
+          <div className="label mb-1">Thème</div>
+          <select className="input" value={f.theme} onChange={(e) => setF({ ...f, theme: e.target.value })}>
+            <option value="">— Non défini —</option>
+            {THEMES_INDICATEUR.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block sm:col-span-2 xl:col-span-4">
           <div className="label mb-1">Description</div>
           <input className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
         </label>
@@ -396,6 +544,25 @@ function IndicatorForm({ title, cycleId, initialName, onDone, onCancel }: { titl
           <input className="input" inputMode="decimal" value={f.valeurCible} onChange={(e) => setF({ ...f, valeurCible: e.target.value })} />
         </label>
       </div>
+      {f.valeurInitiale.trim() !== "" ? (
+        <div className="grid sm:grid-cols-2 gap-2">
+          <label className="block">
+            <div className="label mb-1">Source de la valeur initiale (facultatif)</div>
+            <input className="input" value={f.baselineSource} onChange={(e) => setF({ ...f, baselineSource: e.target.value })} />
+          </label>
+          <label className="block">
+            <div className="label mb-1">Date de la mesure initiale</div>
+            <input type="date" className="input" value={f.baselineDate} onChange={(e) => setF({ ...f, baselineDate: e.target.value })} />
+          </label>
+        </div>
+      ) : (
+        <label className="flex items-start gap-2 text-sm rounded-md bg-amber-50/50 border border-amber-200/70 p-3">
+          <input type="checkbox" className="mt-1" checked={proposeAction} onChange={(e) => setProposeAction(e.target.checked)} />
+          <span>
+            <strong>Valeur initiale inconnue</strong> — proposer l'action « État des lieux initial ». Si une action d'état des lieux existe déjà pour cet objectif, l'indicateur y sera rattaché (pas de doublon). Décochez si une mesure fiable existe déjà.
+          </span>
+        </label>
+      )}
       {error && <p className="text-sm text-bad">{error}</p>}
       <div className="flex gap-2">
         <button
@@ -412,6 +579,10 @@ function IndicatorForm({ title, cycleId, initialName, onDone, onCancel }: { titl
               valeurActuelle: f.valeurActuelle || null,
               valeurCible: f.valeurCible || null,
               echeance: f.echeance || null,
+              theme: f.theme || null,
+              baselineSource: f.baselineSource || null,
+              baselineDate: f.baselineDate || null,
+              proposeBaselineAction: proposeAction,
             });
             setBusy(false);
             if (!res.ok) return setError(res.error || "Erreur.");

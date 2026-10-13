@@ -6,6 +6,7 @@ import { lockedFieldsTouched } from "@/lib/diffusion";
 import { propagateGoalToChildren } from "@/lib/diffusionDb";
 import { isObjectiveStatut, isPriorite } from "@/lib/objectifs";
 import { loadObjectiveDetail } from "@/lib/objectifsDb";
+import { sanitizeCodes, unknownCodes, normalizePopulations, PERIMETRES_ORGANISATIONNELS, POPULATIONS } from "@/lib/referentiels";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -33,6 +34,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.priorite !== undefined && !isPriorite(body.priorite)) return NextResponse.json({ error: "Priorité invalide." }, { status: 400 });
   if (body.libelle !== undefined && !String(body.libelle).trim()) return NextResponse.json({ error: "L'intitulé ne peut pas être vide." }, { status: 400 });
 
+  if (unknownCodes(PERIMETRES_ORGANISATIONNELS, body.perimetreOrg ?? []).length > 0) return NextResponse.json({ error: "Périmètre organisationnel invalide." }, { status: 400 });
+  if (unknownCodes(POPULATIONS, body.populations ?? []).length > 0) return NextResponse.json({ error: "Population concernée invalide." }, { status: 400 });
+  // Établissements précisés : uniquement des établissements existants du groupe propriétaire.
+  let scopeIds: string[] | undefined;
+  if (body.scopeEstablishmentIds !== undefined) {
+    const wanted = Array.from(new Set((Array.isArray(body.scopeEstablishmentIds) ? body.scopeEstablishmentIds : []).map(String)));
+    if (cycle.strategicGoal.ownerType !== "groupe" && wanted.length > 0) return NextResponse.json({ error: "La sélection d'établissements est réservée aux objectifs de groupe." }, { status: 400 });
+    const found = wanted.length ? await prisma.establishment.findMany({ where: { id: { in: wanted }, groupId: cycle.strategicGoal.ownerId }, select: { id: true } }) : [];
+    if (found.length !== wanted.length) return NextResponse.json({ error: "Établissement hors du groupe ou introuvable." }, { status: 400 });
+    scopeIds = found.map((e) => e.id);
+  }
+
   let responsable: string | null | undefined = undefined;
   if (body.responsableActorId !== undefined) {
     const actor = body.responsableActorId ? await prisma.actor.findUnique({ where: { id: body.responsableActorId }, select: { name: true } }) : null;
@@ -51,9 +64,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       axe: text(body.axe),
       resultatAttendu: text(body.resultatAttendu),
       perimetre: text(body.perimetre),
+      perimetreOrg: body.perimetreOrg === undefined ? undefined : sanitizeCodes(PERIMETRES_ORGANISATIONNELS, body.perimetreOrg),
+      populations: body.populations === undefined ? undefined : normalizePopulations(sanitizeCodes(POPULATIONS, body.populations)),
       echeance,
     },
   });
+  if (scopeIds) {
+    // Remplacement de la sélection (liens uniquement : aucun établissement n'est touché).
+    await prisma.$transaction([
+      prisma.goalCycleScopeEstablishment.deleteMany({ where: { strategicGoalCycleId: params.id } }),
+      prisma.goalCycleScopeEstablishment.createMany({ data: scopeIds.map((establishmentId) => ({ strategicGoalCycleId: params.id, establishmentId })), skipDuplicates: true }),
+    ]);
+  }
   if (body.libelle !== undefined || body.description !== undefined) {
     await prisma.strategicGoal.update({
       where: { id: cycle.strategicGoalId },
@@ -66,6 +88,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   for (const k of ["statut", "priorite", "axe", "resultatAttendu", "perimetre", "responsable"] as const) {
     if (body[k] !== undefined && (updated as any)[k] !== (cycle as any)[k]) changes[k] = { from: (cycle as any)[k], to: (updated as any)[k] };
   }
+  for (const k of ["perimetreOrg", "populations"] as const) {
+    if (body[k] !== undefined && JSON.stringify((updated as any)[k]) !== JSON.stringify((cycle as any)[k])) changes[k] = { from: (cycle as any)[k].join(", ") || null, to: (updated as any)[k].join(", ") || null };
+  }
+  if (scopeIds) changes.etablissements_precises = { from: null, to: `${scopeIds.length} sélectionné(s)` };
   if (body.libelle !== undefined && String(body.libelle).trim() !== cycle.strategicGoal.libelle) changes.libelle = { from: cycle.strategicGoal.libelle, to: String(body.libelle).trim() };
   if (Object.keys(changes).length > 0) {
     await logAudit({ entityType: "objectif", entityId: params.id, entityLabel: String(body.libelle ?? cycle.strategicGoal.libelle).slice(0, 120), action: "update", changes, user });

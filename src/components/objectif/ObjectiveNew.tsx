@@ -5,13 +5,14 @@ import { ObjectiveCreateForm } from "@/components/objectif/ObjectiveCreateForm";
 
 // Page « Nouvel objectif stratégique » (groupe ou établissement).
 export async function ObjectiveNew({ ownerType, ownerId, basePath, backHref }: { ownerType: "groupe" | "etablissement"; ownerId: string; basePath: string; backHref: string }) {
-  const [plans, actors, establishmentCount] = await Promise.all([
+  const [plans, actors, establishmentCount, establishments] = await Promise.all([
     prisma.strategicPlan.findMany({ where: { ownerType, ownerId, statut: { not: "clos" } }, orderBy: { startDate: "desc" }, select: { id: true, libelle: true } }),
     prisma.actor.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, distinct: ["name"] }),
     ownerType === "groupe" ? prisma.establishment.count({ where: { groupId: ownerId } }) : Promise.resolve(0),
+    ownerType === "groupe" ? prisma.establishment.findMany({ where: { groupId: ownerId }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : Promise.resolve([]),
   ]);
   return (
-    <div>
+    <div data-wide-page>
       <Link href={backHref} className="text-sm text-blue hover:underline">
         ← Objectifs & conformité
       </Link>
@@ -22,7 +23,7 @@ export async function ObjectiveNew({ ownerType, ownerId, basePath, backHref }: {
           <StrategicPlanForm ownerType={ownerType} ownerId={ownerId} establishmentCount={establishmentCount} />
         </div>
       ) : (
-        <ObjectiveCreateForm ownerType={ownerType} ownerId={ownerId} plans={plans} actors={actors} establishmentCount={establishmentCount} basePath={basePath} />
+        <ObjectiveCreateForm ownerType={ownerType} ownerId={ownerId} plans={plans} actors={actors} establishmentCount={establishmentCount} establishments={establishments} basePath={basePath} />
       )}
     </div>
   );

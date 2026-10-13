@@ -29,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <UserMenu name={user.name} />
           </div>
         </div>
-        <main className="max-w-6xl mx-auto px-8 py-10">{children}</main>
+        <main className="max-w-6xl [&:has([data-wide-page])]:max-w-[1600px] mx-auto px-8 py-10">{children}</main>
         <FlashMessage />
       </div>
     </div>
