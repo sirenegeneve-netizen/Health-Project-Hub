@@ -6,7 +6,6 @@ import { can, getUserAssignments } from "@/lib/authz";
 import { GLOBAL_SCOPE_ID, type PermissionAction, type ScopeType } from "@/lib/roles";
 import { logAudit, truncateLabel } from "@/lib/audit";
 import {
-import { authorizeScopes, authzMode, recordScope, type Access, type RecordModel } from "@/lib/accessResolve";
   deleteEstablishmentData,
   deleteGroupData,
   deleteInitiativeData,
@@ -15,6 +14,7 @@ import { authorizeScopes, authzMode, recordScope, type Access, type RecordModel 
   type DeletionSummary,
   type SimpleKind,
 } from "@/lib/deletionCore";
+import { authorizeScopes, authzMode, recordScope, type Access, type RecordModel } from "@/lib/accessResolve";
 
 export type DeleteKind = "group" | "establishment" | "initiative" | SimpleKind;
 
