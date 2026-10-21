@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary } from "@/lib/metrics";
 import { GroupTabs } from "@/components/GroupTabs";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupReportingPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: { initiatives: { include: { budgetLines: true }, orderBy: { name: "asc" } } },

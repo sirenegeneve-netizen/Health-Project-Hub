@@ -15,6 +15,7 @@ import { Pill } from "@/components/Pill";
 import { InitiativeEstablishmentManager } from "@/components/InitiativeEstablishmentManager";
 import { InitiativeGoalContributionManager } from "@/components/InitiativeGoalContributionManager";
 import { InitiativeRequirementCoverageManager } from "@/components/InitiativeRequirementCoverageManager";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function CadragePage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: {

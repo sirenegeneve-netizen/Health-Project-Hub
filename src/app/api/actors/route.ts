@@ -3,12 +3,16 @@ import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { guardCreate } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("actor", body);
+  if (!__g.ok) return __g.response;
+
   const actor = await prisma.actor.create({
     data: {
       initiativeId: body.initiativeId || null,

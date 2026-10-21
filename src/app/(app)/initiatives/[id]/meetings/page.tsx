@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { MeetingForm } from "@/components/EntityForms";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function MeetingsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const meetings = await prisma.meeting.findMany({

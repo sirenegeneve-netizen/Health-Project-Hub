@@ -4,8 +4,11 @@ import { requireUser } from "@/lib/auth";
 import { requireConfigAccess } from "@/lib/projectConfigAuth";
 import { logAudit } from "@/lib/audit";
 import { cloneTemplate } from "@/lib/templateEngine";
+import { guardAuthenticated } from "@/lib/access";
 
 export async function GET(req: NextRequest) {
+  const __g = await guardAuthenticated();
+  if (!__g.ok) return __g.response;
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   const typeKey = new URL(req.url).searchParams.get("typeKey");

@@ -12,6 +12,7 @@ import { migrateExistingInitiatives, seedTemplateEngine } from "@/lib/templateEn
 //   ?key=…&step=migrate     migration seule (le seed doit avoir été exécuté)
 //   ?key=…&limit=50         nombre maximum d'initiatives migrées par appel (200 par défaut)
 export async function GET(req: NextRequest) {
+  // authz-exempt: protégé par la clé d'administration (ADMIN_SEED_KEY)
   const expectedKey = process.env.ADMIN_SEED_KEY;
   if (!expectedKey) {
     return NextResponse.json(

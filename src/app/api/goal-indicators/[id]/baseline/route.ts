@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { toNumberOrNull } from "@/lib/objectifs";
+import { guardRecord } from "@/lib/access";
 
 // Établir la valeur initiale d'un indicateur (après audit / état des lieux). L'historique est conservé :
 //  - valider = true  → la valeur devient la valeur initiale de référence (la précédente passe à « remplacé ») ;
@@ -15,6 +16,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!ind) return NextResponse.json({ error: "Indicateur introuvable." }, { status: 404 });
 
   const body = await req.json();
+  const __g = await guardRecord("goalIndicator", params.id, "modifier");
+  if (!__g.ok) return __g.response;
+
   const valeur = toNumberOrNull(body.valeur);
   if (valeur === null || Number.isNaN(valeur)) return NextResponse.json({ error: "Une valeur numérique est requise (0 est une valeur valide)." }, { status: 400 });
   const date = body.dateMesure ? new Date(body.dateMesure) : new Date();

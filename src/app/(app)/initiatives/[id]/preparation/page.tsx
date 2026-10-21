@@ -5,6 +5,7 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { ensureStageCriteria, computeStageCompletion } from "@/lib/stageCriteria";
 import { Pill } from "@/components/Pill";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 // paramétrage/conception, livrables) restent accessibles en lien profond pour
 // ne pas dupliquer leur suivi ici.
 export default async function PreparationPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
 

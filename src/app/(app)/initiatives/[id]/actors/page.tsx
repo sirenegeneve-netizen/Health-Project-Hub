@@ -4,6 +4,7 @@ import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { ActorForm, ActorManageRow } from "@/components/ActorForms";
 import { RaciBoard } from "@/components/RaciBoard";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default async function GovernancePage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getScope, initiativeFilter } from "@/lib/scope";
 import { computeHealthScore } from "@/lib/healthScore";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { PlanningLevelToggle } from "@/components/PlanningLevelToggle";
@@ -9,8 +10,9 @@ export const dynamic = "force-dynamic";
 const HEALTH_COLOR: Record<string, string> = { vert: "bg-ok", orange: "bg-warn", rouge: "bg-bad" };
 
 export default async function RoadmapPage() {
+  const scope = await getScope();
   const initiatives = await prisma.initiative.findMany({
-    where: { status: { not: "cloture" } },
+    where: { status: { not: "cloture" }, ...(initiativeFilter(scope) ?? {}) },
     include: { establishments: { include: { establishment: true } }, deliverables: true },
     orderBy: { startDate: "asc" },
   });

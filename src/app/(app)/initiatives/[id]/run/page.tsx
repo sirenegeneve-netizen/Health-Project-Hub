@@ -4,10 +4,12 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { BacklogForm, KpiForm } from "@/components/EntityForms";
 import { computeStabilityReadiness, computeBacklogTriage } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function RunPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id }, include: { interfaces: true, risks: true, trainings: true } });
   if (!initiative) notFound();
 

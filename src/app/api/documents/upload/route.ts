@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
 import { logAudit, truncateLabel } from "@/lib/audit";
+import { guardCreate } from "@/lib/access";
 
 // Upload d'un vrai fichier (PDF, Word, image...) vers Vercel Blob — distinct de
 // la route /api/documents qui gère l'import de texte collé (mail, compte rendu).
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
   if (!file || !ownerIdRaw) {
     return NextResponse.json({ error: "Fichier et portée (ownerId) requis." }, { status: 400 });
   }
+
+  const __g = await guardCreate("documentRef", { initiativeId: initiativeIdRaw, ownerType, ownerId: ownerIdRaw });
+  if (!__g.ok) return __g.response;
 
   const blob = await put(file.name, file, { access: "public", addRandomSuffix: true });
 

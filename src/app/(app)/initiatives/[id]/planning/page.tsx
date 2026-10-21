@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { GanttChart } from "@/components/GanttChart";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ const VIEWS = [
 ];
 
 export default async function PlanningPage({ params, searchParams }: { params: { id: string }; searchParams: { vue?: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { baselines: { orderBy: { createdAt: "asc" } }, establishments: { include: { establishment: true } } },

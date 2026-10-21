@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { InlineSelect } from "@/components/InlineSelect";
 import { ActionsKanban } from "@/components/ActionsKanban";
 import { resolveActionOrigin } from "@/lib/actionOrigin";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere, ownerFilter } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ const STATUS_OPTIONS = [
 export default async function GlobalActionsPage({ searchParams }: { searchParams: { vue?: string; filtre?: string } }) {
   const scope = await getScope();
   const actions = await prisma.action.findMany({
-    where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : undefined,
+    where: scope.establishmentId ? { initiative: initiativeScopeWhere(scope) } : ownerFilter(scope),
     include: { initiative: true, meeting: true, risk: true, decision: true, responsableActor: true },
     orderBy: [{ status: "asc" }, { echeance: "asc" }],
   });

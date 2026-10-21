@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { GroupContacts } from "@/components/GroupContacts";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupGouvernancePage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: { actorAffiliations: { include: { actor: true }, orderBy: { createdAt: "asc" } } },

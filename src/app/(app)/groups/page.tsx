@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getScope, groupFilter, establishmentFilter, initiativeFilter } from "@/lib/scope";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary } from "@/lib/metrics";
 import { GroupForm } from "@/components/GroupForm";
@@ -7,10 +8,12 @@ import { GroupForm } from "@/components/GroupForm";
 export const dynamic = "force-dynamic";
 
 export default async function GroupsPage() {
+  const scope = await getScope();
   const groups = await prisma.group.findMany({
+    where: groupFilter(scope),
     include: {
-      establishments: true,
-      initiatives: { include: { budgetLines: true } },
+      establishments: { where: establishmentFilter(scope) },
+      initiatives: { where: initiativeFilter(scope), include: { budgetLines: true } },
     },
     orderBy: { name: "asc" },
   });

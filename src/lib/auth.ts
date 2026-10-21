@@ -59,6 +59,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   const session = await prisma.session.findUnique({ where: { token }, include: { user: true } });
   if (!session || session.expiresAt < new Date()) return null;
+  // Un compte suspendu perd l'accès immédiatement, même avec une session encore valide.
+  if (session.user.status !== "active") return null;
 
   return { id: session.user.id, email: session.user.email, name: session.user.name, actorId: session.user.actorId };
 }

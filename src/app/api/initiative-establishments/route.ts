@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 // Rattache un Établissement existant à une Initiative (relation many-to-many,
 // vue comparative multi-sites). Les deux doivent appartenir au même Groupe —
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("initiativeEstablishment", body);
+  if (!__g.ok) return __g.response;
+
   const { initiativeId, establishmentId } = body;
   if (!initiativeId || !establishmentId) {
     return NextResponse.json({ error: "initiativeId et establishmentId sont requis." }, { status: 400 });

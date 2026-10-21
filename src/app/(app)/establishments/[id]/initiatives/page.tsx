@@ -3,11 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 
 export default async function EstablishmentInitiativesPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("establishment", params.id);
   const TYPE_LABELS = await getTypeLabels();
   const establishment = await prisma.establishment.findUnique({
     where: { id: params.id },

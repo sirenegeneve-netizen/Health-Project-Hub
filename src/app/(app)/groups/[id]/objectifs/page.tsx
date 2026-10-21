@@ -15,10 +15,12 @@ import { ActionForm } from "@/components/EntityForms";
 import { ActionPlanSection } from "@/components/ActionPlanSection";
 import { CycleTargetCell, DiffuseButton, InheritedPill, ResyncButton } from "@/components/ObjectifsDiffusion";
 import { diffusionProgress } from "@/lib/diffusion";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupObjectifsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!group) notFound();
 

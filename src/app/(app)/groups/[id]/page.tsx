@@ -6,11 +6,13 @@ import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { computeBudgetSummary } from "@/lib/metrics";
 import { GroupTabs } from "@/components/GroupTabs";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 
 export default async function GroupDetailPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const TYPE_LABELS = await getTypeLabels();
   const group = await prisma.group.findUnique({
     where: { id: params.id },

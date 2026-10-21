@@ -7,6 +7,7 @@ import { RiskForm, ActionForm } from "@/components/EntityForms";
 import { RiskMatrix } from "@/components/RiskMatrix";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function RisksPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { establishments: { include: { establishment: true } } },

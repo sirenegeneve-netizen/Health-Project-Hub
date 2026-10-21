@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeFilter, ownerFilter } from "@/lib/scope";
 import { CalendarBoard, type CalEvent } from "@/components/CalendarBoard";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { PlanningLevelToggle } from "@/components/PlanningLevelToggle";
@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 export default async function CalendarPage() {
   const scope = await getScope();
-  const scopedInitiative = scope.establishmentId ? initiativeScopeWhere(scope) : undefined;
+  const scopedInitiative = initiativeFilter(scope);
+  const scopedOwner = scope.establishmentId ? (scopedInitiative ? { initiative: scopedInitiative } : {}) : ownerFilter(scope) ?? {};
 
   const now = new Date();
   const horizon = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
@@ -20,12 +21,12 @@ export default async function CalendarPage() {
     prisma.trainingSession.findMany({ where: { date: inRange, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) }, include: { initiative: true }, orderBy: { date: "asc" } }),
     prisma.interface.findMany({ where: { datePrevue: inRange, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) }, include: { initiative: true }, orderBy: { datePrevue: "asc" } }),
     prisma.action.findMany({
-      where: { echeance: inRange, status: { notIn: ["termine", "abandonne"] }, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) },
+      where: { echeance: inRange, status: { notIn: ["termine", "abandonne"] }, ...scopedOwner },
       include: { initiative: true },
       orderBy: { echeance: "asc" },
     }),
     prisma.decision.findMany({
-      where: { status: { not: "decision_prise" }, createdAt: { lte: horizon }, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) },
+      where: { status: { not: "decision_prise" }, createdAt: { lte: horizon }, ...scopedOwner },
       include: { initiative: true },
       orderBy: { createdAt: "asc" },
     }),

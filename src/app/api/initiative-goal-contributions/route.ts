@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardLink } from "@/lib/access";
 
 // Rattache une Initiative existante à un StrategicGoalCycle existant
 // (relation many-to-many facultative des deux côtés). Le cycle doit être
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardLink("initiativeGoalContribution", body, ["strategicGoalCycleId"]);
+  if (!__g.ok) return __g.response;
+
   const { initiativeId, strategicGoalCycleId } = body;
   if (!initiativeId || !strategicGoalCycleId) {
     return NextResponse.json({ error: "initiativeId et strategicGoalCycleId sont requis." }, { status: 400 });

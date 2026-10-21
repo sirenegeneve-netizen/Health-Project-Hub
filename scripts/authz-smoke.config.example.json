@@ -1,0 +1,45 @@
+{
+  "baseUrl": "https://votre-preproduction.vercel.app",
+  "anonymousMustNotRead": ["/api/initiatives", "/api/search?q=test", "/api/actors"],
+  "users": [
+    {
+      "label": "Référent établissement E1 (monoétablissement)",
+      "email": "referent.e1@exemple.fr",
+      "password": "à fournir",
+      "mustRead": [{ "path": "/api/objectives?ownerType=etablissement&ownerId=ID_E1" }],
+      "mustNotRead": [
+        { "path": "/api/objectives?ownerType=etablissement&ownerId=ID_E2" },
+        { "path": "/api/objectives?ownerType=groupe&ownerId=ID_GROUPE" },
+        { "path": "/api/objectives/ID_CYCLE_E2" },
+        { "path": "/api/documents?initiativeId=ID_PROJET_E2" }
+      ],
+      "mustNotWrite": [
+        { "method": "PATCH", "path": "/api/actions/ID_ACTION_E2", "body": { "title": "x" } },
+        { "method": "DELETE", "path": "/api/risks/ID_RISQUE_E2" },
+        { "method": "PATCH", "path": "/api/goal-indicators/ID_INDICATEUR_E2", "body": { "valeurCible": 1 } },
+        { "method": "POST", "path": "/api/actions", "body": { "title": "x", "ownerType": "etablissement", "ownerId": "ID_E2" } },
+        { "method": "POST", "path": "/api/actions", "body": { "title": "x", "ownerType": "etablissement", "ownerId": "ID_E1", "strategicGoalCycleId": "ID_CYCLE_E2" } },
+        { "method": "POST", "path": "/api/groups/ID_GROUPE/diffusion", "body": {} },
+        { "method": "PUT", "path": "/api/actions/ID_ACTION_GROUPE/audit", "body": { "scopeKey": "ID_E2" } }
+      ],
+      "mayWriteIdempotent": []
+    },
+    {
+      "label": "Directeur de groupe (consultation consolidée)",
+      "email": "directeur.groupe@exemple.fr",
+      "password": "à fournir",
+      "mustRead": [{ "path": "/api/objectives?ownerType=etablissement&ownerId=ID_E1" }, { "path": "/api/objectives?ownerType=etablissement&ownerId=ID_E2" }],
+      "mustNotWrite": [
+        { "method": "PATCH", "path": "/api/actions/ID_ACTION_E1", "body": { "title": "x" } },
+        { "method": "POST", "path": "/api/actions", "body": { "title": "x", "ownerType": "etablissement", "ownerId": "ID_E1" } }
+      ]
+    },
+    {
+      "label": "Utilisateur sans affectation",
+      "email": "sans.affectation@exemple.fr",
+      "password": "à fournir",
+      "mustNotRead": [{ "path": "/api/objectives?ownerType=groupe&ownerId=ID_GROUPE" }, { "path": "/api/documents?initiativeId=ID_PROJET_E1" }],
+      "mustNotWrite": [{ "method": "PATCH", "path": "/api/actions/ID_ACTION_E1", "body": { "title": "x" } }]
+    }
+  ]
+}

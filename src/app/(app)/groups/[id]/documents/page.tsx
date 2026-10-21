@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentTextImport } from "@/components/DocumentTextImport";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupDocumentsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!group) notFound();
 

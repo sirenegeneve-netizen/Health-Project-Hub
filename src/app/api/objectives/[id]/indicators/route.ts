@@ -6,6 +6,7 @@ import { syncIndicatorsToChildren } from "@/lib/diffusionDb";
 import { isFrequence, isIndicatorStatut, isSens, toNumberOrNull } from "@/lib/objectifs";
 import { isTheme } from "@/lib/referentiels";
 import { ensureBaselineAction } from "@/lib/baselineDb";
+import { guardRecord } from "@/lib/access";
 
 // Ajoute un indicateur à un objectif. Sur un objectif de groupe diffusé, sa définition est aussitôt copiée
 // dans chaque déclinaison d'établissement (valeurs propres à l'établissement).
@@ -17,6 +18,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!cycle) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });
 
   const body = await req.json();
+  const __g = await guardRecord("strategicGoalCycle", params.id, "modifier");
+  if (!__g.ok) return __g.response;
+
   if (!String(body.nom || "").trim()) return NextResponse.json({ error: "Le nom de l'indicateur est requis." }, { status: 400 });
   if (body.sens !== undefined && !isSens(body.sens)) return NextResponse.json({ error: "Sens invalide." }, { status: 400 });
   if (body.frequence !== undefined && !isFrequence(body.frequence)) return NextResponse.json({ error: "Fréquence invalide." }, { status: 400 });

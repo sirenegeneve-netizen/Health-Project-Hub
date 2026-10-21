@@ -3,10 +3,12 @@ import { DeleteButton } from "@/components/DeleteButton";
 import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { KpiForm } from "@/components/EntityForms";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function KpisPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const kpis = await prisma.kpi.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } });

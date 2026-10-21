@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentTextImport } from "@/components/DocumentTextImport";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function EstablishmentDocumentsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("establishment", params.id);
   const establishment = await prisma.establishment.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!establishment) notFound();
 

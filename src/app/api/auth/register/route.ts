@@ -8,6 +8,7 @@ import { hashPassword, createSession } from "@/lib/auth";
 // n'est pas configurée, l'inscription est bloquée par défaut (fail closed)
 // plutôt que de rester ouverte par erreur.
 export async function POST(req: Request) {
+  // authz-exempt: protégé par un code d'invitation (REGISTER_INVITE_CODE) ; crée un compte SANS affectation (aucun accès métier en mode enforce)
   const body = await req.json();
   const email = (body.email || "").trim().toLowerCase();
   const name = (body.name || "").trim();

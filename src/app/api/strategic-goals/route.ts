@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { syncGroupDiffusion } from "@/lib/diffusionDb";
+import { guardCreate } from "@/lib/access";
 
 // Crée un Objectif stratégique (identité stable, sans période — la période
 // vient du Plan auquel un Cycle de cet objectif sera rattaché).
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("strategicGoal", body);
+  if (!__g.ok) return __g.response;
+
   const { ownerType, ownerId, libelle } = body;
   if (!ownerType || !["groupe", "etablissement"].includes(ownerType)) {
     return NextResponse.json({ error: "ownerType invalide (groupe | etablissement attendu)." }, { status: 400 });

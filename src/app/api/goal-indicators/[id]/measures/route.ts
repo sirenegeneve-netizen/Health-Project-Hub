@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { toNumberOrNull } from "@/lib/objectifs";
+import { guardRecord } from "@/lib/access";
 
 // Saisie d'une mesure : valeur réellement constatée à une date donnée. La « valeur actuelle » de l'indicateur
 // est toujours la dernière mesure ; l'historique est conservé.
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!indicator) return NextResponse.json({ error: "Indicateur introuvable." }, { status: 404 });
 
   const body = await req.json();
+  const __g = await guardRecord("goalIndicator", params.id, "modifier");
+  if (!__g.ok) return __g.response;
+
   const valeur = toNumberOrNull(body.valeur);
   if (valeur === null || Number.isNaN(valeur)) return NextResponse.json({ error: "Une valeur numérique est requise." }, { status: 400 });
   const date = body.dateMesure ? new Date(body.dateMesure) : new Date();

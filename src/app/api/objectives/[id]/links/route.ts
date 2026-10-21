@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { isLinkKind, isLinkNature } from "@/lib/objectifs";
 import { addObjectiveLink } from "@/lib/objectifsDb";
+import { guardRecord } from "@/lib/access";
 
 // Relie à l'objectif un risque, une décision, un constat d'audit ou une exigence EXISTANTS (aucune duplication).
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardRecord("strategicGoalCycle", params.id, "modifier");
+  if (!__g.ok) return __g.response;
+
   if (!isLinkKind(body.kind) || !body.targetId) return NextResponse.json({ error: "kind (risque | decision | constat | exigence) et targetId requis." }, { status: 400 });
   const nature = body.nature === undefined ? "associe" : body.nature;
   if (!isLinkNature(nature)) return NextResponse.json({ error: "Nature invalide." }, { status: 400 });

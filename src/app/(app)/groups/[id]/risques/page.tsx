@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { Pill } from "@/components/Pill";
 import { RiskForm } from "@/components/EntityForms";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupRisquesPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({ where: { id: params.id }, select: { id: true, name: true } });
   if (!group) notFound();
 

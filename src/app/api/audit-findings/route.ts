@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 // Crée un constat d'audit (écart, observation ou point fort), optionnellement
 // lié à une exigence qualité existante. Porté par un Groupe ou un
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("auditFinding", body);
+  if (!__g.ok) return __g.response;
+
   const { ownerType, ownerId, libelle } = body;
   if (!ownerType || !["groupe", "etablissement"].includes(ownerType)) {
     return NextResponse.json({ error: "ownerType invalide (groupe | etablissement attendu)." }, { status: 400 });

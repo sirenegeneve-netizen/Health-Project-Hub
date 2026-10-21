@@ -10,6 +10,7 @@ async function assertAdmin(userId: string) {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  // authz-exempt: assertAdmin : gererUtilisateurs au niveau plateforme (canGlobally)
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   if (!(await assertAdmin(user.id))) return NextResponse.json({ error: "Accès réservé à l'administration." }, { status: 403 });
@@ -23,6 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  // authz-exempt: assertAdmin : gererUtilisateurs au niveau plateforme (canGlobally)
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   if (!(await assertAdmin(user.id))) return NextResponse.json({ error: "Accès réservé à l'administration." }, { status: 403 });

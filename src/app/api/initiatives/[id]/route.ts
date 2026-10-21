@@ -5,10 +5,14 @@ import { logTimelineEvent } from "@/lib/timeline";
 import { requireUser } from "@/lib/auth";
 import { checkPhaseChange } from "@/lib/stageRuntime";
 import { logAudit, diffRecords } from "@/lib/audit";
+import { guardInitiative } from "@/lib/access";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardInitiative(params.id, "voir");
+  if (!__g.ok) return __g.response;
+
 
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
@@ -37,6 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardInitiative(params.id, "modifier");
+  if (!__g.ok) return __g.response;
+
   const current = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!current) return NextResponse.json({ error: "not found" }, { status: 404 });
 
@@ -101,5 +108,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const __g = await guardInitiative(params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
   return handleDelete("initiative", params.id);
 }

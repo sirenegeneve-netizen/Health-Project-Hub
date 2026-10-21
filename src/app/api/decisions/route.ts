@@ -4,12 +4,16 @@ import { logTimelineEvent } from "@/lib/timeline";
 import { resolveActorName } from "@/lib/actorResolve";
 import { requireUser } from "@/lib/auth";
 import { logAudit, truncateLabel } from "@/lib/audit";
+import { guardCreate } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("decision", body);
+  if (!__g.ok) return __g.response;
+
 
   const ownerType = body.ownerType || "initiative"; // groupe | etablissement | initiative
   const ownerId = body.ownerId || body.initiativeId;

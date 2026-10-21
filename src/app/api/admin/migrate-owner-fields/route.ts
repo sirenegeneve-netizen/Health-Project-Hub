@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 // enregistrements existants (tous rattachés à une Initiative avant ce lot).
 // Idempotent : ne touche que les lignes où ownerId est encore vide.
 export async function GET(req: NextRequest) {
+  // authz-exempt: protégé par la clé d'administration (ADMIN_SEED_KEY)
   const expectedKey = process.env.ADMIN_SEED_KEY;
   if (!expectedKey) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getScope, groupFilter, establishmentFilter } from "@/lib/scope";
 import { EstablishmentForm } from "@/components/EstablishmentForm";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,14 @@ export default async function EstablishmentsPage({
 }: {
   searchParams: { q?: string; groupe?: string; type?: string; statut?: string };
 }) {
+  const scope = await getScope();
   const [establishments, groups] = await Promise.all([
     prisma.establishment.findMany({
+      where: establishmentFilter(scope),
       include: { initiatives: { include: { initiative: true } }, group: true },
       orderBy: { name: "asc" },
     }),
-    prisma.group.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.group.findMany({ where: groupFilter(scope), orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   let filtered = establishments;

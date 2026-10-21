@@ -4,12 +4,16 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { recordGateDecision } from "@/lib/stageRuntime";
 import { isGateOutcome, GATE_OUTCOME_LABELS } from "@/lib/templatePlan";
+import { guardInitiative } from "@/lib/access";
 
 // Enregistre une décision de Gate (GO / GO avec réserves / NO GO) : historisée (append-only), reliée à une
 // Décision HPH, et fait avancer l'initiative à l'étape suivante si la décision l'autorise.
 export async function POST(req: NextRequest, { params }: { params: { id: string; key: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
+  const __g = await guardInitiative(params.id, "valider");
+  if (!__g.ok) return __g.response;
 
   const body = await req.json();
   if (!isGateOutcome(body.outcome)) return NextResponse.json({ error: "Décision invalide." }, { status: 400 });

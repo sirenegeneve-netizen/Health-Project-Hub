@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { computeHealthScore } from "@/lib/healthScore";
 import { GroupTabs } from "@/components/GroupTabs";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function GroupInitiativesPage({
   params: { id: string };
   searchParams: { etablissement?: string; type?: string; multi?: string };
 }) {
+  await requirePageAccess("group", params.id);
   const TYPE_LABELS = await getTypeLabels();
   const group = await prisma.group.findUnique({
     where: { id: params.id },

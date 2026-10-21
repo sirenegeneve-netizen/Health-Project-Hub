@@ -4,12 +4,16 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { createExpectedObject, getStageState } from "@/lib/stageRuntime";
 import { isItemKind, TRACKED_KINDS } from "@/lib/templatePlan";
+import { guardInitiative } from "@/lib/access";
 
 // Crée l'objet HPH réel (livrable, action, décision, risque, indicateur) correspondant à un élément
 // attendu de l'étape, rattaché à cette étape. Refuse si l'élément existe déjà (pas de doublon).
 export async function POST(req: NextRequest, { params }: { params: { id: string; key: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+
+  const __g = await guardInitiative(params.id, "modifier");
+  if (!__g.ok) return __g.response;
 
   const body = await req.json();
   const kind = body.kind;

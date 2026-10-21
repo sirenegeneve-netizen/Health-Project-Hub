@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit, diffRecords } from "@/lib/audit";
+import { guardRecord } from "@/lib/access";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -9,6 +10,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const before = await prisma.actor.findUnique({ where: { id: params.id } });
   const body = await req.json();
+  const __g = await guardRecord("actor", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   const actor = await prisma.actor.update({
     where: { id: params.id },
     data: {
@@ -36,6 +40,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("actor", params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
 
   return NextResponse.json(
     { error: "Suppression désactivée. Utilisez la désactivation (PATCH actif=false) pour retirer un acteur des listes de sélection sans perdre l'historique associé." },

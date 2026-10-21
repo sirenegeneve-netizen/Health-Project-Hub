@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { getScope } from "@/lib/scope";
 import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { Pill } from "@/components/Pill";
 
@@ -55,6 +57,13 @@ export default async function JournalPage({ searchParams }: { searchParams: { en
   if (searchParams.entityType) where.entityType = searchParams.entityType;
   if (searchParams.action) where.action = searchParams.action;
 
+  // Le journal n'a pas de rattachement établissement : en mode « enforce », seuls les rôles plateforme voient tout le journal ;
+  // les autres ne voient que leurs propres opérations.
+  const scope = await getScope();
+  if (scope.visibility && scope.visibility.enforced && !scope.visibility.all) {
+    const me = await getCurrentUser();
+    where.userId = me?.id ?? "__aucun__";
+  }
   const entries = await prisma.auditLog.findMany({ where, orderBy: { createdAt: "desc" }, take: 150 });
 
   const groups = new Map<string, typeof entries>();

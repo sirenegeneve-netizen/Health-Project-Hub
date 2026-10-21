@@ -6,6 +6,7 @@ import { migrateObjectifs } from "@/lib/objectifsDb";
 //   ?key=…&dryRun=1   simulation (n'écrit rien) : compte ce qui serait rattaché
 //   ?key=…            exécution ; renvoie les comptages avant / après (doivent être identiques)
 export async function GET(req: NextRequest) {
+  // authz-exempt: protégé par la clé d'administration (ADMIN_SEED_KEY)
   const expectedKey = process.env.ADMIN_SEED_KEY;
   if (!expectedKey) {
     return NextResponse.json({ error: "ADMIN_SEED_KEY n'est pas configurée dans les variables d'environnement." }, { status: 503 });

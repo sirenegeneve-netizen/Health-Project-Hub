@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { applicableEstablishmentIds, conformiteSummary, isConformiteStatut } from "@/lib/objectifs";
+import { guardRecord } from "@/lib/access";
 
 // Applicabilité d'une exigence de référence du GROUPE aux établissements, et suivi local de conformité.
 // L'exigence n'est jamais dupliquée : seules des lignes d'applicabilité (par établissement) varient.
@@ -19,6 +20,9 @@ async function loadGroupRequirement(id: string) {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("qualityRequirement", params.id, "voir");
+  if (!__g.ok) return __g.response;
+
   const { error, req, establishments } = await loadGroupRequirement(params.id);
   if (error) return error;
 
@@ -52,6 +56,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (error) return error;
 
   const body = await req.json();
+  const __g = await guardRecord("qualityRequirement", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   if (body.portee !== undefined && !["tous", "selection"].includes(body.portee)) return NextResponse.json({ error: "Portée invalide (tous | selection)." }, { status: 400 });
   const entries: { establishmentId: string; applicable: boolean }[] = Array.isArray(body.establishments) ? body.establishments : [];
   const valid = new Set(establishments.map((e) => e.id));
@@ -88,6 +95,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (error) return error;
 
   const body = await req.json();
+  const __g = await guardRecord("qualityRequirement", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   if (!body.establishmentId || !establishments.some((e) => e.id === body.establishmentId)) return NextResponse.json({ error: "Établissement invalide : il doit appartenir au groupe." }, { status: 400 });
   if (body.statutConformite !== undefined && !isConformiteStatut(body.statutConformite)) return NextResponse.json({ error: "Statut de conformité invalide." }, { status: 400 });
 

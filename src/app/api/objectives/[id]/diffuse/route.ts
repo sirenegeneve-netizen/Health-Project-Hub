@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { syncGroupDiffusion } from "@/lib/diffusionDb";
+import { guardRecord } from "@/lib/access";
 
 // Diffuse un objectif de GROUPE à tous les établissements rattachés : copie verrouillée de l'intitulé et de la
 // description, définition des indicateurs héritée, déclinaison vide à renseigner par chaque établissement.
@@ -10,6 +11,9 @@ import { syncGroupDiffusion } from "@/lib/diffusionDb";
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("strategicGoalCycle", params.id, "diffuser");
+  if (!__g.ok) return __g.response;
+
 
   const cycle = await prisma.strategicGoalCycle.findUnique({ where: { id: params.id }, include: { strategicGoal: true, strategicPlan: true } });
   if (!cycle) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });

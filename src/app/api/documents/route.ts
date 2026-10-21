@@ -4,6 +4,7 @@ import { logTimelineEvent } from "@/lib/timeline";
 import { analyzeText } from "@/lib/mailSuggest";
 import { requireUser } from "@/lib/auth";
 import { logAudit, truncateLabel } from "@/lib/audit";
+import { guardCreate, guardInitiative } from "@/lib/access";
 
 export async function GET(req: NextRequest) {
   const { user } = await requireUser();
@@ -11,6 +12,8 @@ export async function GET(req: NextRequest) {
 
   const initiativeId = req.nextUrl.searchParams.get("initiativeId");
   if (!initiativeId) return NextResponse.json({ error: "initiativeId requis" }, { status: 400 });
+  const __g = await guardInitiative(initiativeId, "voir");
+  if (!__g.ok) return __g.response;
   const docs = await prisma.documentRef.findMany({ where: { initiativeId }, orderBy: { createdAt: "desc" } });
   return NextResponse.json(docs);
 }
@@ -20,6 +23,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("documentRef", body);
+  if (!__g.ok) return __g.response;
+
 
   const ownerType = body.ownerType || "initiative"; // groupe | etablissement | initiative
   const ownerId = body.ownerId || body.initiativeId;

@@ -3,8 +3,12 @@ import { handleDelete } from "@/lib/deletion";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { guardRecord } from "@/lib/access";
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const __g = await guardRecord("documentRef", params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
   return handleDelete("document", params.id);
 }
 
@@ -19,6 +23,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const doc = await prisma.documentRef.findUnique({ where: { id: params.id } });
   if (!doc) return NextResponse.json({ error: "Document introuvable." }, { status: 404 });
   const body = await req.json();
+  const __g = await guardRecord("documentRef", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
 
   // Détachement
   if (body.linkedType === null) {

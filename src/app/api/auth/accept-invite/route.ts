@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword, createSession } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  // authz-exempt: public par conception : jeton d'invitation à usage unique
   const body = await req.json();
   const token = (body.token || "").trim();
   const password = body.password || "";

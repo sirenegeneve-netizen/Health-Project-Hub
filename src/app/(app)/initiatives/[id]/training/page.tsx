@@ -5,6 +5,7 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { TrainingForm, TrainingSessionForm, KpiForm } from "@/components/EntityForms";
 import { computePopulationReadiness, computeAccompagnementReadiness } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function AccompagnementPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { establishments: { include: { establishment: true } } },

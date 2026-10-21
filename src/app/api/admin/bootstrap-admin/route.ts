@@ -8,6 +8,7 @@ import { GLOBAL_SCOPE_ID } from "@/lib/authz";
 // (mode transitoire, cf. src/lib/authz.ts) — cette route crée la première
 // affectation administrateur/plateforme pour sortir de ce mode.
 export async function GET(req: NextRequest) {
+  // authz-exempt: protégé par la clé d'administration (ADMIN_SEED_KEY)
   const expectedKey = process.env.ADMIN_SEED_KEY;
   if (!expectedKey) {
     return NextResponse.json({ error: "ADMIN_SEED_KEY n'est pas configurée dans les variables d'environnement." }, { status: 503 });

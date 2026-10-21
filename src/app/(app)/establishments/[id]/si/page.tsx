@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
 import { InstalledProducts } from "@/components/InstalledProducts";
 import { EcosystemInterfaces } from "@/components/EcosystemInterfaces";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function EstablishmentSiPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("establishment", params.id);
   const establishment = await prisma.establishment.findUnique({
     where: { id: params.id },
     include: {

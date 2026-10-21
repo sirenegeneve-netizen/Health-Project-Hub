@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardLink } from "@/lib/access";
 
 // Déclare qu'une Initiative couvre une exigence qualité existante (relation
 // facultative des deux côtés). Même règle de portée que pour les objectifs
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardLink("initiativeRequirementCoverage", body, ["qualityRequirementId"]);
+  if (!__g.ok) return __g.response;
+
   const { initiativeId, qualityRequirementId } = body;
   if (!initiativeId || !qualityRequirementId) {
     return NextResponse.json({ error: "initiativeId et qualityRequirementId sont requis." }, { status: 400 });

@@ -4,6 +4,7 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { getInitiativeStages } from "@/lib/templateEngine";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 // non affectées à un établissement précis sont signalées sous le tableau
 // plutôt qu'agrégées dans une moyenne trompeuse.
 export default async function EstablishmentsComparisonPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { establishments: { include: { establishment: true } } },

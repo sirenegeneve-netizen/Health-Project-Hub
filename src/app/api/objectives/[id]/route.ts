@@ -7,10 +7,14 @@ import { propagateGoalToChildren } from "@/lib/diffusionDb";
 import { isObjectiveStatut, isPriorite } from "@/lib/objectifs";
 import { loadObjectiveDetail } from "@/lib/objectifsDb";
 import { sanitizeCodes, unknownCodes, normalizePopulations, PERIMETRES_ORGANISATIONNELS, POPULATIONS } from "@/lib/referentiels";
+import { guardRecord } from "@/lib/access";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("strategicGoalCycle", params.id, "voir");
+  if (!__g.ok) return __g.response;
+
   const detail = await loadObjectiveDetail(params.id);
   if (!detail) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });
   return NextResponse.json(detail);
@@ -23,6 +27,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardRecord("strategicGoalCycle", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   const cycle = await prisma.strategicGoalCycle.findUnique({ where: { id: params.id }, include: { strategicGoal: true } });
   if (!cycle) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });
 

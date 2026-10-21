@@ -3,12 +3,16 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LOCKED_PLAN_FIELDS, lockedFieldsTouched } from "@/lib/diffusion";
 import { propagatePlanToChildren, syncGroupDiffusion } from "@/lib/diffusionDb";
+import { guardRecord } from "@/lib/access";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardRecord("strategicPlan", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   const current = await prisma.strategicPlan.findUnique({ where: { id: params.id } });
   if (!current) return NextResponse.json({ error: "Plan introuvable." }, { status: 404 });
 

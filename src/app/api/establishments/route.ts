@@ -3,12 +3,15 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { syncGroupDiffusion } from "@/lib/diffusionDb";
+import { guardAuthenticated, loadVisibility, establishmentVisibleWhere, guardScope, groupScope } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardScope((d) => groupScope(d, String(body.groupId)), "gererStructure", `group:${body.groupId}`);
+  if (!__g.ok) return __g.response;
   const groupId = body.groupId as string | undefined;
   if (!groupId) {
     return NextResponse.json({ error: "groupId est requis — un établissement doit être rattaché à un groupe explicitement choisi." }, { status: 400 });
@@ -47,7 +50,10 @@ export async function GET() {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
+  const __a = await guardAuthenticated();
+  const __v = await loadVisibility(__a.access!);
   const establishments = await prisma.establishment.findMany({
+    where: establishmentVisibleWhere(__v),
     include: { initiatives: { include: { initiative: true } } },
     orderBy: { name: "asc" },
   });

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getScope, initiativeFilter } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
 export default async function GlobalMeetingsPage() {
-  const meetings = await prisma.meeting.findMany({ include: { initiative: true }, orderBy: { date: "desc" } });
+  const scope = await getScope();
+  const meetings = await prisma.meeting.findMany({ where: initiativeFilter(scope) ? { initiative: initiativeFilter(scope) } : undefined, include: { initiative: true }, orderBy: { date: "desc" } });
 
   if (meetings.length === 0) {
     return (

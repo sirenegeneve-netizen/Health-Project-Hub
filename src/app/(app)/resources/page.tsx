@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { computeActorWorkload, findSinglePointsOfFailure } from "@/lib/resourceGovernance";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere, initiativeFilter, ownerFilter } from "@/lib/scope";
 import { AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -41,15 +41,15 @@ export default async function PortfolioResourcesPage({ searchParams }: { searchP
     // lié à un compte, ou détaché lors de la suppression de son initiative) n'a
     // pas d'initiative à lister — l'inclure faisait planter la page.
     prisma.actor.findMany({
-      where: scope.establishmentId ? { initiativeId: { not: null }, initiative: initiativeScopeWhere(scope) } : { initiativeId: { not: null } },
+      where: { initiativeId: { not: null }, ...(initiativeFilter(scope) ? { initiative: initiativeFilter(scope) } : {}) },
       include: { initiative: true },
       orderBy: { name: "asc" },
     }),
-    prisma.raciEntry.findMany(),
-    prisma.action.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
-    prisma.risk.findMany({ select: { initiativeId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
-    prisma.interface.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
-    prisma.deliverable.findMany({ select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.raciEntry.findMany({ where: initiativeFilter(scope) ? { initiative: initiativeFilter(scope) } : undefined }),
+    prisma.action.findMany({ where: ownerFilter(scope), select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.risk.findMany({ where: ownerFilter(scope), select: { initiativeId: true, proprietaire: true, proprietaireActorId: true, status: true } }),
+    prisma.interface.findMany({ where: initiativeFilter(scope) ? { initiative: initiativeFilter(scope) } : undefined, select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
+    prisma.deliverable.findMany({ where: initiativeFilter(scope) ? { initiative: initiativeFilter(scope) } : undefined, select: { initiativeId: true, responsable: true, responsableActorId: true, status: true } }),
   ]);
 
   if (actors.length === 0) {

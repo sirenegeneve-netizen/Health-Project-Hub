@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { validateObjectiveInput } from "@/lib/objectifs";
 import { createObjective, summarizeObjectives } from "@/lib/objectifsDb";
+import { guardCreate, guardOwner } from "@/lib/access";
 
 // Liste de pilotage : objectifs d'un groupe ou d'un établissement avec cible, compteurs et progression
 // calculée (« — » tant qu'aucune donnée réelle ne permet de la calculer).
@@ -15,6 +16,8 @@ export async function GET(req: NextRequest) {
   if (!ownerType || !ownerId || !["groupe", "etablissement"].includes(ownerType)) {
     return NextResponse.json({ error: "ownerType (groupe | etablissement) et ownerId requis." }, { status: 400 });
   }
+  const __g = await guardOwner(ownerType, ownerId, "voir");
+  if (!__g.ok) return __g.response;
   return NextResponse.json(await summarizeObjectives(ownerType, ownerId));
 }
 
@@ -25,6 +28,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("strategicGoalCycle", body);
+  if (!__g.ok) return __g.response;
+
   const errors = validateObjectiveInput(body);
   if (errors.length > 0) return NextResponse.json({ error: errors[0], errors }, { status: 400 });
 

@@ -6,6 +6,7 @@ import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { computeValidationReadiness } from "@/lib/readiness";
 import { HealthBadge } from "@/components/HealthBadge";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const ANOMALY_STATUS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function ValidationPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const anomalies = await prisma.anomaly.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } });

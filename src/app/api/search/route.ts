@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardAuthenticated, loadVisibility, ownerVisibleWhere, initiativeRelWhere, initiativeVisibleWhere, andWhere } from "@/lib/access";
 
 export async function GET(req: NextRequest) {
   const { user } = await requireUser();
@@ -9,18 +10,22 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim();
   if (!q) return NextResponse.json({ results: [] });
   const contains = { contains: q };
+  const __a = await guardAuthenticated();
+  const __v = await loadVisibility(__a.access!);
+  const ownerVis = ownerVisibleWhere(__v);
+  const relVis = initiativeRelWhere(__v);
 
   const [initiatives, actions, risks, decisions, interfaces, anomalies, meetings, documents, vigilancePoints] =
     await Promise.all([
-      prisma.initiative.findMany({ where: { OR: [{ name: contains }, { reference: contains }, { description: contains }] } }),
-      prisma.action.findMany({ where: { OR: [{ title: contains }, { comments: contains }] }, include: { initiative: true } }),
-      prisma.risk.findMany({ where: { OR: [{ description: contains }, { cause: contains }] }, include: { initiative: true } }),
-      prisma.decision.findMany({ where: { OR: [{ subject: contains }, { context: contains }] }, include: { initiative: true } }),
-      prisma.interface.findMany({ where: { OR: [{ name: contains }, { systemeSource: contains }, { systemeCible: contains }] }, include: { initiative: true } }),
-      prisma.anomaly.findMany({ where: { description: contains }, include: { initiative: true } }),
-      prisma.meeting.findMany({ where: { OR: [{ title: contains }, { notes: contains }] }, include: { initiative: true } }),
-      prisma.documentRef.findMany({ where: { OR: [{ title: contains }, { note: contains }] }, include: { initiative: true } }),
-      prisma.vigilancePoint.findMany({ where: { description: contains }, include: { initiative: true } }),
+      prisma.initiative.findMany({ where: andWhere({ OR: [{ name: contains }, { reference: contains }, { description: contains }] }, initiativeVisibleWhere(__v)) }),
+      prisma.action.findMany({ where: andWhere({ OR: [{ title: contains }, { comments: contains }] }, ownerVis), include: { initiative: true } }),
+      prisma.risk.findMany({ where: andWhere({ OR: [{ description: contains }, { cause: contains }] }, ownerVis), include: { initiative: true } }),
+      prisma.decision.findMany({ where: andWhere({ OR: [{ subject: contains }, { context: contains }] }, ownerVis), include: { initiative: true } }),
+      prisma.interface.findMany({ where: andWhere({ OR: [{ name: contains }, { systemeSource: contains }, { systemeCible: contains }] }, relVis), include: { initiative: true } }),
+      prisma.anomaly.findMany({ where: andWhere({ description: contains }, relVis), include: { initiative: true } }),
+      prisma.meeting.findMany({ where: andWhere({ OR: [{ title: contains }, { notes: contains }] }, relVis), include: { initiative: true } }),
+      prisma.documentRef.findMany({ where: andWhere({ OR: [{ title: contains }, { note: contains }] }, ownerVis), include: { initiative: true } }),
+      prisma.vigilancePoint.findMany({ where: andWhere({ description: contains }, relVis), include: { initiative: true } }),
     ]);
 
   const ownerHref = (o: { ownerType: string; ownerId: string | null; initiativeId: string | null }, initiativeSuffix: string, initiativeFallback: string) => {

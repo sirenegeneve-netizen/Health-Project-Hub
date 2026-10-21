@@ -1,6 +1,6 @@
 export type Role = "administrateur" | "referent_etablissement" | "directeur" | "chef_de_projet";
 export type ScopeType = "plateforme" | "groupe" | "etablissement" | "initiative";
-export type PermissionAction = "voir" | "creer" | "modifier" | "supprimer" | "valider" | "gererUtilisateurs" | "gererStructure";
+export type PermissionAction = "voir" | "creer" | "modifier" | "supprimer" | "valider" | "diffuser" | "gererUtilisateurs" | "gererStructure";
 
 export const GLOBAL_SCOPE_ID = "GLOBAL";
 
@@ -33,8 +33,9 @@ export const ROLE_ALLOWED_SCOPES: Record<Role, ScopeType[]> = {
 // "referent_etablissement" (admin-like mais borné à son établissement) est
 // une proposition non explicitement validée — à confirmer à l'usage.
 export const PERMISSIONS: Record<Role, Record<PermissionAction, boolean>> = {
-  administrateur: { voir: true, creer: true, modifier: true, supprimer: true, valider: true, gererUtilisateurs: true, gererStructure: true },
-  referent_etablissement: { voir: true, creer: true, modifier: true, supprimer: true, valider: true, gererUtilisateurs: true, gererStructure: false },
-  directeur: { voir: true, creer: true, modifier: true, supprimer: false, valider: true, gererUtilisateurs: false, gererStructure: false },
-  chef_de_projet: { voir: true, creer: true, modifier: true, supprimer: false, valider: true, gererUtilisateurs: false, gererStructure: false },
+  administrateur: { voir: true, creer: true, modifier: true, supprimer: true, valider: true, diffuser: true, gererUtilisateurs: true, gererStructure: true },
+  referent_etablissement: { voir: true, creer: true, modifier: true, supprimer: true, valider: true, diffuser: false, gererUtilisateurs: true, gererStructure: false },
+  // « diffuser » = décliner plans et objectifs du groupe vers les établissements : permission distincte (P0).
+  directeur: { voir: true, creer: true, modifier: true, supprimer: false, valider: true, diffuser: true, gererUtilisateurs: false, gererStructure: false },
+  chef_de_projet: { voir: true, creer: true, modifier: true, supprimer: false, valider: true, diffuser: false, gererUtilisateurs: false, gererStructure: false },
 };

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { loadAuditPageData, type AuditPageData } from "@/lib/baselineAuditDb";
+import { loadAccess, loadVisibility, recordScope } from "@/lib/access";
+import { decide } from "@/lib/authzCore";
 import { BaselineAuditForm } from "@/components/audit/BaselineAuditForm";
 import { PERIMETRES_ORGANISATIONNELS, POPULATIONS, labelOf } from "@/lib/referentiels";
 
@@ -9,7 +12,15 @@ export const dynamic = "force-dynamic";
 const STATUS: Record<string, string> = { a_faire: "À faire", en_cours: "En cours", en_attente: "En attente", termine: "Terminé", abandonne: "Abandonné" };
 
 export default async function BaselineAuditPage({ params, searchParams }: { params: { id: string }; searchParams: { perimetre?: string } }) {
-  const loaded = await loadAuditPageData(params.id, searchParams.perimetre);
+  const access = await loadAccess();
+  if (!access) redirect("/login");
+  // Qui voit l'audit : celui qui voit l'action du groupe (vue complète), sinon seulement les établissements de son périmètre.
+  const actionScope = await recordScope(access.db, "action", params.id);
+  const seesAction = decide(access.assignments, "voir", actionScope).allowed;
+  const vis = await loadVisibility(access);
+  const limits = access.mode === "enforce" && !seesAction ? { establishmentIds: vis.establishmentIds, global: false } : undefined;
+  const loaded = await loadAuditPageData(params.id, searchParams.perimetre, limits);
+  if (loaded.kind === "forbidden") return notFound();
   if (loaded.kind === "missing") return notFound();
   if (loaded.kind === "not_baseline") {
     const notBaseline = loaded as { action?: { title: string } };

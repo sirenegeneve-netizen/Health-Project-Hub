@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 // Une seule route, en upsert : poser 0 ou vide supprime la ligne (case vidée
 // dans la heatmap plutôt que ligne à 0 conservée en base).
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("actorAllocation", body);
+  if (!__g.ok) return __g.response;
+
   const { actorId, initiativeId, weekStart } = body;
   if (!actorId || !initiativeId || !weekStart) {
     return NextResponse.json({ error: "actorId, initiativeId et weekStart sont requis." }, { status: 400 });

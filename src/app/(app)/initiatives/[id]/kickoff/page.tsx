@@ -8,6 +8,7 @@ import { ensureStageCriteria } from "@/lib/stageCriteria";
 import { computeCadrageReadiness } from "@/lib/readiness";
 import { computeBudgetSummary } from "@/lib/metrics";
 import { HealthBadge } from "@/components/HealthBadge";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ function isKickoffMeeting(m: { type: string; title: string }) {
 // pas de double saisie) ; le "pendant" pointe vers la réunion de Kick-off dans
 // le module Réunions ; le "après" est une checklist propre à cette étape.
 export default async function KickoffPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { budgetLines: true },

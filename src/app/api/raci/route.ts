@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 // Une cellule de la matrice = un couple (acteur, activité). On upsert son rôle,
 // ou on la supprime si role est null — c'est ce qui permet au clic sur une cellule
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("raciEntry", body);
+  if (!__g.ok) return __g.response;
+
   const { initiativeId, actorId, activite, role } = body;
 
   if (!role) {

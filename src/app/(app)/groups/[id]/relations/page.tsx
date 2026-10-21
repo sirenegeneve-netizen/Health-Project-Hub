@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { GroupTabs } from "@/components/GroupTabs";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ const RELATION_LABELS: Record<string, string> = {
 };
 
 export default async function GroupRelationsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("group", params.id);
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: {

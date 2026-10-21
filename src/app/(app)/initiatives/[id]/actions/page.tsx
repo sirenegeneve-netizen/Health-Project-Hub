@@ -8,6 +8,7 @@ import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
 import { ActionsKanban } from "@/components/ActionsKanban";
 import { resolveActionOrigin } from "@/lib/actionOrigin";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function ActionsPage({ params, searchParams }: { params: { id: string }; searchParams: { vue?: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: { establishments: { include: { establishment: true } } },

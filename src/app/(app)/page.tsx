@@ -14,7 +14,7 @@ import { PortfolioTabs } from "@/components/PortfolioTabs";
 import { PortfolioCharts } from "@/components/PortfolioCharts";
 import { severityFor, reasonHref, ALERT_STYLES } from "@/lib/portfolioAlerts";
 import { IconBadge } from "@/components/IconBadge";
-import { getScope, initiativeScopeWhere } from "@/lib/scope";
+import { getScope, initiativeScopeWhere, initiativeFilter, ownerFilter } from "@/lib/scope";
 import { Briefcase, TriangleAlert, Clock, Euro, Ban, GitFork, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +70,8 @@ export default async function HomePage() {
     return sum + findSinglePointsOfFailure(p.raciEntries, actorsById).length;
   }, 0);
 
-  const scopedInitiative = scope.establishmentId ? { establishments: { some: { establishmentId: scope.establishmentId } } } : undefined;
+  const scopedInitiative = initiativeFilter(scope);
+  const scopedOwner = scope.establishmentId ? (scopedInitiative ? { initiative: scopedInitiative } : {}) : ownerFilter(scope) ?? {};
 
   const recentEvents = await prisma.timelineEvent.findMany({
     where: scopedInitiative ? { initiative: scopedInitiative } : undefined,
@@ -85,7 +86,7 @@ export default async function HomePage() {
 
   const [pendingDecisions, dueSoonActions, imminentDeliverables] = await Promise.all([
     prisma.decision.findMany({
-      where: { status: { not: "decision_prise" }, ...(scopedInitiative ? { initiative: scopedInitiative } : {}) },
+      where: { status: { not: "decision_prise" }, ...scopedOwner },
       include: { initiative: true },
       orderBy: { createdAt: "desc" },
     }),
@@ -93,7 +94,7 @@ export default async function HomePage() {
       where: {
         echeance: { gte: now, lte: in7Days },
         status: { notIn: ["termine", "abandonne"] },
-        ...(scopedInitiative ? { initiative: scopedInitiative } : {}),
+        ...scopedOwner,
       },
       include: { initiative: true },
       orderBy: { echeance: "asc" },

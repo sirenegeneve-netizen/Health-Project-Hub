@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { InitiativeRelationsManager } from "@/components/InitiativeRelationsManager";
 import { detectResourceConflicts, detectScheduleConflicts } from "@/lib/portfolioConflicts";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function InitiativeRelationsPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: {

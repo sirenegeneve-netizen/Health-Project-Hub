@@ -3,10 +3,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
 import { EstablishmentInfoForm } from "@/components/EstablishmentInfoForm";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function EstablishmentCadragePage({ params }: { params: { id: string } }) {
+  await requirePageAccess("establishment", params.id);
   const establishment = await prisma.establishment.findUnique({ where: { id: params.id } });
   if (!establishment) notFound();
 

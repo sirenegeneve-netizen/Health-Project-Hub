@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 // Crée une exigence qualité/conformité (référentiel générique, pas un modèle
 // par norme). Portée par un Groupe ou un Établissement.
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("qualityRequirement", body);
+  if (!__g.ok) return __g.response;
+
   const { ownerType, ownerId, referentiel, libelle } = body;
   if (!ownerType || !["groupe", "etablissement"].includes(ownerType)) {
     return NextResponse.json({ error: "ownerType invalide (groupe | etablissement attendu)." }, { status: 400 });

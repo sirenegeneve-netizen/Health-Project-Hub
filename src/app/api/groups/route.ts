@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { guardCreate } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("group", {});
+  if (!__g.ok) return __g.response; // création de groupe : rôle plateforme uniquement
   if (!body.name || !String(body.name).trim()) {
     return NextResponse.json({ error: "Le nom du groupe est requis." }, { status: 400 });
   }

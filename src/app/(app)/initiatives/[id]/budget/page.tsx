@@ -3,10 +3,12 @@ import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { BudgetTargetsForm, BudgetLineForm, BudgetLinesTable } from "@/components/BudgetForms";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function BudgetPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id }, include: { budgetLines: { orderBy: { createdAt: "desc" } } } });
   if (!initiative) notFound();
 

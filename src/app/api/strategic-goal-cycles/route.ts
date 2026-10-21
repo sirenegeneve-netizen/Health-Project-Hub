@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { cycleIsDiffused } from "@/lib/diffusion";
 import { syncGroupDiffusion } from "@/lib/diffusionDb";
+import { guardCreate } from "@/lib/access";
 
 // Décline un Objectif stratégique existant dans un Plan donné. Le Goal et le
 // Plan doivent porter la même portée (même ownerType/ownerId) — on ne peut
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("strategicGoalCycle", body);
+  if (!__g.ok) return __g.response;
+
   const { strategicGoalId, strategicPlanId } = body;
   if (!strategicGoalId || !strategicPlanId) {
     return NextResponse.json({ error: "strategicGoalId et strategicPlanId sont requis." }, { status: 400 });

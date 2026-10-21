@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { guardRecord } from "@/lib/access";
 
 // Validation d'une valeur initiale proposée (résultats de l'audit validés) : elle devient la valeur de référence.
 export async function PATCH(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("goalIndicatorBaseline", params.id, "valider");
+  if (!__g.ok) return __g.response;
+
   const b = await prisma.goalIndicatorBaseline.findUnique({ where: { id: params.id }, include: { goalIndicator: { include: { strategicGoalCycle: { select: { id: true, strategicGoal: { select: { libelle: true } } } } } } } });
   if (!b) return NextResponse.json({ error: "Valeur introuvable." }, { status: 404 });
   if (b.statut !== "propose") return NextResponse.json({ error: "Seule une valeur proposée peut être validée." }, { status: 409 });

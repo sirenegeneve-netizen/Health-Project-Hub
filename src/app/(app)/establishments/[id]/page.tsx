@@ -3,6 +3,7 @@ import { DeleteButton } from "@/components/DeleteButton";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { EstablishmentTabs } from "@/components/EstablishmentTabs";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function EstablishmentDetailPage({
   params: { id: string };
   searchParams: { onboarding?: string };
 }) {
+  await requirePageAccess("establishment", params.id);
   const establishment = await prisma.establishment.findUnique({
     where: { id: params.id },
     include: {

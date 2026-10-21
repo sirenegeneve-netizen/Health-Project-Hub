@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit, diffRecords } from "@/lib/audit";
+import { guardGroup } from "@/lib/access";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
@@ -10,6 +11,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const before = await prisma.group.findUnique({ where: { id: params.id } });
   const body = await req.json();
+  const __g = await guardGroup(params.id, "gererStructure");
+  if (!__g.ok) return __g.response;
   const group = await prisma.group.update({
     where: { id: params.id },
     data: { name: body.name ? String(body.name).trim() : undefined },
@@ -21,5 +24,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  // authz-exempt: contrôle des droits de suppression dans handleDelete (lib/deletion.ts)
   return handleDelete("group", params.id);
 }

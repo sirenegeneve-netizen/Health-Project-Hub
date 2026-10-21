@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { Role, ScopeType, PermissionAction, PERMISSIONS, GLOBAL_SCOPE_ID, ROLE_ALLOWED_SCOPES } from "@/lib/roles";
+import { authzMode } from "@/lib/accessResolve";
 
 export { GLOBAL_SCOPE_ID, ROLE_ALLOWED_SCOPES };
 export type { Role, ScopeType, PermissionAction };
@@ -51,7 +52,13 @@ export interface AuthzUser {
 // existants n'ont pas été affectés manuellement. À retirer une fois toutes
 // les affectations faites (voir chantier "gestion structurée des comptes").
 export async function can(user: AuthzUser, action: PermissionAction, target: { type: ScopeType; id: string }): Promise<boolean> {
-  if (user.assignments.length === 0) return true; // mode transitoire
+  if (user.assignments.length === 0) {
+    // Plus d'accès implicite : en mode « enforce », un compte sans affectation n'a aucun droit. En mode « audit »
+    // (transition, le temps de régulariser les comptes), l'accès est conservé mais journalisé.
+    if (authzMode() === "enforce") return false;
+    console.warn(JSON.stringify({ authz: "audit-would-deny", userId: user.id, action, resource: `${target.type}:${target.id}`, reason: "aucune affectation" }));
+    return true;
+  }
 
   for (const a of user.assignments) {
     if (!PERMISSIONS[a.role][action]) continue;

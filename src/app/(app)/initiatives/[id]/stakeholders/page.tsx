@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { StakeholderForm } from "@/components/EntityForms";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 const LEVELS = ["faible", "moyenne", "forte"];
 
 export default async function StakeholdersPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const stakeholders = await prisma.stakeholder.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } });

@@ -6,6 +6,7 @@ import { StageCriteriaList } from "@/components/StageCriteriaList";
 import { ensureStageCriteria, computeStageCompletion } from "@/lib/stageCriteria";
 import { computeBudgetSummary, formatEur } from "@/lib/metrics";
 import { Pill } from "@/components/Pill";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 // partir des données réelles et affichés à titre indicatif ; la décision de
 // considérer chaque point comme réglé reste manuelle (checklist).
 export default async function CloturePage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id }, include: { budgetLines: true } });
   if (!initiative) notFound();
 

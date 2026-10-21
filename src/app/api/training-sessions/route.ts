@@ -4,12 +4,16 @@ import { logTimelineEvent } from "@/lib/timeline";
 import { resolveActorName } from "@/lib/actorResolve";
 import { requireUser } from "@/lib/auth";
 import { hoursBetween } from "@/lib/time";
+import { guardCreate } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("trainingSession", body);
+  if (!__g.ok) return __g.response;
+
   const date = new Date(body.date);
   const dureeCalculee = hoursBetween(date, body.heureDebut, body.heureFin);
   const session = await prisma.trainingSession.create({

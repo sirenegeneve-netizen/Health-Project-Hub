@@ -82,15 +82,26 @@ export function expectedScopeKeys(ctx: { establishments: { id: string }[] }): st
 
 export type AuditPageData = Extract<Awaited<ReturnType<typeof loadAuditPageData>>, { kind: "ok" }>;
 
-export async function loadAuditPageData(actionId: string, scopeKeyWanted?: string) {
+// `allowed` restreint la vue aux établissements que l'utilisateur peut voir quand il n'a pas accès à l'objectif du groupe
+// lui-même (ex. référent d'un établissement) : pas de consolidation du groupe, pas d'autres établissements.
+export interface AuditViewLimits {
+  establishmentIds: string[] | null; // null = aucune restriction
+  global: boolean; // périmètre global (groupe) autorisé
+}
+
+export async function loadAuditPageData(actionId: string, scopeKeyWanted?: string, limits?: AuditViewLimits) {
   const ctx = await loadContext(actionId);
   if (!ctx) return { kind: "missing" as const };
   if (!ctx.cycle) return { kind: "not_baseline" as const, action: ctx.action };
   const action = ctx.action;
   const cycle = ctx.cycle;
-  const audits = await prisma.baselineAudit.findMany({ where: { actionId }, include: { measures: true } });
-  const expected = expectedScopeKeys(ctx);
-  const scopeKey = scopeKeyWanted && (scopeKeyWanted === GLOBAL_SCOPE || ctx.establishments.some((e) => e.id === scopeKeyWanted)) ? scopeKeyWanted : expected[0];
+  const restricted = !!limits && limits.establishmentIds !== null;
+  if (restricted) ctx.establishments = ctx.establishments.filter((e) => limits!.establishmentIds!.includes(e.id));
+  if (restricted && !limits!.global && ctx.establishments.length === 0) return { kind: "forbidden" as const };
+  const audits = (await prisma.baselineAudit.findMany({ where: { actionId }, include: { measures: true } })).filter((a) => !restricted || (a.establishmentId ? ctx.establishments.some((e) => e.id === a.establishmentId) : limits!.global));
+  const expected = restricted && !limits!.global ? ctx.establishments.map((e) => e.id) : expectedScopeKeys(ctx);
+  const wantedAllowed = !!scopeKeyWanted && ((scopeKeyWanted === GLOBAL_SCOPE && (!restricted || limits!.global)) || ctx.establishments.some((e) => e.id === scopeKeyWanted));
+  const scopeKey = wantedAllowed ? (scopeKeyWanted as string) : expected[0];
   const audit = audits.find((a) => a.scopeKey === scopeKey) || null;
   const establishmentId = scopeKey === GLOBAL_SCOPE ? null : scopeKey;
   const target = resolveTarget(ctx, establishmentId);
@@ -105,7 +116,7 @@ export async function loadAuditPageData(actionId: string, scopeKeyWanted?: strin
   });
 
   const findings = audit?.statut === "valide" && audit.contenu ? await prisma.auditFinding.findMany({ where: { baselineAuditId: audit.id }, include: { actions: { select: { id: true, title: true, status: true } } }, orderBy: { createdAt: "asc" } }) : [];
-  const consolidation = ctx.establishments.length > 0 ? consolidateAudits(ctx.establishments, audits.map((a) => ({ establishmentId: a.establishmentId, statut: a.statut, measures: a.measures }))) : null;
+  const consolidation = ctx.establishments.length > 0 && (!restricted || limits!.global) ? consolidateAudits(ctx.establishments, audits.map((a) => ({ establishmentId: a.establishmentId, statut: a.statut, measures: a.measures }))) : null;
 
   return {
     kind: "ok" as const,

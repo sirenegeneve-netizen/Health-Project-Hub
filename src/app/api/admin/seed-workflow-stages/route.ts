@@ -6,6 +6,7 @@ import { WORKFLOWS } from "@/lib/workflowSeedData";
 // Protégée par une clé secrète définie dans les variables d'environnement
 // Vercel (ADMIN_SEED_KEY) : sans cette variable, la route refuse tout appel.
 export async function GET(req: NextRequest) {
+  // authz-exempt: protégé par la clé d'administration (ADMIN_SEED_KEY)
   const expectedKey = process.env.ADMIN_SEED_KEY;
   if (!expectedKey) {
     return NextResponse.json(

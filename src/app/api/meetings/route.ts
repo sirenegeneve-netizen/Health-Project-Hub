@@ -4,12 +4,16 @@ import { logTimelineEvent } from "@/lib/timeline";
 import { checkMeetingConflicts } from "@/lib/meetingConflicts";
 import { checkUnavailableParticipants } from "@/lib/actorAvailability";
 import { requireUser } from "@/lib/auth";
+import { guardCreate } from "@/lib/access";
 
 export async function POST(req: NextRequest) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardCreate("meeting", body);
+  if (!__g.ok) return __g.response;
+
   const participantActorIds: string[] = Array.isArray(body.participantActorIds) ? body.participantActorIds : [];
   const date = new Date(body.date);
 

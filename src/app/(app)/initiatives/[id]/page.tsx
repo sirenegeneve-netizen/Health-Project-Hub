@@ -11,10 +11,12 @@ import { InitiativeJourney } from "@/components/InitiativeJourney";
 import { computeStages } from "@/lib/lifecycle";
 import { getInitiativeStages } from "@/lib/templateEngine";
 import { findInitiativeActors } from "@/lib/actorScope";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function InitiativeDashboard({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({
     where: { id: params.id },
     include: {

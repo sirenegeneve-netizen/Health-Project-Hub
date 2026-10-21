@@ -7,10 +7,12 @@ import { ActionForm, RiskForm, DecisionForm } from "@/components/EntityForms";
 import { MeetingNotes } from "@/components/MeetingNotes";
 import { Pill } from "@/components/Pill";
 import { computeHealthScore } from "@/lib/healthScore";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
 export default async function MeetingDetailPage({ params }: { params: { id: string; meetingId: string } }) {
+  await requirePageAccess("initiative", params.id);
   const meeting = await prisma.meeting.findUnique({
     where: { id: params.meetingId },
     include: { actions: true, risks: true, decisions: true, initiative: true },

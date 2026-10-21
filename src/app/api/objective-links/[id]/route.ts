@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { guardRecord } from "@/lib/access";
 
 // Retire le lien (le risque, la décision, le constat ou l'exigence eux-mêmes ne sont jamais touchés).
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("strategicGoalLink", params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
   const link = await prisma.strategicGoalLink.findUnique({ where: { id: params.id }, include: { strategicGoalCycle: { select: { id: true, strategicGoal: { select: { libelle: true } } } } } });
   if (!link) return NextResponse.json({ error: "Lien introuvable." }, { status: 404 });
   await prisma.strategicGoalLink.delete({ where: { id: params.id } });

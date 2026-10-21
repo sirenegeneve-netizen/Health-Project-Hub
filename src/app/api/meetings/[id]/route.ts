@@ -2,10 +2,14 @@ import { handleDelete } from "@/lib/deletion";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { guardRecord } from "@/lib/access";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("meeting", params.id, "voir");
+  if (!__g.ok) return __g.response;
+
 
   const meeting = await prisma.meeting.findUnique({
     where: { id: params.id },
@@ -20,6 +24,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 
   const body = await req.json();
+  const __g = await guardRecord("meeting", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   const meeting = await prisma.meeting.update({
     where: { id: params.id },
     data: {
@@ -34,5 +41,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const __g = await guardRecord("meeting", params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
   return handleDelete("meeting", params.id);
 }

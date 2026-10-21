@@ -4,6 +4,7 @@ import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeT
 import { ChangeForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
 import { Pill } from "@/components/Pill";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const DECISION_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function ChangesPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const changes = await prisma.changeRequest.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } });

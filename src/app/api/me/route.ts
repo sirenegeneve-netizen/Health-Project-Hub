@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 const norm = (s: string | null) => (s || "").trim().toLowerCase();
 
 export async function GET(req: NextRequest) {
+  // authz-exempt: ne renvoie que les éléments dont l'appelant (son acteur) est responsable
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
 

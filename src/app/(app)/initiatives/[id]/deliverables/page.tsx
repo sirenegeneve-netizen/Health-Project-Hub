@@ -4,6 +4,7 @@ import { findInitiativeActors } from "@/lib/actorScope";
 import { InitiativeTabsServer as InitiativeTabs } from "@/components/InitiativeTabsServer";
 import { DeliverableForm } from "@/components/EntityForms";
 import { InlineSelect } from "@/components/InlineSelect";
+import { requirePageAccess } from "@/lib/pageAccess";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ const STATUS_OPTIONS = [
 ].map(([value, label]) => ({ value, label }));
 
 export default async function DeliverablesPage({ params }: { params: { id: string } }) {
+  await requirePageAccess("initiative", params.id);
   const initiative = await prisma.initiative.findUnique({ where: { id: params.id } });
   if (!initiative) notFound();
   const deliverables = await prisma.deliverable.findMany({ where: { initiativeId: params.id }, orderBy: { datePrevue: "asc" } });

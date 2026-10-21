@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { isFrequence, isIndicatorStatut, isSens, lockedIndicatorFields, toNumberOrNull } from "@/lib/objectifs";
 import { propagateIndicatorDefinition } from "@/lib/objectifsDb";
 import { isTheme } from "@/lib/referentiels";
+import { guardRecord } from "@/lib/access";
 
 async function load(id: string) {
   return prisma.goalIndicator.findUnique({ where: { id }, include: { strategicGoalCycle: { select: { id: true, strategicGoal: { select: { libelle: true } } } } } });
@@ -20,6 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!current) return NextResponse.json({ error: "Indicateur introuvable." }, { status: 404 });
 
   const body = await req.json();
+  const __g = await guardRecord("goalIndicator", params.id, "modifier", body);
+  if (!__g.ok) return __g.response;
+
   const locked = lockedIndicatorFields(!!current.parentIndicatorId, body);
   if (locked.length > 0) {
     return NextResponse.json({ error: "Cet indicateur est défini par le groupe (comparabilité entre établissements) : sa définition ne peut pas être modifiée ici.", code: "inherited_locked", fields: locked }, { status: 403 });
@@ -90,6 +94,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
+  const __g = await guardRecord("goalIndicator", params.id, "supprimer");
+  if (!__g.ok) return __g.response;
+
   const current = await load(params.id);
   if (!current) return NextResponse.json({ error: "Indicateur introuvable." }, { status: 404 });
 

@@ -6,6 +6,7 @@ import { can, getUserAssignments } from "@/lib/authz";
 import { GLOBAL_SCOPE_ID, type PermissionAction, type ScopeType } from "@/lib/roles";
 import { logAudit, truncateLabel } from "@/lib/audit";
 import {
+import { authorizeScopes, authzMode, recordScope, type Access, type RecordModel } from "@/lib/accessResolve";
   deleteEstablishmentData,
   deleteGroupData,
   deleteInitiativeData,
@@ -75,8 +76,18 @@ async function resolve(kind: DeleteKind, id: string): Promise<Resolved | null> {
   }
 }
 
-async function authorize(user: CurrentUser, r: Resolved): Promise<boolean> {
+// Éléments « simples » : même décision de rattachement que les autres routes (projet, établissement, groupe), de sorte qu'un rôle
+// de groupe ne supprime pas les données locales d'un établissement. Groupes, établissements et projets : règles de structure (can).
+const MODEL_BY_KIND: Partial<Record<DeleteKind, RecordModel>> = { risk: "risk", action: "action", decision: "decision", document: "documentRef", meeting: "meeting", kpi: "kpi" };
+
+async function authorize(user: CurrentUser, r: Resolved, kind: DeleteKind, id: string): Promise<boolean> {
   const assignments = await getUserAssignments(user.id);
+  const model = MODEL_BY_KIND[kind];
+  if (model) {
+    const scope = await recordScope(prisma, model, id);
+    const access: Access = { user, assignments, mode: authzMode(), db: prisma };
+    return (await authorizeScopes(access, "supprimer", [scope], `${model}:${id}`)).allowed;
+  }
   // Objet sans périmètre identifiable : réservé à la portée plateforme.
   const target = r.scope ?? { type: "plateforme" as ScopeType, id: GLOBAL_SCOPE_ID };
   return can({ id: user.id, assignments }, r.permission, target);
@@ -105,7 +116,7 @@ export async function handleDelete(kind: DeleteKind, id: string): Promise<NextRe
   const resolved = await resolve(kind, id);
   if (!resolved) return json({ ok: true, alreadyGone: true }, 200);
 
-  if (!(await authorize(user, resolved))) {
+  if (!(await authorize(user, resolved, kind, id))) {
     return json({ error: "Vous n'avez pas les droits nécessaires pour supprimer cet élément." }, 403);
   }
 
@@ -144,7 +155,7 @@ export async function handlePreview(kind: DeleteKind, id: string): Promise<NextR
 
   const resolved = await resolve(kind, id);
   if (!resolved) return json({ error: "Cet élément n'existe plus." }, 404);
-  if (!(await authorize(user, resolved))) return json({ error: "Accès refusé." }, 403);
+  if (!(await authorize(user, resolved, kind, id))) return json({ error: "Accès refusé." }, 403);
 
   if (kind === "group" || kind === "establishment" || kind === "initiative") {
     const preview = await previewDeletion(prisma, kind, id);

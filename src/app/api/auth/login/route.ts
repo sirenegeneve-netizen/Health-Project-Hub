@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyPassword, createSession } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  // authz-exempt: public par conception : authentification
   const body = await req.json();
   const email = (body.email || "").trim().toLowerCase();
   const password = body.password || "";
