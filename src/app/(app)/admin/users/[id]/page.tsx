@@ -73,6 +73,8 @@ export default async function UserDetailPage({ params }: { params: { id: string 
 
       <UserDetailPanel
         userId={target.id}
+        name={target.name}
+        email={target.email}
         status={target.status}
         assignments={assignments}
         groups={groups}

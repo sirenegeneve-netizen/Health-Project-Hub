@@ -19,6 +19,8 @@ interface AssignmentDisplay {
 
 export function UserDetailPanel({
   userId,
+  name,
+  email,
   status,
   assignments,
   groups,
@@ -27,6 +29,8 @@ export function UserDetailPanel({
   latestInviteUrl,
 }: {
   userId: string;
+  name: string;
+  email: string;
   status: string;
   assignments: AssignmentDisplay[];
   groups: Option[];
@@ -41,6 +45,27 @@ export function UserDetailPanel({
   const [newScopeId, setNewScopeId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState(latestInviteUrl);
+  const [identity, setIdentity] = useState({ name, email });
+  const [identityMsg, setIdentityMsg] = useState<string | null>(null);
+
+  async function saveIdentity() {
+    setBusy(true);
+    setError(null);
+    setIdentityMsg(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: identity.name, email: identity.email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setIdentityMsg(`Erreur : ${data.error || "enregistrement impossible."}`);
+      setIdentityMsg("Identité mise à jour.");
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function optionsFor(scopeType: ScopeType): Option[] {
     if (scopeType === "groupe") return groups;
@@ -111,6 +136,27 @@ export function UserDetailPanel({
 
   return (
     <div className="space-y-6">
+      <div className="card">
+        <h2 className="font-display text-base text-ink mb-2">Identité du compte</h2>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block">
+            <div className="label mb-1">Nom</div>
+            <input className="input" value={identity.name} onChange={(e) => setIdentity({ ...identity, name: e.target.value })} />
+          </label>
+          <label className="block">
+            <div className="label mb-1">Adresse e-mail (identifiant de connexion)</div>
+            <input className="input" type="email" value={identity.email} onChange={(e) => setIdentity({ ...identity, email: e.target.value })} />
+          </label>
+        </div>
+        <p className="text-xs text-muted mt-2">Aucun e-mail n'est envoyé par HPH : l'invitation se fait en copiant le lien ci-dessous. Une adresse ne peut appartenir qu'à un seul compte.</p>
+        <div className="flex items-center gap-3 mt-2">
+          <button className="btn-secondary text-sm" disabled={busy || (identity.name === name && identity.email === email)} onClick={saveIdentity}>
+            Enregistrer l'identité
+          </button>
+          {identityMsg && <span className={`text-sm ${identityMsg.startsWith("Erreur") ? "text-bad" : "text-teal-700"}`}>{identityMsg}</span>}
+        </div>
+      </div>
+
       <div className="card">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-display text-base text-ink">Statut du compte</h2>

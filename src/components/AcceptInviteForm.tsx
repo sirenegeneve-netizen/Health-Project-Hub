@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function AcceptInviteForm({ token, name }: { token: string; name: string }) {
   const router = useRouter();
@@ -45,11 +46,11 @@ export function AcceptInviteForm({ token, name }: { token: string; name: string 
       </div>
       <div>
         <label className="label block mb-1">Mot de passe</label>
-        <input className="input" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordInput required minLength={8} autoComplete="new-password" value={password} onChange={setPassword} />
       </div>
       <div>
         <label className="label block mb-1">Confirmer le mot de passe</label>
-        <input className="input" type="password" required minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        <PasswordInput required minLength={8} autoComplete="new-password" value={confirm} onChange={setConfirm} />
       </div>
       {error && <p className="text-sm text-bad">{error}</p>}
       <button type="submit" disabled={loading} className="btn w-full justify-center">

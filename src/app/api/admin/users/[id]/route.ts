@@ -33,10 +33,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!before) return NextResponse.json({ error: "Compte introuvable." }, { status: 404 });
 
   const body = await req.json();
+  // Identité du compte : nom et adresse e-mail modifiables par l'administration (adresse unique, tracée dans le journal).
+  let newEmail: string | undefined;
+  if (body.email !== undefined) {
+    newEmail = String(body.email).trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(newEmail)) return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 });
+    if (newEmail !== before.email) {
+      const taken = await prisma.user.findUnique({ where: { email: newEmail } });
+      if (taken) return NextResponse.json({ error: "Un compte existe déjà avec cet email." }, { status: 409 });
+    } else {
+      newEmail = undefined;
+    }
+  }
+  if (body.name !== undefined && !String(body.name).trim()) return NextResponse.json({ error: "Le nom ne peut pas être vide." }, { status: 400 });
   const updated = await prisma.user.update({
     where: { id: params.id },
     data: {
-      name: body.name ?? undefined,
+      email: newEmail,
+      name: body.name !== undefined ? String(body.name).trim() : undefined,
       telephone: body.telephone !== undefined ? body.telephone : undefined,
       status: body.status ?? undefined,
     },
