@@ -29,9 +29,12 @@ export async function getScope(): Promise<Scope> {
   const visibility = access ? await loadVisibility(access) : null;
   // Un identifiant d'établissement venu du navigateur ne suffit jamais : il doit être dans le périmètre autorisé.
   const allowedCookie = cookieId && (!visibility || !visibility.enforced || visibility.all || visibility.establishmentIds.includes(cookieId)) ? cookieId : null;
-  if (!allowedCookie) return { establishmentId: null, establishmentName: null, visibility };
+  // Compte limité à un seul établissement (mode « enforce ») : le périmètre est cet établissement, sans choix possible.
+  const onlyOne = visibility && visibility.enforced && !visibility.all && visibility.establishmentIds.length === 1 ? visibility.establishmentIds[0] : null;
+  const effectiveId = allowedCookie ?? onlyOne;
+  if (!effectiveId) return { establishmentId: null, establishmentName: null, visibility };
 
-  const establishment = await prisma.establishment.findUnique({ where: { id: allowedCookie } });
+  const establishment = await prisma.establishment.findUnique({ where: { id: effectiveId } });
   if (!establishment) return { establishmentId: null, establishmentName: null, visibility };
 
   return { establishmentId: establishment.id, establishmentName: establishment.name, visibility };

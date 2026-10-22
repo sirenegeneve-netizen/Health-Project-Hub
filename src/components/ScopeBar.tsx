@@ -13,10 +13,12 @@ export function ScopeBar({
   establishments,
   currentId,
   currentName,
+  allowAll = true,
 }: {
   establishments: EstablishmentOption[];
   currentId: string | null;
   currentName: string | null;
+  allowAll?: boolean; // faux pour un compte limité à un seul établissement : pas de « vue Groupe »
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -46,7 +48,7 @@ export function ScopeBar({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 mt-1.5 w-72 rounded-lg border border-line bg-white shadow-lg z-20 py-1 max-h-80 overflow-auto">
-            <button
+            {allowAll && <button
               onClick={() => select(null)}
               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-teal-50 ${
                 !currentId ? "text-primary font-medium" : "text-ink"
@@ -55,8 +57,8 @@ export function ScopeBar({
               <Globe2 size={14} />
               Tous les établissements
               <span className="ml-auto text-xs text-ink/40">Vue Groupe</span>
-            </button>
-            {establishments.length > 0 && <div className="my-1 border-t border-line" />}
+            </button>}
+            {allowAll && establishments.length > 0 && <div className="my-1 border-t border-line" />}
             {establishments.map((e) => (
               <button
                 key={e.id}

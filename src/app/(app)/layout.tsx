@@ -4,7 +4,7 @@ import { ScopeBar } from "@/components/ScopeBar";
 import { UserMenu } from "@/components/UserMenu";
 import { FlashMessage } from "@/components/FlashMessage";
 import { prisma } from "@/lib/db";
-import { getScope } from "@/lib/scope";
+import { getScope, establishmentFilter } from "@/lib/scope";
 import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +13,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [establishments, scope] = await Promise.all([
-    prisma.establishment.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    getScope(),
-  ]);
+  const scope = await getScope();
+  // Seuls les établissements autorisés sont proposés dans le sélecteur de périmètre.
+  const establishments = await prisma.establishment.findMany({ where: establishmentFilter(scope), select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const singleEstablishment = !!scope.visibility && scope.visibility.enforced && !scope.visibility.all && scope.visibility.establishmentIds.length === 1;
 
   return (
     <div className="min-h-screen flex">
@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex-1 min-w-0">
         <div className="border-b border-line bg-white/60 backdrop-blur px-8 py-3 flex items-center gap-3 sticky top-0 z-30">
           <span className="text-xs uppercase tracking-wide text-ink/40 font-medium">Périmètre</span>
-          <ScopeBar establishments={establishments} currentId={scope.establishmentId} currentName={scope.establishmentName} />
+          <ScopeBar establishments={establishments} currentId={scope.establishmentId} currentName={scope.establishmentName} allowAll={!singleEstablishment} />
           <div className="ml-auto">
             <UserMenu name={user.name} />
           </div>
