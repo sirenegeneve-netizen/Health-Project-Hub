@@ -52,7 +52,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       email: newEmail,
       name: body.name !== undefined ? String(body.name).trim() : undefined,
       telephone: body.telephone !== undefined ? body.telephone : undefined,
-      status: body.status ?? undefined,
+      // Réactiver un compte qui n'a jamais défini de mot de passe : il reste « invité » (un lien d'invitation est nécessaire).
+      status: body.status === "active" && !before.passwordHash ? "invited" : body.status ?? undefined,
     },
   });
 

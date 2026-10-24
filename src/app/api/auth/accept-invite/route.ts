@@ -16,6 +16,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ce lien d'invitation n'est plus valide. Demandez-en un nouveau à votre administrateur." }, { status: 410 });
   }
 
+  if (invite.user.status === "suspended") {
+    return NextResponse.json({ error: "Ce compte est suspendu. Contactez votre administrateur." }, { status: 403 });
+  }
+
   await prisma.$transaction([
     prisma.user.update({ where: { id: invite.userId }, data: { passwordHash: hashPassword(password), status: "active" } }),
     prisma.inviteToken.update({ where: { id: invite.id }, data: { usedAt: new Date() } }),

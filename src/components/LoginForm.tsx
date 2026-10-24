@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export function LoginForm() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export function LoginForm() {
       </div>
       <div>
         <label className="label block mb-1">Mot de passe</label>
-        <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordInput required autoComplete="current-password" value={password} onChange={setPassword} />
       </div>
       {error && <p className="text-sm text-bad">{error}</p>}
       <button type="submit" disabled={loading} className="btn w-full justify-center">

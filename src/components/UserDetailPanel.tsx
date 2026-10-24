@@ -127,7 +127,9 @@ export function UserDetailPanel({
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/users/${userId}/invite`, { method: "POST" });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setError(data.error || "Impossible de générer le lien.");
+      setError(null);
       setInviteUrl(data.inviteUrl);
     } finally {
       setBusy(false);
@@ -164,9 +166,12 @@ export function UserDetailPanel({
             {status === "suspended" ? "Réactiver" : "Suspendre"}
           </button>
         </div>
-        {status === "invited" && (
+        {status === "suspended" && <p className="text-sm text-muted mt-2">Compte suspendu : il ne peut pas se connecter. Réactivez-le pour générer un lien d'accès.</p>}
+        {(status === "invited" || status === "active") && (
           <div className="mt-2">
-            <p className="text-sm text-muted mb-2">Compte invité, pas encore activé.</p>
+            <p className="text-sm text-muted mb-2">
+              {status === "invited" ? "Compte invité, pas encore activé." : "Compte actif. Le lien ci-dessous permet de réinitialiser son mot de passe (aucun e-mail n'est envoyé)."}
+            </p>
             {inviteUrl ? (
               <div className="flex gap-2">
                 <input readOnly className="input flex-1 text-xs" value={inviteUrl} onFocus={(e) => e.target.select()} />
@@ -176,7 +181,7 @@ export function UserDetailPanel({
               </div>
             ) : (
               <button className="btn-secondary text-sm" disabled={busy} onClick={regenerateInvite}>
-                Générer un lien d'invitation
+                {status === "invited" ? "Générer un lien d'invitation" : "Générer un lien de réinitialisation du mot de passe"}
               </button>
             )}
             <button className="text-xs text-blue hover:underline mt-2 block" disabled={busy} onClick={regenerateInvite}>
