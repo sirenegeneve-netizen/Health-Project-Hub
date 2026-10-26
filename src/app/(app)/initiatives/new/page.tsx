@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db";
+import { getScope, groupFilter, establishmentFilter } from "@/lib/scope";
 import { NewInitiativeForm } from "@/components/NewInitiativeForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewInitiativePage() {
+  const scope = await getScope();
   const [groups, establishments] = await Promise.all([
-    prisma.group.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.establishment.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, groupId: true } }),
+    prisma.group.findMany({ where: groupFilter(scope), orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.establishment.findMany({ where: establishmentFilter(scope), orderBy: { name: "asc" }, select: { id: true, name: true, groupId: true } }),
   ]);
   return (
     <div className="space-y-6">

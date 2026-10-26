@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { missingChildren } from "@/lib/diffusion";
+import { allowedEstablishments } from "@/lib/declinaison";
 
 // Diffusion groupe → établissements (accès base). Idempotent : peut être relancé à tout moment
 // (création d'un établissement, nouvel objectif diffusé, bouton « Resynchroniser »). N'écrase jamais
@@ -23,12 +23,39 @@ export async function syncGroupDiffusion(groupId: string): Promise<DiffusionSumm
     prisma.strategicGoal.findMany({ where: { ownerType: "groupe", ownerId: groupId, diffuse: true } }),
   ]);
 
-  // 1) Copies de plans et d'objectifs pour chaque établissement.
+  // 0) Destinataires de chaque cycle de groupe diffusé : « tous » (y compris établissements rattachés plus tard) ou la sélection
+  //    enregistrée. Un établissement hors sélection n'est jamais créé ; un établissement déjà décliné (même « hors périmètre »)
+  //    n'est jamais recréé (unicité objectif × plan) ni modifié ici.
+  const groupCycles = await prisma.strategicGoalCycle.findMany({
+    where: { strategicGoalId: { in: goals.map((g) => g.id) }, strategicPlanId: { in: plans.map((p) => p.id) } },
+    select: { id: true, strategicGoalId: true, strategicPlanId: true, diffusion: true },
+  });
+  const targets = await prisma.goalDiffusionTarget.findMany({
+    where: { strategicGoalCycleId: { in: groupCycles.map((c) => c.id) } },
+    select: { strategicGoalCycleId: true, establishmentId: true },
+  });
+  const targetsOf = new Map<string, string[]>();
+  for (const t of targets) targetsOf.set(t.strategicGoalCycleId, [...(targetsOf.get(t.strategicGoalCycleId) || []), t.establishmentId]);
+  const allowed = new Map<string, Set<string>>();
+  for (const c of groupCycles) allowed.set(c.id, new Set(allowedEstablishments(c.diffusion, targetsOf.get(c.id) || [], estIds)));
+
+  // Copies nécessaires : un plan / un objectif est copié dans un établissement si au moins un de ses cycles l'y destine.
+  const planNeeds = new Set<string>();
+  const goalNeeds = new Set<string>();
+  for (const c of groupCycles) {
+    for (const estId of Array.from(allowed.get(c.id)!)) {
+      planNeeds.add(`${estId}::${c.strategicPlanId}`);
+      goalNeeds.add(`${estId}::${c.strategicGoalId}`);
+    }
+  }
+
+  // 1) Copies de plans et d'objectifs pour les établissements destinataires.
   const existingPlans = await prisma.strategicPlan.findMany({
     where: { ownerType: "etablissement", ownerId: { in: estIds }, parentPlanId: { in: plans.map((p) => p.id) } },
     select: { id: true, ownerId: true, parentPlanId: true },
   });
-  const missingPlans = missingChildren(plans.map((p) => p.id), estIds, existingPlans.map((p) => ({ ownerId: p.ownerId, parentId: p.parentPlanId })));
+  const havePlan = new Set(existingPlans.map((p) => `${p.ownerId}::${p.parentPlanId}`));
+  const missingPlans = Array.from(planNeeds).filter((k) => !havePlan.has(k)).map((k) => ({ establishmentId: k.split("::")[0], parentId: k.split("::")[1] }));
   if (missingPlans.length > 0) {
     const byId = new Map(plans.map((p) => [p.id, p]));
     const res = await prisma.strategicPlan.createMany({
@@ -45,7 +72,8 @@ export async function syncGroupDiffusion(groupId: string): Promise<DiffusionSumm
     where: { ownerType: "etablissement", ownerId: { in: estIds }, parentGoalId: { in: goals.map((g) => g.id) } },
     select: { id: true, ownerId: true, parentGoalId: true },
   });
-  const missingGoals = missingChildren(goals.map((g) => g.id), estIds, existingGoals.map((g) => ({ ownerId: g.ownerId, parentId: g.parentGoalId })));
+  const haveGoal = new Set(existingGoals.map((g) => `${g.ownerId}::${g.parentGoalId}`));
+  const missingGoals = Array.from(goalNeeds).filter((k) => !haveGoal.has(k)).map((k) => ({ establishmentId: k.split("::")[0], parentId: k.split("::")[1] }));
   if (missingGoals.length > 0) {
     const byId = new Map(goals.map((g) => [g.id, g]));
     const res = await prisma.strategicGoal.createMany({
@@ -58,8 +86,8 @@ export async function syncGroupDiffusion(groupId: string): Promise<DiffusionSumm
     summary.goalsCreated = res.count;
   }
 
-  // 2) Déclinaison : chaque cycle (objectif diffusé × plan diffusé) du groupe est décliné, vide, dans chaque
-  //    établissement — la cible et les indicateurs sont à saisir par l'établissement.
+  // 2) Déclinaison : chaque cycle de groupe est décliné, vide, dans ses seuls établissements destinataires — la cible et les
+  //    indicateurs sont à saisir par l'établissement. Une déclinaison créée démarre « non pris en charge ».
   const childPlans = await prisma.strategicPlan.findMany({
     where: { ownerType: "etablissement", ownerId: { in: estIds }, parentPlanId: { in: plans.map((p) => p.id) } },
     select: { id: true, ownerId: true, parentPlanId: true },
@@ -71,16 +99,13 @@ export async function syncGroupDiffusion(groupId: string): Promise<DiffusionSumm
   const planOf = new Map(childPlans.map((p) => [`${p.ownerId}::${p.parentPlanId}`, p.id]));
   const goalOf = new Map(childGoals.map((g) => [`${g.ownerId}::${g.parentGoalId}`, g.id]));
 
-  const groupCycles = await prisma.strategicGoalCycle.findMany({
-    where: { strategicGoalId: { in: goals.map((g) => g.id) }, strategicPlanId: { in: plans.map((p) => p.id) } },
-    select: { id: true, strategicGoalId: true, strategicPlanId: true },
-  });
-  const rows: { strategicGoalId: string; strategicPlanId: string; statut: string; parentCycleId: string }[] = [];
+  const now = new Date();
+  const rows: { strategicGoalId: string; strategicPlanId: string; statut: string; parentCycleId: string; miseEnOeuvre: string; miseEnOeuvreMajLe: Date }[] = [];
   for (const c of groupCycles) {
-    for (const estId of estIds) {
+    for (const estId of Array.from(allowed.get(c.id)!)) {
       const g = goalOf.get(`${estId}::${c.strategicGoalId}`);
       const p = planOf.get(`${estId}::${c.strategicPlanId}`);
-      if (g && p) rows.push({ strategicGoalId: g, strategicPlanId: p, statut: "actif", parentCycleId: c.id });
+      if (g && p) rows.push({ strategicGoalId: g, strategicPlanId: p, statut: "actif", parentCycleId: c.id, miseEnOeuvre: "non_pris_en_charge", miseEnOeuvreMajLe: now });
     }
   }
   if (rows.length > 0) {
@@ -91,7 +116,7 @@ export async function syncGroupDiffusion(groupId: string): Promise<DiffusionSumm
       await prisma.strategicGoalCycle.updateMany({ where: { strategicGoalId: r.strategicGoalId, strategicPlanId: r.strategicPlanId, parentCycleId: null }, data: { parentCycleId: r.parentCycleId } });
     }
   }
-  // Les cycles de groupe diffusés portent la portée « tous » (la sélection par établissement viendra ensuite).
+  // Anciennes diffusions (portée « aucune ») : elles valaient « tous ». Les cycles déjà en « tous » ou « selection » ne changent pas.
   if (groupCycles.length > 0) {
     await prisma.strategicGoalCycle.updateMany({ where: { id: { in: groupCycles.map((c) => c.id) }, diffusion: "aucune" }, data: { diffusion: "tous" } });
     for (const c of groupCycles) await syncIndicatorsToChildren(c.id);
@@ -125,7 +150,7 @@ export async function propagatePlanToChildren(planId: string) {
 export async function syncIndicatorsToChildren(groupCycleId: string): Promise<number> {
   const [indicators, children] = await Promise.all([
     prisma.goalIndicator.findMany({ where: { strategicGoalCycleId: groupCycleId } }),
-    prisma.strategicGoalCycle.findMany({ where: { parentCycleId: groupCycleId }, select: { id: true } }),
+    prisma.strategicGoalCycle.findMany({ where: { parentCycleId: groupCycleId, OR: [{ miseEnOeuvre: null }, { miseEnOeuvre: { not: "hors_perimetre" } }] }, select: { id: true } }),
   ]);
   if (indicators.length === 0 || children.length === 0) return 0;
   const existing = await prisma.goalIndicator.findMany({

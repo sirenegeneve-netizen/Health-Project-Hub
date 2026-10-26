@@ -16,6 +16,7 @@ import { InitiativeEstablishmentManager } from "@/components/InitiativeEstablish
 import { InitiativeGoalContributionManager } from "@/components/InitiativeGoalContributionManager";
 import { InitiativeRequirementCoverageManager } from "@/components/InitiativeRequirementCoverageManager";
 import { requirePageAccess } from "@/lib/pageAccess";
+import { getScope, establishmentFilter } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +50,14 @@ export default async function CadragePage({ params }: { params: { id: string } }
     },
   });
   if (!initiative) notFound();
+  const scope = await getScope();
 
   const [stakeholders, actors, raciEntries, risks, groupEstablishments] = await Promise.all([
     prisma.stakeholder.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "desc" } }),
     findInitiativeActors(params.id),
     prisma.raciEntry.findMany({ where: { initiativeId: params.id } }),
     prisma.risk.findMany({ where: { initiativeId: params.id }, orderBy: { createdAt: "asc" } }),
-    prisma.establishment.findMany({ where: { groupId: initiative.groupId }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.establishment.findMany({ where: { groupId: initiative.groupId, ...(establishmentFilter(scope) ?? {}) }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   // Objectifs stratégiques disponibles : portés par le Groupe de l'initiative,

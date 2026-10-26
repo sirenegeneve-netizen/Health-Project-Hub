@@ -57,6 +57,7 @@ model Establishment {
 
   initiatives  InitiativeEstablishment[]
   goalCycleScopes GoalCycleScopeEstablishment[]
+  diffusionTargets GoalDiffusionTarget[]
   trainings    TrainingRecord[]
   risks        Risk[]
   actions      Action[]
@@ -996,6 +997,21 @@ model StrategicGoalCycle {
   perimetreOrg       String[]  @default([]) // codes : groupe, siege, service_unite, ...
   populations        String[]  @default([]) // codes : patients_hospitalises, personnel_soignant, ...
   scopeEstablishments GoalCycleScopeEstablishment[]
+  // Déclinaison locale (P1) — renseignés seulement sur les déclinaisons d'établissement (parentCycleId non nul).
+  miseEnOeuvre       String?   // non_pris_en_charge | pris_en_charge | en_cours | termine | non_applicable | hors_perimetre
+  miseEnOeuvreMajLe  DateTime?
+  etatAvantSortie    String?   // état conservé quand l'établissement sort du périmètre (restauré s'il revient)
+  horsPerimetreLe    DateTime?
+  derogationStatut   String?   // demandee | validee | refusee
+  derogationMotif    String?
+  derogationDemandeePar String?
+  derogationDecisionPar String?
+  derogationDecisionLe  DateTime?
+  derogationDecisionNote String?
+  // Diffusion sélective (cycle de groupe) et signalement des changements du groupe.
+  diffusionTargets   GoalDiffusionTarget[]
+  sourceChanges      GoalSourceChange[]
+  changeReviews      GoalChangeReview[]
   indicators         GoalIndicator[]
   links              StrategicGoalLink[]
   updatedAt          DateTime  @default(now()) @updatedAt
@@ -1417,4 +1433,47 @@ model BaselineAuditMeasure {
 
   @@unique([auditId, goalIndicatorId])
   @@index([goalIndicatorId])
+}
+
+// Établissements destinataires d'un objectif de groupe diffusé « par sélection » (diffusion = "selection").
+model GoalDiffusionTarget {
+  id                   String   @id @default(cuid())
+  strategicGoalCycleId String
+  strategicGoalCycle   StrategicGoalCycle @relation(fields: [strategicGoalCycleId], references: [id], onDelete: Cascade)
+  establishmentId      String
+  establishment        Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+
+  @@unique([strategicGoalCycleId, establishmentId])
+  @@index([establishmentId])
+}
+
+// Changement apporté à un objectif du groupe diffusé (champs suivis, valeurs avant / après). Les déclinaisons le voient comme
+// « changement du groupe à examiner » : rien n'est écrasé sans décision explicite de l'établissement.
+model GoalSourceChange {
+  id            String   @id @default(cuid())
+  sourceCycleId String
+  sourceCycle   StrategicGoalCycle @relation(fields: [sourceCycleId], references: [id], onDelete: Cascade)
+  changes       Json     // { champ: { from, to, auto } } — auto = déjà propagé car verrouillé (intitulé, description)
+  auteur        String?
+  createdAt     DateTime @default(now())
+  reviews       GoalChangeReview[]
+
+  @@index([sourceCycleId, createdAt])
+}
+
+// Décision d'une déclinaison sur un changement du groupe : accepté (champs hérités recopiés) ou ignoré. Historique conservé.
+model GoalChangeReview {
+  id           String   @id @default(cuid())
+  changeId     String
+  change       GoalSourceChange @relation(fields: [changeId], references: [id], onDelete: Cascade)
+  childCycleId String
+  childCycle   StrategicGoalCycle @relation(fields: [childCycleId], references: [id], onDelete: Cascade)
+  decision     String   // accepte | ignore
+  appliedFields Json?
+  decidePar    String?
+  decideLe     DateTime @default(now())
+
+  @@unique([changeId, childCycleId])
+  @@index([childCycleId])
 }

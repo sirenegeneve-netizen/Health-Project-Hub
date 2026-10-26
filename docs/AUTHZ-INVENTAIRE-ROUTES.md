@@ -1,13 +1,13 @@
 # Inventaire des routes API et de leur contrôle d'accès (P0)
 
-173 handlers. Généré à partir du code ; le test `tests/authz-coverage.test.ts` échoue si une route n'a ni garde ni exception justifiée.
+177 handlers. Généré à partir du code ; le test `tests/authz-coverage.test.ts` échoue si une route n'a ni garde ni exception justifiée.
 
 ## Répartition
 
-- `guardRecord` : 72
+- `guardRecord` : 75
 - `guardCreate` : 36
 - `requireConfigAccess` : 18
-- `exception` : 16
+- `exception` : 17
 - `guardInitiative` : 8
 - `guardAuthenticated` : 6
 - `canGlobally` : 5
@@ -58,6 +58,7 @@
 | `/api/admin/authz-inventory` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY), lecture seule |
 | `/api/admin/bootstrap-admin` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY) |
 | `/api/admin/migrate-objectifs` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY) |
+| `/api/admin/migrate-diffusion-states` | GET | exception | ADMIN_SEED_KEY, simulation par défaut (apply=1 pour appliquer) |
 | `/api/admin/migrate-owner-fields` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY) |
 | `/api/admin/migrate-project-templates` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY) |
 | `/api/admin/seed-workflow-stages` | GET | Exception justifiée | protégé par la clé d'administration (ADMIN_SEED_KEY) |
@@ -156,6 +157,9 @@
 | `/api/objectives/[id]` | GET | guardRecord | "strategicGoalCycle", params.id, "voir" |
 | `/api/objectives/[id]` | PATCH | guardRecord | "strategicGoalCycle", params.id, "modifier", body |
 | `/api/objectives/[id]/diffuse` | POST | guardRecord | "strategicGoalCycle", params.id, "diffuser" |
+| `/api/objectives/[id]/etat` | POST | guardRecord | "strategicGoalCycle", params.id, "modifier" |
+| `/api/objectives/[id]/derogation` | POST | guardRecord | "strategicGoalCycle", params.id, "voir" ou "modifier" ; décision : + guardRecord sur le cycle parent, "valider", + canDecideDerogation |
+| `/api/objectives/[id]/changes/[changeId]` | POST | guardRecord | "strategicGoalCycle", params.id, "modifier" |
 | `/api/objectives/[id]/indicators` | POST | guardRecord | "strategicGoalCycle", params.id, "modifier" |
 | `/api/objectives/[id]/links` | POST | guardRecord | "strategicGoalCycle", params.id, "modifier" |
 | `/api/problems` | POST | guardCreate | "problem", body |

@@ -1,32 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { logAudit } from "@/lib/audit";
-import { syncGroupDiffusion } from "@/lib/diffusionDb";
 import { guardRecord } from "@/lib/access";
+import { applySelection, previewSelection } from "@/lib/declinaisonDb";
 
-// Diffuse un objectif de GROUPE à tous les établissements rattachés : copie verrouillée de l'intitulé et de la
-// description, définition des indicateurs héritée, déclinaison vide à renseigner par chaque établissement.
-// (La sélection établissement par établissement viendra ensuite.) Une diffusion ne se retire pas.
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+// Diffuse un objectif de GROUPE aux établissements : tous (y compris ceux rattachés plus tard) ou une sélection.
+// Corps : { mode: "tous" | "selection", establishmentIds?: string[], dryRun?: boolean }. Sans corps : mode « tous » (compatibilité).
+// dryRun = simulation : renvoie le plan (à créer, à restaurer, à marquer hors périmètre) sans rien écrire.
+// Un établissement retiré garde sa déclinaison, marquée « Hors périmètre » (état précédent mémorisé) ; s'il revient, l'état est restauré.
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ error: "Authentification requise." }, { status: 401 });
   const __g = await guardRecord("strategicGoalCycle", params.id, "diffuser");
   if (!__g.ok) return __g.response;
 
+  const body: any = await req.json().catch(() => ({}));
+  const mode = body && body.mode ? body.mode : "tous";
+  const ids = body ? body.establishmentIds : undefined;
 
-  const cycle = await prisma.strategicGoalCycle.findUnique({ where: { id: params.id }, include: { strategicGoal: true, strategicPlan: true } });
-  if (!cycle) return NextResponse.json({ error: "Objectif introuvable." }, { status: 404 });
-  if (cycle.strategicGoal.ownerType !== "groupe" || cycle.parentCycleId) {
-    return NextResponse.json({ error: "Seul un objectif propre au groupe peut être diffusé." }, { status: 400 });
+  if (body && body.dryRun === true) {
+    const res = await previewSelection(params.id, mode, ids);
+    if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status || 400 });
+    const p = res.data;
+    return NextResponse.json({ ok: true, dryRun: true, targets: p.targets.length, toCreate: p.toCreate.length, toRestore: p.toRestore.length, toRemove: p.toRemove.length });
   }
-
-  await prisma.$transaction([
-    prisma.strategicGoal.update({ where: { id: cycle.strategicGoalId }, data: { diffuse: true } }),
-    prisma.strategicPlan.update({ where: { id: cycle.strategicPlanId }, data: { diffuse: true } }),
-    prisma.strategicGoalCycle.update({ where: { id: cycle.id }, data: { diffusion: "tous" } }),
-  ]);
-  const summary = await syncGroupDiffusion(cycle.strategicGoal.ownerId);
-  await logAudit({ entityType: "objectif", entityId: cycle.id, entityLabel: cycle.strategicGoal.libelle.slice(0, 120), action: "update", changes: { diffusion: { from: "aucune", to: `tous les établissements (${summary.establishments})` } }, user });
-  return NextResponse.json({ ok: true, ...summary });
+  const res = await applySelection(params.id, mode, ids, { id: user.id, name: user.name });
+  if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status || 400 });
+  return NextResponse.json({ ok: true, ...res.data });
 }

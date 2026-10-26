@@ -3,16 +3,21 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Pill } from "@/components/Pill";
 import { formatProgress, formatTarget } from "@/lib/objectifs";
+import { ETAT_LABELS } from "@/lib/declinaison";
 import { PERIMETRES_ORGANISATIONNELS, POPULATIONS, labelOf } from "@/lib/referentiels";
 import { loadDocumentCandidates, loadInitiativeCandidates, loadLinkCandidates, loadObjectiveDetail, loadObjectiveHistory } from "@/lib/objectifsDb";
 import { ObjectiveActionsSection } from "@/components/objectif/ObjectiveActionsSection";
 import { AssociationSection } from "@/components/objectif/AssociationSection";
-import { DiffuseObjectiveButton } from "@/components/objectif/DiffuseObjectiveButton";
+import { DiffusionSelector } from "@/components/objectif/DiffusionSelector";
+import { DeclinationPanel } from "@/components/objectif/DeclinationPanel";
+import { DeclinationsTable } from "@/components/objectif/DeclinationsTable";
+import { declinationRights } from "@/lib/declinaisonAccess";
 import { IndicatorsSection, type IndicatorView } from "@/components/objectif/IndicatorsSection";
 import { ObjectiveHeaderControls } from "@/components/objectif/ObjectiveHeaderControls";
 
 const STATUT_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = { actif: "ok", atteint: "ok", reporte: "warn", abandonne: "neutral" };
 const STATUT_LABEL: Record<string, string> = { actif: "Actif", atteint: "Atteint", reporte: "Reporté", abandonne: "Abandonné" };
+const ETAT_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = { non_pris_en_charge: "warn", pris_en_charge: "neutral", en_cours: "ok", termine: "ok", non_applicable: "neutral", hors_perimetre: "neutral" };
 const PRIORITE_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = { basse: "neutral", normale: "neutral", haute: "warn", critique: "bad" };
 
 function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
@@ -72,6 +77,8 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
   } else {
     establishmentCount = await prisma.establishment.count({ where: { groupId: ownerId } });
   }
+  const rights = await declinationRights(cycle.id, groupId || null);
+  const etatLabelOf = (v: string | null) => (v && v in ETAT_LABELS ? ETAT_LABELS[v as keyof typeof ETAT_LABELS] : "État non renseigné");
   const parent = inherited
     ? await prisma.strategicGoalCycle.findUnique({ where: { id: cycle.parentCycleId as string }, include: { strategicGoal: { select: { ownerId: true } } } })
     : null;
@@ -151,7 +158,9 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
           <Pill text={STATUT_LABEL[cycle.statut] || cycle.statut} tone={STATUT_TONE[cycle.statut] || "neutral"} />
           <Pill text={`Priorité ${cycle.priorite}`} tone={PRIORITE_TONE[cycle.priorite] || "neutral"} />
           {inherited && <Pill text="Hérité du groupe" tone="neutral" />}
-          {cycle.diffusion !== "aucune" && !inherited && <Pill text="Diffusé aux établissements" tone="ok" />}
+          {cycle.diffusion !== "aucune" && !inherited && <Pill text={cycle.diffusion === "selection" ? "Diffusé à une sélection" : "Diffusé aux établissements"} tone="ok" />}
+          {inherited && <Pill text={etatLabelOf(cycle.miseEnOeuvre)} tone={(cycle.miseEnOeuvre && ETAT_TONE[cycle.miseEnOeuvre]) || "neutral"} />}
+          {!inherited && detail.derogationsPending > 0 && <Pill text={`${detail.derogationsPending} dérogation(s) à examiner`} tone="warn" />}
           {cycle.responsable && <span className="text-sm text-muted">Pilote : {cycle.responsable}</span>}
         </div>
         <div className="mt-4 flex items-center gap-6 flex-wrap">
@@ -195,6 +204,20 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
           />
         </div>
       </div>
+
+      {inherited && (
+        <section className="mb-8">
+          <SectionTitle sub="Votre prise en charge de l'objectif du groupe : état déclaré, dérogation, changements du groupe à examiner.">Déclinaison locale</SectionTitle>
+          <DeclinationPanel
+            cycleId={cycle.id}
+            etat={cycle.miseEnOeuvre}
+            etatLabel={etatLabelOf(cycle.miseEnOeuvre)}
+            derogation={cycle.derogationStatut ? { statut: cycle.derogationStatut, motif: cycle.derogationMotif, demandeePar: cycle.derogationDemandeePar, decisionPar: cycle.derogationDecisionPar, decisionNote: cycle.derogationDecisionNote } : null}
+            changes={detail.changesToReview.map((c) => ({ id: c.id, createdAt: c.createdAt.toISOString(), auteur: c.auteur, changes: c.changes as any, toApply: c.toApply }))}
+            canModify={rights.canModify}
+          />
+        </section>
+      )}
 
       <section className="mb-8">
         <SectionTitle>Description / finalité</SectionTitle>
@@ -266,32 +289,39 @@ export async function ObjectiveSheet({ cycleId, ownerType, ownerId, basePath, ba
       <section className="mb-8">
         <SectionTitle>Établissements concernés</SectionTitle>
         {ownerType === "groupe" ? (
-          detail.children.length === 0 ? (
-            <div className="card space-y-3">
-              <p className="text-sm text-muted">Cet objectif n'est pas diffusé aux établissements.</p>
-              {!inherited && <DiffuseObjectiveButton cycleId={cycle.id} establishmentCount={establishmentCount} />}
-            </div>
-          ) : (
-            <ul className="card !p-0 divide-y divide-ink/5">
-              {detail.children.map((c) => (
-                <li key={c.cycleId} className="px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
-                  <span>
-                    {c.establishment ? (
-                      <Link href={`/establishments/${c.establishment.id}/objectifs/${c.cycleId}`} className="text-blue hover:underline">
-                        {c.establishment.name}
-                      </Link>
-                    ) : (
-                      "Établissement"
-                    )}
-                    <span className="text-xs text-muted"> · {STATUT_LABEL[c.statut] || c.statut}</span>
-                  </span>
-                  <span className="text-muted">
-                    {formatProgress(c.progress)} <span className="text-xs">({basisText(c.progress)})</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )
+          <div className="space-y-4">
+            {!inherited && detail.diffusionInfo && (
+              <div className="card space-y-2">
+                <div className="label">Diffusion aux établissements</div>
+                <DiffusionSelector cycleId={cycle.id} establishments={detail.diffusionInfo.establishments} mode={detail.diffusionInfo.mode} targetIds={detail.diffusionInfo.targetIds} canDiffuse={rights.canDiffuse} />
+              </div>
+            )}
+            {detail.children.length === 0 ? (
+              <p className="text-sm text-muted">Aucune déclinaison pour le moment.</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted">
+                  {Object.entries(detail.etatCounts)
+                    .map(([k, n]) => `${n} ${k === "non_renseigne" ? "état non renseigné" : etatLabelOf(k).toLowerCase()}`)
+                    .join(" · ")}
+                </p>
+                <DeclinationsTable
+                  canDecide={rights.canDecide}
+                  rows={detail.children.map((c) => ({
+                    cycleId: c.cycleId,
+                    establishmentId: c.establishment ? c.establishment.id : null,
+                    establishmentName: c.establishment ? c.establishment.name : "Établissement",
+                    statutLabel: STATUT_LABEL[c.statut] || c.statut,
+                    etat: c.etat,
+                    etatLabel: c.etatLabel,
+                    progressText: `${formatProgress(c.progress)} (${basisText(c.progress)})`,
+                    derogation: c.derogation ? { statut: c.derogation.statut, motif: c.derogation.motif, demandeePar: c.derogation.demandeePar, decisionPar: c.derogation.decisionPar, decisionNote: c.derogation.decisionNote } : null,
+                    changesPending: c.changesPending,
+                  }))}
+                />
+              </>
+            )}
+          </div>
         ) : (
           <div className="card text-sm">
             {parent ? (

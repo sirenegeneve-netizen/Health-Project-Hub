@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import { sanitizeCodes, isTheme, PERIMETRES_ORGANISATIONNELS, POPULATIONS, normalizePopulations } from "@/lib/referentiels";
 import { syncGroupDiffusion, syncIndicatorsToChildren } from "@/lib/diffusionDb";
+import { listPendingChanges } from "@/lib/declinaisonDb";
+import { ETAT_LABELS, fieldsToApply, isEtat, pendingChanges } from "@/lib/declinaison";
+import type { FieldChange } from "@/lib/declinaison";
 import {
   currentValue,
   effectiveIndicator,
@@ -273,6 +276,14 @@ export async function summarizeObjectives(ownerType: string, ownerId: string): P
     select: { id: true, parentCycleId: true, actions: { select: { status: true } } },
   });
   const childInds = children.length ? await indicatorViews(children.map((c) => c.id)) : [];
+  const [sourceChanges, childReviews] = children.length
+    ? await Promise.all([
+        prisma.goalSourceChange.findMany({ where: { sourceCycleId: cycleId }, orderBy: { createdAt: "asc" } }),
+        prisma.goalChangeReview.findMany({ where: { childCycleId: { in: children.map((c) => c.id) } }, select: { changeId: true, childCycleId: true } }),
+      ])
+    : [[], []];
+  const reviewsByChild = new Map<string, string[]>();
+  for (const r of childReviews) reviewsByChild.set(r.childCycleId, [...(reviewsByChild.get(r.childCycleId) || []), r.changeId]);
   const childProgress = new Map<string, { percent: number | null }[]>();
   for (const ch of children) {
     const p = objectiveProgress({ indicators: childInds.filter((i) => i.strategicGoalCycleId === ch.id), actions: ch.actions });
@@ -325,7 +336,14 @@ export async function loadObjectiveDetail(cycleId: string) {
     prisma.decision.findMany({ where: { id: { in: links.map((l) => l.decisionId).filter(Boolean) as string[] } }, select: { id: true, subject: true, status: true, date: true } }),
     prisma.auditFinding.findMany({ where: { id: { in: links.map((l) => l.auditFindingId).filter(Boolean) as string[] } }, select: { id: true, libelle: true, type: true, statut: true } }),
     prisma.qualityRequirement.findMany({ where: { id: { in: links.map((l) => l.qualityRequirementId).filter(Boolean) as string[] } }, select: { id: true, referentiel: true, code: true, libelle: true } }),
-    prisma.strategicGoalCycle.findMany({ where: { parentCycleId: cycleId }, select: { id: true, statut: true, strategicGoal: { select: { ownerId: true } }, actions: { select: { status: true } } } }),
+    prisma.strategicGoalCycle.findMany({
+      where: { parentCycleId: cycleId },
+      select: {
+        id: true, statut: true, createdAt: true, strategicGoal: { select: { ownerId: true } }, actions: { select: { status: true } },
+        miseEnOeuvre: true, etatAvantSortie: true, horsPerimetreLe: true,
+        derogationStatut: true, derogationMotif: true, derogationDemandeePar: true, derogationDecisionPar: true, derogationDecisionLe: true, derogationDecisionNote: true,
+      },
+    }),
   ]);
 
   // Documents / preuves : liés à l'objectif, à ses indicateurs, à ses actions, à ses exigences et constats.
@@ -342,8 +360,46 @@ export async function loadObjectiveDetail(cycleId: string) {
   const childInds = children.length ? await indicatorViews(children.map((c) => c.id)) : [];
   const childViews = children.map((c) => {
     const p = objectiveProgress({ indicators: childInds.filter((i) => i.strategicGoalCycleId === c.id), actions: c.actions });
-    return { cycleId: c.id, statut: c.statut, establishment: establishments.find((e) => e.id === c.strategicGoal.ownerId) || null, progress: p };
+    const etat = c.miseEnOeuvre && isEtat(c.miseEnOeuvre) ? c.miseEnOeuvre : null;
+    return {
+      cycleId: c.id,
+      statut: c.statut,
+      establishment: establishments.find((e) => e.id === c.strategicGoal.ownerId) || null,
+      progress: p,
+      // Déclinaison (P1) : état déclaré (null = non encore renseigné), dérogation, hors périmètre, changements du groupe à examiner.
+      etat,
+      etatLabel: etat ? ETAT_LABELS[etat] : "État non renseigné",
+      etatAvantSortie: c.etatAvantSortie,
+      horsPerimetreLe: c.horsPerimetreLe,
+      derogation: c.derogationStatut
+        ? { statut: c.derogationStatut, motif: c.derogationMotif, demandeePar: c.derogationDemandeePar, decisionPar: c.derogationDecisionPar, decisionLe: c.derogationDecisionLe, decisionNote: c.derogationDecisionNote }
+        : null,
+      changesPending: pendingChanges(sourceChanges, reviewsByChild.get(c.id) || [], c.createdAt).length,
+    };
   });
+  const etatCounts: Record<string, number> = {};
+  for (const v of childViews) etatCounts[v.etat || "non_renseigne"] = (etatCounts[v.etat || "non_renseigne"] || 0) + 1;
+  const derogationsPending = childViews.filter((v) => v.derogation && v.derogation.statut === "demandee").length;
+
+  // Côté groupe : mode de diffusion, destinataires et établissements du groupe (pour le sélecteur et les « non diffusés »).
+  let diffusionInfo: { mode: string; targetIds: string[]; establishments: { id: string; name: string }[] } | null = null;
+  if (!cycle.parentCycleId && cycle.strategicGoal.ownerType === "groupe") {
+    const [targets, groupEsts] = await Promise.all([
+      prisma.goalDiffusionTarget.findMany({ where: { strategicGoalCycleId: cycleId }, select: { establishmentId: true } }),
+      prisma.establishment.findMany({ where: { groupId: cycle.strategicGoal.ownerId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    ]);
+    diffusionInfo = { mode: cycle.diffusion, targetIds: targets.map((t) => t.establishmentId), establishments: groupEsts };
+  }
+
+  // Côté déclinaison : changements du groupe encore à examiner.
+  const pending = cycle.parentCycleId ? await listPendingChanges(cycleId) : [];
+  const changesToReview = pending.map((c) => ({
+    id: c.id,
+    createdAt: c.createdAt,
+    auteur: c.auteur,
+    changes: c.changes as unknown as Record<string, FieldChange>,
+    toApply: fieldsToApply(c.changes as unknown as Record<string, FieldChange>),
+  }));
 
   return {
     cycle,
@@ -355,6 +411,10 @@ export async function loadObjectiveDetail(cycleId: string) {
     requirements,
     documents,
     children: childViews,
+    etatCounts,
+    derogationsPending,
+    diffusionInfo,
+    changesToReview,
     rollup: children.length ? rollupProgress(childViews.map((c) => ({ percent: c.progress.percent }))) : null,
   };
 }

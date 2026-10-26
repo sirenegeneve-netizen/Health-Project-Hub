@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { lockedFieldsTouched } from "@/lib/diffusion";
 import { propagateGoalToChildren } from "@/lib/diffusionDb";
+import { recordSourceChange } from "@/lib/declinaisonDb";
 import { isObjectiveStatut, isPriorite } from "@/lib/objectifs";
 import { loadObjectiveDetail } from "@/lib/objectifsDb";
 import { sanitizeCodes, unknownCodes, normalizePopulations, PERIMETRES_ORGANISATIONNELS, POPULATIONS } from "@/lib/referentiels";
@@ -90,6 +91,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: { libelle: body.libelle === undefined ? undefined : String(body.libelle).trim(), description: text(body.description) },
     });
     await propagateGoalToChildren(cycle.strategicGoalId);
+  }
+
+  // Objectif de groupe diffusé : les changements des champs suivis sont enregistrés (avant / après) pour être signalés aux
+  // déclinaisons. Aucune déclinaison n'est modifiée ici ; une erreur d'enregistrement ne doit pas faire échouer la modification.
+  if (!cycle.parentCycleId && cycle.diffusion !== "aucune") {
+    try {
+      const newLibelle = body.libelle === undefined ? cycle.strategicGoal.libelle : String(body.libelle).trim();
+      const newDescription = body.description === undefined ? cycle.strategicGoal.description : text(body.description);
+      await recordSourceChange(
+        params.id,
+        { ...(cycle as any), libelle: cycle.strategicGoal.libelle, description: cycle.strategicGoal.description },
+        { ...(updated as any), libelle: newLibelle, description: newDescription },
+        user
+      );
+    } catch (e) {
+      console.error("recordSourceChange", e);
+    }
   }
 
   const changes: Record<string, { from: unknown; to: unknown }> = {};
