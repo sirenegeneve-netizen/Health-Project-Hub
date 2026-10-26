@@ -197,7 +197,7 @@ export async function changeDerogation(
   if (!res.ok) return bad(res.error!, 409);
   const v = res.value!;
   const now = new Date();
-  const data: Record<string, unknown> = { derogationStatut: v.statut, miseEnOeuvre: v.etat, miseEnOeuvreMajLe: now };
+  const data: any = { derogationStatut: v.statut, miseEnOeuvre: v.etat, miseEnOeuvreMajLe: now };
   if (action === "demander") {
     data.derogationMotif = input.motif!.trim();
     data.derogationDemandeePar = user.name;
@@ -276,7 +276,7 @@ export async function reviewChange(childCycleId: string, changeId: string, decis
     const source = await prisma.strategicGoalCycle.findUnique({ where: { id: c.parentCycleId! } });
     if (!source) return bad("Objectif du groupe introuvable.", 404);
     applied = fieldsToApply(change.changes as unknown as Record<string, FieldChange>);
-    const data: Record<string, unknown> = {};
+    const data: any = {};
     // Valeurs ACTUELLES du groupe pour les champs concernés (jamais cible, indicateurs, responsable ni statut).
     for (const k of applied) data[k] = (source as any)[k];
     if (Object.keys(data).length > 0) await prisma.strategicGoalCycle.update({ where: { id: c.id }, data });

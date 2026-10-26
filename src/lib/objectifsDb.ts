@@ -276,14 +276,6 @@ export async function summarizeObjectives(ownerType: string, ownerId: string): P
     select: { id: true, parentCycleId: true, actions: { select: { status: true } } },
   });
   const childInds = children.length ? await indicatorViews(children.map((c) => c.id)) : [];
-  const [sourceChanges, childReviews] = children.length
-    ? await Promise.all([
-        prisma.goalSourceChange.findMany({ where: { sourceCycleId: cycleId }, orderBy: { createdAt: "asc" } }),
-        prisma.goalChangeReview.findMany({ where: { childCycleId: { in: children.map((c) => c.id) } }, select: { changeId: true, childCycleId: true } }),
-      ])
-    : [[], []];
-  const reviewsByChild = new Map<string, string[]>();
-  for (const r of childReviews) reviewsByChild.set(r.childCycleId, [...(reviewsByChild.get(r.childCycleId) || []), r.changeId]);
   const childProgress = new Map<string, { percent: number | null }[]>();
   for (const ch of children) {
     const p = objectiveProgress({ indicators: childInds.filter((i) => i.strategicGoalCycleId === ch.id), actions: ch.actions });
@@ -358,6 +350,14 @@ export async function loadObjectiveDetail(cycleId: string) {
     ? await prisma.establishment.findMany({ where: { id: { in: children.map((c) => c.strategicGoal.ownerId) } }, select: { id: true, name: true } })
     : [];
   const childInds = children.length ? await indicatorViews(children.map((c) => c.id)) : [];
+  const [sourceChanges, childReviews] = children.length
+    ? await Promise.all([
+        prisma.goalSourceChange.findMany({ where: { sourceCycleId: cycleId }, orderBy: { createdAt: "asc" } }),
+        prisma.goalChangeReview.findMany({ where: { childCycleId: { in: children.map((c) => c.id) } }, select: { changeId: true, childCycleId: true } }),
+      ])
+    : [[], []];
+  const reviewsByChild = new Map<string, string[]>();
+  for (const r of childReviews) reviewsByChild.set(r.childCycleId, [...(reviewsByChild.get(r.childCycleId) || []), r.changeId]);
   const childViews = children.map((c) => {
     const p = objectiveProgress({ indicators: childInds.filter((i) => i.strategicGoalCycleId === c.id), actions: c.actions });
     const etat = c.miseEnOeuvre && isEtat(c.miseEnOeuvre) ? c.miseEnOeuvre : null;
